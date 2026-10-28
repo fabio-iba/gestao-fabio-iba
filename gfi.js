@@ -32,37 +32,61 @@
   }
   function trocarChave() { try { localStorage.removeItem(KEY_LS); } catch (e) {} location.reload(); }
 
-  /* ---------------- chamadas ao Apps Script ---------------- */
+  /* ---------------- chamadas ao Apps Script ----------------
+   * O navegador bloqueia (CORS) a leitura direta das respostas do Apps Script.
+   * Por isso: pedidos pequenos vão por JSONP (<script>); grandes vão por POST sem
+   * leitura da resposta e o resultado é buscado depois por JSONP (op "resultado"). */
+  var seqCb = 0;
+  function jsonp(obj) {
+    return new Promise(function (ok, no) {
+      var nome = '__gfi' + Date.now().toString(36) + (seqCb++), s = document.createElement('script'), fim = false;
+      var t = setTimeout(function () { limpar(); no(erro('server_unavailable', 'O servidor (Apps Script) não respondeu.')); }, 60000);
+      function limpar() { fim = true; clearTimeout(t); try { delete window[nome]; } catch (e) { window[nome] = undefined; } if (s.parentNode) s.parentNode.removeChild(s); }
+      window[nome] = function (j) { if (fim) return; limpar(); ok(j); };
+      s.onerror = function () { if (fim) return; limpar(); no(erro('server_unavailable', 'Sem conexão com o servidor (Apps Script). Verifique a internet e o endereço em config.js.')); };
+      s.src = API + '?callback=' + nome + '&q=' + encodeURIComponent(JSON.stringify(obj));
+      (document.head || document.documentElement).appendChild(s);
+    });
+  }
+  function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function postGrande(corpo) {
+    var rid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+    corpo.rid = rid;
+    return fetch(API, { method: 'POST', mode: 'no-cors', body: JSON.stringify(corpo), headers: { 'Content-Type': 'text/plain;charset=utf-8' } })
+      .then(function () {
+        var n = 0;
+        function buscar() {
+          return jsonp({ op: 'resultado', key: corpo.key, rid: rid }).then(function (j) {
+            if (j && j.code === 'pending' && ++n < 20) return esperar(1500).then(buscar);
+            return j;
+          });
+        }
+        return buscar();
+      });
+  }
   function api(op, dados) {
     if (!API) return Promise.reject(erro('not_configured', 'Configure o endereço do Apps Script em config.js.'));
     var corpo = Object.assign({ op: op, key: chave(), app: APP }, dados || {});
-    // text/plain evita a pré-verificação CORS, que o Apps Script não responde
     var txt = JSON.stringify(corpo);
-    // leituras e gravações pequenas vão por GET (mais compatível com o Apps Script); arquivos grandes por POST
-    var req = txt.length < 6000
-      ? fetch(API + '?q=' + encodeURIComponent(txt), { method: 'GET', redirect: 'follow' })
-      : fetch(API, { method: 'POST', body: txt, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
-    return req
-      .then(function (r) { if (!r.ok) throw erro('server_unavailable', 'O servidor respondeu ' + r.status + '.'); return r.json(); })
-      .then(function (j) {
+    var req = txt.length < 5000 ? jsonp(corpo) : postGrande(corpo);
+    return req.then(function (j) {
         if (!j || !j.ok) {
           if (j && j.code === 'not_granted') { try { localStorage.removeItem(KEY_LS); } catch (e) {} aviso('Chave de acesso incorreta. Recarregue a página e digite a chave de novo.'); }
           throw erro((j && j.code) || 'internal', (j && j.message) || 'Erro no servidor.');
         }
         return j.data;
-      }, function (e) { if (e && e.code) throw e; console.error('GFI api', op, e); throw erro('server_unavailable', 'Sem conexão com o servidor (Apps Script). Verifique a internet e o endereço em config.js.'); });
+      }, function (e) { console.error('GFI api', op, e); if (e && e.code) throw e; throw erro('server_unavailable', 'Sem conexão com o servidor (Apps Script).'); });
   }
 
-  // leitura síncrona (só para os dados embutidos da página inicial e do calendário, antes dos scripts da página)
-  function apiSync(op, dados) {
-    try {
-      var x = new XMLHttpRequest();
-      x.open('GET', API + '?q=' + encodeURIComponent(JSON.stringify(Object.assign({ op: op, key: chave(), app: APP }, dados || {}))), false);
-      x.send();
-      var j = JSON.parse(x.responseText);
-      return j && j.ok ? j.data : null;
-    } catch (e) { return null; }
+  // dados lidos ANTES dos scripts da página (página inicial, calendário e chaves do navegador):
+  // carregados por um <script> escrito durante a leitura do <head>, que roda antes do resto da página
+  var PRE = window.GFI_PRE = { ok: false, data: null };
+  window.__gfiPre = function (j) { PRE.ok = !!(j && j.ok); PRE.data = PRE.ok ? j.data : null; };
+  if (API && document.readyState === 'loading') {
+    var colsPre = []; if (APP === 'inicio' || APP === 'cal') colsPre.push('paginas'); if ((window.GFI_LS || []).length) colsPre.push('navegador');
+    if (colsPre.length) document.write('<script src="' + API + '?callback=__gfiPre&q=' + encodeURIComponent(JSON.stringify({ op: 'listMany', key: chave(), app: APP, cols: colsPre })) + '"><\/script>');
   }
+  function apiSync(op, dados) { return PRE.ok ? PRE.data : null; }
 
   function aviso(msg) {
     var id = 'gfi-aviso', el = document.getElementById(id);
@@ -270,9 +294,14 @@
   // passam a ser guardadas na planilha, para valer em qualquer computador
   var LS = window.GFI_LS || [];
   if (LS.length && API) {
-    var r0 = apiSync('listMany', { cols: ['navegador'] });
     var setOrig = Storage.prototype.setItem, rmOrig = Storage.prototype.removeItem;
-    ((r0 && r0.navegador) || []).forEach(function (d) { if (LS.indexOf(d.id) >= 0 && d.data && typeof d.data.v === 'string') { try { setOrig.call(localStorage, d.id, d.data.v); } catch (e) {} } });
+    // os valores guardados chegam pelo <script> pré-carregado, que roda logo depois deste arquivo
+    var preOrig = window.__gfiPre;
+    window.__gfiPre = function (j) {
+      preOrig(j);
+      var r0 = PRE.data;
+      ((r0 && r0.navegador) || []).forEach(function (d) { if (LS.indexOf(d.id) >= 0 && d.data && typeof d.data.v === 'string') { try { setOrig.call(localStorage, d.id, d.data.v); } catch (e) {} } });
+    };
     Storage.prototype.setItem = function (k, v) {
       setOrig.call(this, k, v);
       if (this === localStorage && LS.indexOf(k) >= 0) db.doc('navegador/' + k).set({ v: String(v) }).catch(function (e) { aviso('Não foi possível salvar na planilha: ' + e.message); });

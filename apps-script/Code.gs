@@ -12,17 +12,30 @@
 var PROPS = PropertiesService.getScriptProperties();
 
 function doGet(e) {
-  return responder(tratar(e && e.parameter && e.parameter.q ? JSON.parse(e.parameter.q) : {}));
+  var p = (e && e.parameter) || {}, cb = p.callback;
+  var req = {}; try { req = p.q ? JSON.parse(p.q) : {}; } catch (err) { return responder({ ok: false, code: 'invalid_argument', message: 'Pedido mal formado.' }, cb); }
+  var res;
+  if (req.op === 'resultado') {
+    // resultado de um pedido grande enviado antes por POST (rid)
+    if (req.key !== PROPS.getProperty('CHAVE')) res = { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
+    else { var t = CacheService.getScriptCache().get('rid_' + req.rid); res = t ? JSON.parse(t) : { ok: false, code: 'pending', message: 'Aguardando.' }; }
+  } else res = tratar(req);
+  return responder(res, cb);
 }
 
 function doPost(e) {
   var req = {};
   try { req = JSON.parse(e.postData.contents); } catch (err) { return responder({ ok: false, code: 'invalid_argument', message: 'Pedido mal formado.' }); }
-  return responder(tratar(req));
+  var res = tratar(req);
+  if (req.rid) { var t = JSON.stringify(res); if (t.length < 95000) CacheService.getScriptCache().put('rid_' + req.rid, t, 600); }
+  return responder(res);
 }
 
-function responder(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+// com "callback" responde em JSONP (lido por <script>, sem bloqueio de CORS)
+function responder(obj, cb) {
+  var txt = JSON.stringify(obj);
+  if (cb && /^[\w.$]{1,80}$/.test(cb)) return ContentService.createTextOutput(cb + '(' + txt + ')').setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return ContentService.createTextOutput(txt).setMimeType(ContentService.MimeType.JSON);
 }
 
 function tratar(req) {
