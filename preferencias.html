@@ -71,6 +71,8 @@ a{color:var(--ac)}
   function codProf(pid){var s=String(pid)+'|gd-entregas',x=7;for(var i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))>>>0;return x.toString(36).slice(-5)}
   function dataBR(iso){if(!iso)return '';var d=new Date(iso),p=function(n){return String(n).padStart(2,'0')};return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes())}
   function sigla(nome,matriz){var n=norm(nome),s=/psicolog/.test(n)?'PSIORG':/administra/.test(n)?'ADM/PGER':/felicidade/.test(n)?'CFEL':/saude mental/.test(n)?'GSMT':/recursos humanos/.test(n)?'RH':/institucion/.test(n)?'Institucional':nome;return s+(matriz?' '+matriz:'')}
+  // disciplinas sem matriz indicada pertencem à Matriz 2026N (padrão do painel)
+  function matrizDe(d){return (d&&d.matriz)||'2026N'}
   function lista(arr){var o={};(arr||[]).forEach(function(d){o[d.id]=d.data});return o}
 
   var m=/[#?&]p=([\w-]+)\.([a-z0-9]+)/i.exec((location.hash||'')+'&'+(location.search||''));
@@ -80,7 +82,7 @@ a{color:var(--ac)}
   // filtro escolhido pela coordenação ao enviar o link (matrizes, cursos, anos, módulos)
   var FILTRO=null;try{var fm0=/[#&]f=([^&]+)/.exec(location.hash||'');if(fm0)FILTRO=JSON.parse(decodeURIComponent(fm0[1]))}catch(e){FILTRO=null}
   function passaFiltro(d,F){if(!F)return true;
-    if(F.m&&F.m.length&&F.m.indexOf(String(d.matriz||''))<0)return false;
+    if(F.m&&F.m.length&&F.m.indexOf(matrizDe(d))<0)return false;
     if(F.c&&F.c.length&&F.c.indexOf(d.cursoId)<0)return false;
     if(F.a&&F.a.length&&F.a.indexOf(d.ano||'')<0)return false;
     if(F.o&&F.o.length&&F.o.indexOf(d.modulo||'')<0)return false;
@@ -93,7 +95,7 @@ a{color:var(--ac)}
       var k=chaveDisc(d.nome)+'|'+(d.modulo||'');
       var u=g[k]=g[k]||{id:k,chave:chaveDisc(d.nome),nome:d.nome,modulo:d.modulo||'Sem módulo',anos:{},cursos:{},horas:{}};
       if(d.ano)u.anos[d.ano]=1;if(d.hora)u.horas[d.hora]=1;
-      var c=C[d.cursoId];u.cursos[sigla(c?c.nome:'',d.matriz)]=1});
+      var c=C[d.cursoId];u.cursos[sigla(c?c.nome:'',matrizDe(d))]=1});
     return Object.keys(g).map(function(k){var u=g[k];u.ano=Object.keys(u.anos).sort().join(', ');u.curso=Object.keys(u.cursos).sort().join(' · ');u.hora=Object.keys(u.horas).sort().join(', ');return u})
       .sort(function(a,b){return a.modulo.localeCompare(b.modulo,'pt-BR',{numeric:true})||a.nome.localeCompare(b.nome,'pt-BR')});
   }
@@ -149,9 +151,9 @@ a{color:var(--ac)}
       var P=lista(r.pessoas),E=lista(r.escolhas),D=lista(r.disciplinas),C=lista(r.cursos);
       var ps=Object.keys(P).filter(function(id){var p=P[id];return p&&p.nome&&!/mediador/i.test(p.papel||'')}).sort(function(a,b){return P[a].nome.localeCompare(P[b].nome,'pt-BR')});
       var op={m:{},c:{},a:{},o:{}};
-      Object.keys(D).forEach(function(id){var d=D[id];op.m[String(d.matriz||'')]=1;if(d.cursoId)op.c[d.cursoId]=1;if(d.ano)op.a[d.ano]=1;if(d.modulo)op.o[d.modulo]=1});
+      Object.keys(D).forEach(function(id){var d=D[id];op.m[matrizDe(d)]=1;if(d.cursoId)op.c[d.cursoId]=1;if(d.ano)op.a[d.ano]=1;if(d.modulo)op.o[d.modulo]=1});
       var ROT={m:'Matrizes',c:'Cursos',a:'Anos',o:'Módulos'};
-      function rot(t,v){return t==='c'?(C[v]?C[v].nome:v):t==='m'?(v||'Sem matriz'):v}
+      function rot(t,v){return t==='c'?(C[v]?C[v].nome:v):t==='m'?'Matriz '+v:v}
       var F={m:{},c:{},a:{},o:{}},SP={},fila=null;
       function arr(o){return Object.keys(o)}
       function filtroLink(){var f={};['m','c','a','o'].forEach(function(t){var x=arr(F[t]);if(x.length)f[t]=x});return arr(f).length?f:null}
