@@ -17,7 +17,8 @@ function doGet(e) {
   var res;
   if (req.op === 'resultado') {
     // resultado de um pedido grande enviado antes por POST (rid)
-    if (req.key !== PROPS.getProperty('CHAVE')) res = { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
+    var pm = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || ''));
+    if (req.key !== PROPS.getProperty('CHAVE') && !(pm && codProf(pm[1]) === pm[2].toLowerCase())) res = { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
     else { var t = CacheService.getScriptCache().get('rid_' + req.rid); res = t ? JSON.parse(t) : { ok: false, code: 'pending', message: 'Aguardando.' }; }
   } else res = tratar(req);
   return responder(res, cb);
@@ -75,12 +76,16 @@ function tratarPortal(req) {
   var pid = m[1], op = req.op;
   if (op === 'ping') return { ok: true };
   if (op === 'listMany') {
-    var cols = (req.cols || []).filter(function (c) { return ['disciplinas', 'pessoas', 'entregas', 'confirmacoes'].indexOf(c) >= 0; });
+    var cols = (req.cols || []).filter(function (c) { return ['disciplinas', 'pessoas', 'entregas', 'confirmacoes', 'cursos', 'habilitacoes', 'escolhas'].indexOf(c) >= 0; });
     var r = listMany('gd', cols);
     if (r.pessoas) r.pessoas = r.pessoas.filter(function (d) { return d.id === pid; });
     if (r.confirmacoes) r.confirmacoes = r.confirmacoes.filter(function (d) { return d.data && d.data.professorId === pid; });
+    if (r.escolhas) r.escolhas = r.escolhas.filter(function (d) { return d.id === pid; });
+    // das habilitações, o link só recebe as disciplinas fixas (para travar as de outros professores)
+    if (r.habilitacoes) r.habilitacoes = r.habilitacoes.map(function (d) { var f = (d.data && d.data.fixas) || {}; return { id: d.id, data: { fixas: { ead: f.ead || [], estendida: f.estendida || [] } } }; });
     return { ok: true, data: r };
   }
+  if (op === 'escolhas') return comTrava(function () { return { ok: true, data: salvarEscolhas(pid, req.lista || [], req.obs || '') }; });
   if ((op === 'set' || op === 'delete') && req.col === 'confirmacoes') {
     return comTrava(function () {
       var atual = listMany('gd', ['confirmacoes']).confirmacoes.filter(function (d) { return d.id === String(req.id); })[0];
@@ -91,6 +96,47 @@ function tratarPortal(req) {
     });
   }
   return { ok: false, code: 'not_granted', message: 'Operação não permitida pelo link do professor.' };
+}
+
+/* ---------- escolha de disciplinas pelos professores (preferencias.html) ---------- */
+function chaveDisc(n) { return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ''); }
+function dataBR(d) { return Utilities.formatDate(d, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm'); }
+
+function salvarEscolhas(pid, lista, obs) {
+  // não aceita disciplina fixa de outro professor
+  var fixasOutros = {};
+  listMany('gd', ['habilitacoes']).habilitacoes.forEach(function (h) {
+    if (h.id === pid) return;
+    var f = (h.data && h.data.fixas) || {};
+    (f.ead || []).concat(f.estendida || []).forEach(function (k) { fixasOutros[k] = 1; });
+  });
+  lista = lista.filter(function (x) { return x && x.chave && !fixasOutros[x.chave]; });
+  var agora = new Date();
+  gravar({ app: 'gd', col: 'escolhas', id: pid, op: 'set', data: { professorId: pid, lista: lista, obs: String(obs).slice(0, 2000), enviadoEm: agora.toISOString() } });
+
+  var pes = listMany('gd', ['pessoas']).pessoas.filter(function (d) { return d.id === pid; })[0];
+  var nome = (pes && pes.data && pes.data.nome) || pid, email = (pes && pes.data && pes.data.email) || '';
+  var sh = planilhaEscolhas(), dados = sh.getDataRange().getValues();
+  for (var i = dados.length - 1; i >= 1; i--) if (String(dados[i][1]) === pid) sh.deleteRow(i + 1);
+  var linhas = lista.map(function (x) { return [dataBR(agora), pid, nome, email, x.modulo || '', x.nome || '', x.cursos || '', x.ano || '', x.fixa ? 'Fixa' : '', obs || '']; });
+  if (!linhas.length) linhas = [[dataBR(agora), pid, nome, email, '', '(nenhuma disciplina marcada)', '', '', '', obs || '']];
+  sh.getRange(sh.getLastRow() + 1, 1, linhas.length, linhas[0].length).setValues(linhas);
+  return { total: lista.length, enviadoEm: agora.toISOString() };
+}
+
+function planilhaEscolhas() {
+  var id = PROPS.getProperty('ESCOLHAS_PLANILHA'), ss = null;
+  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (e) { ss = null; } }
+  if (!ss) {
+    ss = SpreadsheetApp.create('Escolha de disciplinas - professores');
+    try { DriveApp.getFileById(ss.getId()).moveTo(DriveApp.getFileById(SpreadsheetApp.getActive().getId()).getParents().next()); } catch (e) {}
+    PROPS.setProperty('ESCOLHAS_PLANILHA', ss.getId());
+    var s0 = ss.getSheets()[0];
+    s0.setName('Escolhas');
+    s0.getRange(1, 1, 1, 10).setValues([['Enviado em', 'ID professor', 'Professor', 'E-mail', 'Módulo', 'Disciplina', 'Cursos / matrizes', 'Ano', 'Situação', 'Observação']]).setFontWeight('bold');
+    s0.setFrozenRows(1);
+  }
+  return ss.getSheetByName('Escolhas') || ss.getSheets()[0];
 }
 
 function comTrava(fn) {

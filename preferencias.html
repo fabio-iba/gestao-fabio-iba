@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Escolha de disciplinas</title>
+<script>window.GFI_APP='gd';window.GFI_LS=[]</script>
+<script src="config.js?v=6"></script>
+<script src="gfi.js?v=6"></script>
+<style>
+:root{--bg:#EEF2F5;--card:#fff;--ink:#0F1B2A;--mut:#5B6878;--line:#DCE4EA;--ac:#0F6E7A;--ac-s:#DDF1F1;--lock:#8A6A12;--lock-s:#FBF1D9;--bad:#B92F26;--ok:#146C45}
+@media (prefers-color-scheme:dark){:root{--bg:#0B131B;--card:#131F2A;--ink:#E8EEF3;--mut:#93A3B2;--line:#23313E;--ac:#4CC7C2;--ac-s:#12302F;--lock:#EAB35A;--lock-s:#35280F;--bad:#FF8F86;--ok:#5FD09B}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:16px}
+.band{border-radius:18px;padding:22px 26px;color:#F3F7FA;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:radial-gradient(500px 240px at 90% 0%,rgba(76,199,194,.35),transparent 60%),linear-gradient(120deg,#0B1D2E,#10294A 60%,#134B5A);box-shadow:0 12px 30px -14px rgba(15,27,42,.4)}
+.band h1{margin:0;font-size:clamp(24px,4vw,34px);display:flex;align-items:center;gap:12px}
+.band h1 .ic{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);display:grid;place-items:center}
+.lead{margin:16px 2px}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.bar input,.bar select{font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.bar input{flex:1;min-width:200px}
+.cont{font-weight:700;color:var(--ac);white-space:nowrap}
+button{font:inherit;font-weight:700;border-radius:999px;padding:10px 20px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}
+button:disabled{opacity:.55;cursor:default}
+.mod{margin-top:18px}
+.mod h2{font-size:17px;margin:0 0 10px;display:flex;align-items:center;gap:10px}
+.mod h2 small{font-weight:400;color:var(--mut);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.disc{display:flex;gap:12px;align-items:flex-start;background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer;text-align:left;font-weight:400;width:100%}
+.disc:hover{border-color:var(--ac)}
+.disc .ck{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;margin-top:1px;color:#fff;font-size:14px;font-weight:700}
+.disc.on{border-color:var(--ac);background:var(--ac-s)}
+.disc.on .ck{background:var(--ac);border-color:var(--ac)}
+.disc b{display:block;font-size:14.5px;line-height:1.3}
+.disc span.meta{display:block;color:var(--mut);font-size:12.5px;margin-top:3px}
+.disc.lock{cursor:default;background:var(--lock-s);border-color:transparent}
+.disc.lock .ck{border-color:var(--lock);color:var(--lock)}
+.tag{display:inline-block;font-size:11.5px;font-weight:700;color:var(--lock);margin-top:4px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-top:14px}
+textarea{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);min-height:70px}
+.foot{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.msg{font-weight:700}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.muted{color:var(--mut)}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mut)}
+td input{width:100%;font:inherit;font-size:12.5px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.pill{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.pill.s{background:var(--ac-s);color:var(--ac)}.pill.n{background:var(--lock-s);color:var(--lock)}
+a{color:var(--ac)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="band">
+    <h1><span class="ic">✓</span><span id="titulo">Escolha de disciplinas</span></h1>
+    <a id="voltar" href="index.html" style="display:none;background:#fff;color:#0E2233;border-radius:999px;padding:9px 18px;font-weight:700;text-decoration:none">Voltar ao painel</a>
+  </header>
+  <div id="app"><p class="lead muted">Carregando…</p></div>
+</div>
+<script>
+(function(){
+  var URL_PREF='https://fabio-iba.github.io/gestao-fabio-iba/preferencias.html';
+  var app=document.getElementById('app');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+  function chaveDisc(n){return norm(n).replace(/[^a-z0-9]/g,'')}
+  function codProf(pid){var s=String(pid)+'|gd-entregas',x=7;for(var i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))>>>0;return x.toString(36).slice(-5)}
+  function dataBR(iso){if(!iso)return '';var d=new Date(iso),p=function(n){return String(n).padStart(2,'0')};return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes())}
+  function sigla(nome,matriz){var n=norm(nome),s=/psicolog/.test(n)?'PSIORG':/administra/.test(n)?'ADM/PGER':/felicidade/.test(n)?'CFEL':/saude mental/.test(n)?'GSMT':/recursos humanos/.test(n)?'RH':/institucion/.test(n)?'Institucional':nome;return s+(matriz?' '+matriz:'')}
+  function lista(arr){var o={};(arr||[]).forEach(function(d){o[d.id]=d.data});return o}
+
+  var m=/[#?&]p=([\w-]+)\.([a-z0-9]+)/i.exec((location.hash||'')+'&'+(location.search||''));
+  var PID=m&&codProf(m[1])===m[2].toLowerCase()?m[1]:null;
+  if(m&&!PID){app.innerHTML='<div class="card"><b>Link inválido.</b> <span class="muted">Confira o link enviado pela coordenação.</span></div>';return}
+  if(PID){try{localStorage.setItem('gdPortal',PID+'.'+codProf(PID))}catch(e){}}
+
+  // agrupa as disciplinas: mesmo nome no mesmo módulo = uma escolha (vale para todos os cursos e matrizes)
+  function unidades(D,C){
+    var g={};
+    Object.keys(D).forEach(function(id){var d=D[id];if(!d||!d.nome)return;
+      var k=chaveDisc(d.nome)+'|'+(d.modulo||'');
+      var u=g[k]=g[k]||{id:k,chave:chaveDisc(d.nome),nome:d.nome,modulo:d.modulo||'Sem módulo',anos:{},cursos:{},horas:{}};
+      if(d.ano)u.anos[d.ano]=1;if(d.hora)u.horas[d.hora]=1;
+      var c=C[d.cursoId];u.cursos[sigla(c?c.nome:'',d.matriz)]=1});
+    return Object.keys(g).map(function(k){var u=g[k];u.ano=Object.keys(u.anos).sort().join(', ');u.curso=Object.keys(u.cursos).sort().join(' · ');u.hora=Object.keys(u.horas).sort().join(', ');return u})
+      .sort(function(a,b){return a.modulo.localeCompare(b.modulo,'pt-BR',{numeric:true})||a.nome.localeCompare(b.nome,'pt-BR')});
+  }
+  function fixas(H){var f={};Object.keys(H).forEach(function(pid){var x=(H[pid]&&H[pid].fixas)||{};(x.ead||[]).concat(x.estendida||[]).forEach(function(k){(f[k]=f[k]||[]).push(pid)})});return f}
+
+  if(PID) professor(); else coordenador();
+
+  /* ---------------- professor ---------------- */
+  function professor(){
+    GFI.api('listMany',{cols:['disciplinas','cursos','pessoas','habilitacoes','escolhas']}).then(function(r){
+      var D=lista(r.disciplinas),C=lista(r.cursos),P=lista(r.pessoas),H=lista(r.habilitacoes),E=lista(r.escolhas)[PID]||null;
+      var eu=P[PID]||{nome:PID},FX=fixas(H),us=unidades(D,C),sel={},q='',fm='';
+      if(E&&E.lista)E.lista.forEach(function(x){sel[x.id]=1});
+      us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
+      var mods=[];us.forEach(function(u){if(mods.indexOf(u.modulo)<0)mods.push(u.modulo)});
+      var obs=E&&E.obs||'';
+      function desenhar(){
+        var n=Object.keys(sel).length,nq=norm(q);
+        var vis=us.filter(function(u){return (!fm||u.modulo===fm)&&(!nq||norm(u.nome+' '+u.curso).indexOf(nq)>=0)});
+        var h='<p class="lead">Prof(a). <b>'+esc(eu.nome)+'</b> · marque as disciplinas que você quer trabalhar e clique em <b>Enviar escolhas</b>. Cada disciplina vale para todos os cursos e matrizes em que aparece.</p>'+
+          (E&&E.enviadoEm?'<div class="card" style="margin-top:0"><span class="msg ok">Escolhas enviadas em '+dataBR(E.enviadoEm)+'.</span> <span class="muted">Você pode alterar e enviar de novo quando quiser.</span></div>':'')+
+          '<div class="bar"><input id="q" type="search" placeholder="Buscar disciplina ou curso" value="'+esc(q)+'"><select id="fm"><option value="">Todos os módulos</option>'+mods.map(function(x){return '<option'+(x===fm?' selected':'')+'>'+esc(x)+'</option>'}).join('')+'</select><span class="cont">'+n+' marcada'+(n===1?'':'s')+'</span></div>';
+        mods.forEach(function(md){var it=vis.filter(function(u){return u.modulo===md});if(!it.length)return;
+          h+='<section class="mod"><h2>'+esc(md)+' <small>'+it.length+' disciplina'+(it.length===1?'':'s')+'</small></h2><div class="grid">'+it.map(function(u){
+            var on=!!sel[u.id],cls='disc'+(on?' on':'')+(u.outro||u.minha?' lock':'');
+            var meta=[u.curso,u.ano?u.ano+' ano':'',u.hora].filter(Boolean).join(' · ');
+            var tag=u.outro?'<span class="tag">Fixa para outro professor</span>':u.minha?'<span class="tag">Fixa para você</span>':'';
+            return '<button type="button" class="'+cls+'" data-id="'+esc(u.id)+'"'+(u.outro||u.minha?' aria-disabled="true"':'')+' aria-pressed="'+on+'"><span class="ck">'+(on?'✓':u.outro?'🔒':'')+'</span><span><b>'+esc(u.nome)+'</b><span class="meta">'+esc(meta)+'</span>'+tag+'</span></button>'}).join('')+'</div></section>'});
+        if(!vis.length)h+='<div class="card muted">Nenhuma disciplina encontrada.</div>';
+        h+='<div class="card"><label for="obs"><b>Observação</b> <span class="muted">(opcional)</span></label><textarea id="obs" maxlength="2000" placeholder="Ex.: prefiro disciplinas do 2º ano">'+esc(obs)+'</textarea><div class="foot"><button class="pri" id="enviar">Enviar escolhas</button><span class="msg" id="msg"></span></div></div>';
+        app.innerHTML=h;
+        var qi=document.getElementById('q');qi.oninput=function(){q=qi.value;var p=qi.selectionStart;desenhar();var n2=document.getElementById('q');n2.focus();n2.setSelectionRange(p,p)};
+        document.getElementById('fm').onchange=function(e){fm=e.target.value;desenhar()};
+        document.getElementById('obs').oninput=function(e){obs=e.target.value};
+        document.getElementById('enviar').onclick=enviar;
+      }
+      app.addEventListener('click',function(e){var b=e.target.closest('.disc');if(!b||b.getAttribute('aria-disabled'))return;var id=b.getAttribute('data-id');if(sel[id])delete sel[id];else sel[id]=1;desenhar()});
+      function enviar(){
+        var bt=document.getElementById('enviar'),msg=document.getElementById('msg');bt.disabled=true;msg.className='msg';msg.textContent='Enviando…';
+        var l=us.filter(function(u){return sel[u.id]&&!u.outro}).map(function(u){return {id:u.id,chave:u.chave,nome:u.nome,modulo:u.modulo,cursos:u.curso,ano:u.ano,fixa:u.minha}});
+        GFI.api('escolhas',{lista:l,obs:obs}).then(function(r){E={lista:l,obs:obs,enviadoEm:r.enviadoEm};desenhar();var m2=document.getElementById('msg');m2.className='msg ok';m2.textContent='Escolhas enviadas ('+r.total+' disciplina'+(r.total===1?'':'s')+'). Obrigado!'},
+          function(err){bt.disabled=false;msg.className='msg bad';msg.textContent='Não foi possível enviar ('+(err&&err.message||'erro')+'). Tente de novo.'});
+      }
+      desenhar();
+    },function(err){app.innerHTML='<div class="card"><span class="msg bad">Não foi possível carregar as disciplinas.</span> <span class="muted">'+esc(err&&err.message)+'</span></div>'});
+  }
+
+  /* ---------------- coordenação: links e respostas ---------------- */
+  function coordenador(){
+    document.getElementById('titulo').textContent='Escolha de disciplinas · links';
+    document.getElementById('voltar').style.display='';
+    GFI.api('listMany',{cols:['pessoas','escolhas']}).then(function(r){
+      var P=lista(r.pessoas),E=lista(r.escolhas);
+      var ps=Object.keys(P).filter(function(id){var p=P[id];return p&&p.nome&&!/mediador/i.test(p.papel||'')}).sort(function(a,b){return P[a].nome.localeCompare(P[b].nome,'pt-BR')});
+      var resp=ps.filter(function(id){return E[id]}).length;
+      var h='<p class="lead">Envie a cada professor o link dele. As respostas vão para a planilha <b>Escolha de disciplinas - professores</b>, na pasta do site no seu Drive. <b>'+resp+' de '+ps.length+'</b> já responderam.</p><div class="card" style="overflow-x:auto"><table><thead><tr><th>Professor</th><th>Situação</th><th style="min-width:280px">Link</th><th></th></tr></thead><tbody>'+
+        ps.map(function(id){var p=P[id],e=E[id],lk=URL_PREF+'#p='+id+'.'+codProf(id);
+          var corpo='Olá, '+p.nome.split(' ')[0]+'!\n\nPara a distribuição das próximas disciplinas, acesse o link abaixo e marque as disciplinas que você gostaria de trabalhar. Depois, clique em "Enviar escolhas".\n\n'+lk+'\n\nObrigado!\nFabio Iba';
+          var mail='mailto:'+encodeURIComponent(p.email||'')+'?subject='+encodeURIComponent('Escolha de disciplinas')+'&body='+encodeURIComponent(corpo);
+          return '<tr><td><b>'+esc(p.nome)+'</b><br><span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail')+'</span></td><td>'+(e?'<span class="pill s">Respondeu</span><br><span class="muted" style="font-size:12.5px">'+dataBR(e.enviadoEm)+' · '+((e.lista||[]).length)+' disc.</span>':'<span class="pill n">Aguardando</span>')+'</td><td><input readonly value="'+esc(lk)+'" onclick="this.select()"></td><td style="white-space:nowrap"><button type="button" data-copy="'+esc(lk)+'">Copiar</button> <a href="'+mail+'">Outlook</a></td></tr>'}).join('')+
+        '</tbody></table></div>';
+      app.innerHTML=h;
+      app.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var t=b.getAttribute('data-copy');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copiado!';setTimeout(function(){b.textContent='Copiar'},1500)},function(){prompt('Copie o link:',t)})});
+    },function(err){app.innerHTML='<div class="card"><span class="msg bad">Não foi possível carregar.</span> <span class="muted">'+esc(err&&err.message)+'</span></div>'});
+  }
+})();
+</script>
+</body>
+</html>

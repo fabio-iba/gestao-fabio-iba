@@ -16,6 +16,7 @@ Os painéis da coordenação funcionando fora do Claude:
 | Calendário Docente | `calendario.html` |
 | Validação de Materiais | `validacao.html` |
 | Roteiro do Módulo | `roteiro.html` |
+| Escolha de disciplinas (links dos professores) | `preferencias.html` |
 | Importação dos dados (uso único) | `importar.html` |
 
 ## Passo a passo
