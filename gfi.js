@@ -20,8 +20,16 @@
   function clone(o) { return o == null ? o : JSON.parse(JSON.stringify(o)); }
 
   /* ---------------- chave de acesso ---------------- */
+  // link do professor (gestao-docente.html#p=ID.CODIGO): acesso só às entregas dele, sem a chave
+  function portal() {
+    if (APP !== 'gd') return '';
+    var src = (location.hash || '') + '&' + (location.search || '') + '&p=' + (lsGet('gdPortal') || '');
+    var m = /[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(src);
+    return m ? m[1] : '';
+  }
   function chave() {
     var k = lsGet(KEY_LS);
+    if (!k && portal()) return '';
     while (!k) {
       k = window.prompt('Gestão Fabio Iba\n\nDigite a chave de acesso (definida no Apps Script, propriedade CHAVE).\nEla fica guardada neste navegador.');
       if (k === null) break;
@@ -67,11 +75,12 @@
   function api(op, dados) {
     if (!API) return Promise.reject(erro('not_configured', 'Configure o endereço do Apps Script em config.js.'));
     var corpo = Object.assign({ op: op, key: chave(), app: APP }, dados || {});
+    if (!corpo.key && portal()) corpo.portal = portal();
     var txt = JSON.stringify(corpo);
     var req = txt.length < 5000 ? jsonp(corpo) : postGrande(corpo);
     return req.then(function (j) {
         if (!j || !j.ok) {
-          if (j && j.code === 'not_granted') { try { localStorage.removeItem(KEY_LS); } catch (e) {} aviso('Chave de acesso incorreta. Recarregue a página e digite a chave de novo.'); }
+          if (j && j.code === 'not_granted' && !corpo.portal) { try { localStorage.removeItem(KEY_LS); } catch (e) {} aviso('Chave de acesso incorreta. Recarregue a página e digite a chave de novo.'); }
           throw erro((j && j.code) || 'internal', (j && j.message) || 'Erro no servidor.');
         }
         return j.data;

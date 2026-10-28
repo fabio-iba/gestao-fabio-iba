@@ -42,7 +42,10 @@ function tratar(req) {
   try {
     var chave = PROPS.getProperty('CHAVE');
     if (!chave) return { ok: false, code: 'not_configured', message: 'Defina a propriedade CHAVE no Apps Script.' };
-    if (req.key !== chave) return { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
+    if (req.key !== chave) {
+      if (req.portal) return tratarPortal(req);
+      return { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
+    }
     var op = req.op;
     if (op === 'ping') return { ok: true };
     if (op === 'listMany') return { ok: true, data: listMany(req.app, req.cols || []) };
@@ -58,6 +61,36 @@ function tratar(req) {
   } catch (err) {
     return { ok: false, code: err.code || 'internal', message: String(err.message || err) };
   }
+}
+
+/* ---------- link do professor: lê as entregas e marca "Entreguei", sem a chave ---------- */
+function codProf(pid) {
+  var s = String(pid) + '|gd-entregas', x = 7;
+  for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0;
+  return x.toString(36).slice(-5);
+}
+function tratarPortal(req) {
+  var m = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || ''));
+  if (!m || codProf(m[1]) !== m[2].toLowerCase() || req.app !== 'gd') return { ok: false, code: 'not_granted', message: 'Código do professor inválido.' };
+  var pid = m[1], op = req.op;
+  if (op === 'ping') return { ok: true };
+  if (op === 'listMany') {
+    var cols = (req.cols || []).filter(function (c) { return ['disciplinas', 'pessoas', 'entregas', 'confirmacoes'].indexOf(c) >= 0; });
+    var r = listMany('gd', cols);
+    if (r.pessoas) r.pessoas = r.pessoas.filter(function (d) { return d.id === pid; });
+    if (r.confirmacoes) r.confirmacoes = r.confirmacoes.filter(function (d) { return d.data && d.data.professorId === pid; });
+    return { ok: true, data: r };
+  }
+  if ((op === 'set' || op === 'delete') && req.col === 'confirmacoes') {
+    return comTrava(function () {
+      var atual = listMany('gd', ['confirmacoes']).confirmacoes.filter(function (d) { return d.id === String(req.id); })[0];
+      if (atual && atual.data && atual.data.professorId !== pid) return { ok: false, code: 'not_granted', message: 'Entrega de outro professor.' };
+      if (op === 'set' && (!req.data || req.data.professorId !== pid)) return { ok: false, code: 'not_granted', message: 'Entrega de outro professor.' };
+      if (op === 'delete' && !atual) return { ok: true, data: null };
+      return { ok: true, data: gravar({ app: 'gd', col: 'confirmacoes', id: req.id, op: op, data: req.data }) };
+    });
+  }
+  return { ok: false, code: 'not_granted', message: 'Operação não permitida pelo link do professor.' };
 }
 
 function comTrava(fn) {
