@@ -136,7 +136,7 @@ a{color:var(--ac)}
       function enviar(){
         var bt=document.getElementById('enviar'),msg=document.getElementById('msg');bt.disabled=true;msg.className='msg';msg.textContent='Enviando…';
         var l=us.filter(function(u){return sel[u.id]&&!u.outro}).map(function(u){return {id:u.id,chave:u.chave,nome:u.nome,modulo:u.modulo,cursos:u.curso,ano:u.ano,fixa:u.minha}});
-        GFI.api('escolhas',{lista:l,obs:obs}).then(function(r){E={lista:l,obs:obs,enviadoEm:r.enviadoEm};desenhar();var m2=document.getElementById('msg');m2.className='msg ok';m2.textContent='Escolhas enviadas ('+r.total+' disciplina'+(r.total===1?'':'s')+'). Obrigado!'},
+        GFI.api('escolhas',{lista:l,obs:obs,pid:PID+'.'+codProf(PID)}).then(function(r){E={lista:l,obs:obs,enviadoEm:r.enviadoEm};desenhar();var m2=document.getElementById('msg');m2.className='msg ok';m2.textContent='Escolhas enviadas ('+r.total+' disciplina'+(r.total===1?'':'s')+'). Obrigado!'},
           function(err){bt.disabled=false;msg.className='msg bad';msg.textContent='Não foi possível enviar ('+(err&&err.message||'erro')+'). Tente de novo.'});
       }
       desenhar();

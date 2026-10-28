@@ -49,6 +49,12 @@ function tratar(req) {
     }
     var op = req.op;
     if (op === 'ping') return { ok: true };
+    // escolhas enviadas pelo link do professor, mesmo quando o navegador já tem a chave da coordenação
+    if (op === 'escolhas') {
+      var pe = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || req.pid || ''));
+      if (!pe || codProf(pe[1]) !== pe[2].toLowerCase()) return { ok: false, code: 'invalid_argument', message: 'Link do professor inválido.' };
+      return comTrava(function () { return { ok: true, data: salvarEscolhas(pe[1], req.lista || [], req.obs || '') }; });
+    }
     if (op === 'listMany') return { ok: true, data: listMany(req.app, req.cols || []) };
     if (op === 'set' || op === 'update' || op === 'delete') return comTrava(function () { return { ok: true, data: gravar(req) }; });
     if (op === 'batch') return comTrava(function () { (req.ops || []).forEach(gravar); return { ok: true }; });
