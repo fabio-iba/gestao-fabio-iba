@@ -127,7 +127,24 @@ function salvarEscolhas(pid, lista, obs) {
   var linhas = lista.map(function (x) { return [dataBR(agora), pid, nome, email, x.modulo || '', x.nome || '', x.cursos || '', x.ano || '', x.fixa ? 'Fixa' : '', obs || '']; });
   if (!linhas.length) linhas = [[dataBR(agora), pid, nome, email, '', '(nenhuma disciplina marcada)', '', '', '', obs || '']];
   sh.getRange(sh.getLastRow() + 1, 1, linhas.length, linhas[0].length).setValues(linhas);
+  abaProfessor(sh.getParent(), nome, email, agora, lista, obs);
   return { total: lista.length, enviadoEm: agora.toISOString() };
+}
+
+// uma aba por professor, refeita a cada envio
+function abaProfessor(ss, nome, email, agora, lista, obs) {
+  var titulo = String(nome).replace(/[\/\\?*\[\]:]/g, ' ').slice(0, 90) || 'Professor';
+  var sh = ss.getSheetByName(titulo);
+  if (!sh) sh = ss.insertSheet(titulo); else sh.clear();
+  sh.getRange(1, 1, 4, 2).setValues([['Professor', nome], ['E-mail', email], ['Enviado em', dataBR(agora)], ['Observação', obs || '']]);
+  sh.getRange(1, 1, 4, 1).setFontWeight('bold');
+  var cab = [['Módulo', 'Disciplina', 'Cursos / matrizes', 'Ano', 'Situação']];
+  sh.getRange(6, 1, 1, 5).setValues(cab).setFontWeight('bold').setBackground('#DDF1F1');
+  var linhas = lista.map(function (x) { return [x.modulo || '', x.nome || '', x.cursos || '', x.ano || '', x.fixa ? 'Fixa' : '']; });
+  if (!linhas.length) linhas = [['', '(nenhuma disciplina marcada)', '', '', '']];
+  sh.getRange(7, 1, linhas.length, 5).setValues(linhas);
+  sh.setFrozenRows(6);
+  sh.setColumnWidth(1, 110); sh.setColumnWidth(2, 360); sh.setColumnWidth(3, 260); sh.setColumnWidth(4, 70); sh.setColumnWidth(5, 90);
 }
 
 function planilhaEscolhas() {
