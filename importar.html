@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Importar dados</title>
 <script>window.GFI_APP='importar'</script>
-<script src="config.js?v=4"></script>
-<script src="gfi.js?v=4"></script>
+<script src="config.js?v=5"></script>
+<script src="gfi.js?v=5"></script>
 <style>
 :root{--bg:#F3F6F8;--card:#fff;--ink:#1E1E26;--mut:#5B6878;--line:#DCE6EA;--ac:#0F6E7A;--bad:#B92F26;--ok:#146C45}
 @media (prefers-color-scheme:dark){:root{--bg:#0B131B;--card:#131F2A;--ink:#E8EEF3;--mut:#93A3B2;--line:#23313E;--ac:#4CC7C2;--bad:#FF8F86;--ok:#5FD09B}}
@@ -61,7 +61,7 @@ a{color:var(--ac)}
           Object.keys(dados.apps).forEach(function(app){Object.keys(dados.apps[app]).forEach(function(col){var m=dados.apps[app][col];Object.keys(m).forEach(function(id){ops.push({app:app,op:'set',col:col,id:id,data:m[id]})})})});
           L('Gravando '+ops.length+' registros na planilha…');
           var s2=Promise.resolve(),n=0;
-          for(var i=0;i<ops.length;i+=40)(function(lote){s2=s2.then(function(){return GFI.api('batch',{ops:lote}).then(function(){n+=lote.length;L(n+' de '+ops.length+' gravados.')})})})(ops.slice(i,i+40));
+          for(var i=0;i<ops.length;i+=15)(function(lote){s2=s2.then(function(){return GFI.api('batch',{ops:lote}).then(function(){n+=lote.length;L(n+' de '+ops.length+' gravados.')})})})(ops.slice(i,i+15));
           return s2;
         });
       });

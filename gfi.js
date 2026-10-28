@@ -57,7 +57,7 @@
         var n = 0;
         function buscar() {
           return jsonp({ op: 'resultado', key: corpo.key, rid: rid }).then(function (j) {
-            if (j && j.code === 'pending' && ++n < 20) return esperar(1500).then(buscar);
+            if (j && j.code === 'pending' && ++n < 80) return esperar(2000).then(buscar);
             return j;
           });
         }
