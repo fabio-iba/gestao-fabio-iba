@@ -334,3 +334,42 @@ function autorizar() {
   UrlFetchApp.getRequest('https://api.anthropic.com');
   Logger.log('Autorizado. Pasta de assets: ' + (PROPS.getProperty('PASTA_ASSETS') || '(defina PASTA_ASSETS)'));
 }
+
+/* ---------- atualização automática a partir do GitHub ----------
+ * A cada 10 minutos, busca apps-script/Code.gs e appsscript.json no repositório.
+ * Se mudaram, troca o código deste projeto, cria uma nova versão e atualiza a
+ * implantação do site (mesmo endereço /exec). Instale uma vez rodando
+ * instalarAtualizacaoAutomatica() no editor.
+ * Requer: "API do Google Apps Script" ativada em script.google.com/home/usersettings */
+var REPO_RAW = 'https://raw.githubusercontent.com/fabio-iba/gestao-fabio-iba/main/apps-script/';
+var IMPLANTACAO_SITE = 'AKfycbwlUiqOBPX4Rqi1G8mWnDJpc0zemk332aH_-vGdHhn-M640-rneKvBx7SBr_USLNPuv';
+
+function instalarAtualizacaoAutomatica() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'atualizarDoGitHub') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('atualizarDoGitHub').timeBased().everyMinutes(10).create();
+  atualizarDoGitHub(true);
+  Logger.log('Atualização automática instalada (a cada 10 minutos).');
+}
+
+function atualizarDoGitHub(forcar) {
+  var t = '?t=' + Date.now();
+  var gs = UrlFetchApp.fetch(REPO_RAW + 'Code.gs' + t).getContentText();
+  var man = UrlFetchApp.fetch(REPO_RAW + 'appsscript.json' + t).getContentText();
+  if (gs.indexOf('function atualizarDoGitHub') < 0) throw new Error('Código do GitHub sem a função de atualização; ignorado por segurança.');
+  JSON.parse(man);
+  var hash = Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, gs + '\n' + man));
+  if (forcar !== true && hash === PROPS.getProperty('VERSAO_GITHUB')) return 'sem mudanças';
+  var base = 'https://script.googleapis.com/v1/projects/' + ScriptApp.getScriptId();
+  var op = { headers: { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() }, contentType: 'application/json', muteHttpExceptions: true };
+  function chamar(metodo, url, corpo) {
+    var r = UrlFetchApp.fetch(url, Object.assign({ method: metodo, payload: corpo ? JSON.stringify(corpo) : undefined }, op));
+    if (r.getResponseCode() >= 300) throw new Error(metodo + ' ' + url + ' -> ' + r.getResponseCode() + ': ' + r.getContentText().slice(0, 400));
+    return JSON.parse(r.getContentText() || '{}');
+  }
+  chamar('put', base + '/content', { files: [{ name: 'Code', type: 'SERVER_JS', source: gs }, { name: 'appsscript', type: 'JSON', source: man }] });
+  var v = chamar('post', base + '/versions', { description: 'GitHub ' + Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm') });
+  chamar('put', base + '/deployments/' + IMPLANTACAO_SITE, { deploymentConfig: { versionNumber: v.versionNumber, manifestFileName: 'appsscript', description: 'Site (atualizado do GitHub)' } });
+  PROPS.setProperty('VERSAO_GITHUB', hash);
+  Logger.log('Atualizado para a versão ' + v.versionNumber);
+  return 'versão ' + v.versionNumber;
+}
