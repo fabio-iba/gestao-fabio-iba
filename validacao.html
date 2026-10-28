@@ -1,0 +1,809 @@
+<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='val';window.GFI_LS=["avaliacao_historico", "criterios_personalizados"]</script><script src="config.js"></script><script src="gfi.js"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Validação de Materiais</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{
+  --accent:#0F6E7A; --accent2:#1D6FA3; --accent-soft:#DDF1F1;
+  --bg:#F3F6F8; --surface:#FFFFFF; --surface-alt:#F1F5F7; --line:#DCE6EA;
+  --ink:#1E1E26; --ink-2:#62626F;
+  --ok:#237A3B; --ok-soft:#E5F4E8; --warn:#9A5B0B; --warn-soft:#FBEFD9; --err:#B3261E; --err-soft:#FCE8E6;
+  --shadow:0 1px 2px rgba(20,20,40,.05),0 8px 24px -12px rgba(20,20,40,.16);
+  font-family:"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+  --accent:#4CC7C2;--accent2:#6AA8F5;--accent-soft:#12302F;--bg:#15151B;--surface:#1F1F27;--surface-alt:#272731;--line:#34343F;--ink:#ECECF2;--ink-2:#A3A3B2;
+  --ok:#7BD08E;--ok-soft:#1C3322;--warn:#EAB35A;--warn-soft:#35280F;--err:#F2968E;--err-soft:#3A1C1A;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{color-scheme:dark;
+  --accent:#4CC7C2;--accent2:#6AA8F5;--accent-soft:#12302F;--bg:#15151B;--surface:#1F1F27;--surface-alt:#272731;--line:#34343F;--ink:#ECECF2;--ink-2:#A3A3B2;
+  --ok:#7BD08E;--ok-soft:#1C3322;--warn:#EAB35A;--warn-soft:#35280F;--err:#F2968E;--err-soft:#3A1C1A;--shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6)}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-size:15px;line-height:1.55}
+.container{max-width:1400px;margin:0 auto}
+.topwrap{padding-inline:24px;padding-block:22px 0}
+header{position:relative;overflow:hidden;border-radius:20px;color:#fff;padding-inline:28px;padding-block:24px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;
+  background:radial-gradient(120% 160% at 0% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 42%),linear-gradient(110deg,#12808A 0%,#0F6E7A 35%,#145E78 70%,#1D6FA3 100%);
+  box-shadow:0 18px 40px -18px rgba(15,110,122,.55),0 2px 6px rgba(11,79,92,.12)}
+.brand{display:flex;flex-direction:column;gap:8px;min-width:0}
+.brand-row{display:flex;align-items:center;gap:12px}
+.brand-ico{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);display:grid;place-items:center;flex:none}
+.brand-ico svg{width:18px;height:18px}
+header h1{margin:0;font-size:clamp(24px,3.6vw,32px);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+header p{margin:0;font-size:13.5px;opacity:.92}
+.header-icons{display:flex;gap:12px;flex:none}
+.icon-btn{width:46px;height:46px;border-radius:50%;background:#fff;border:0;color:#1E1E26;cursor:pointer;display:grid;place-items:center;padding:0;box-shadow:0 6px 16px -4px rgba(8,30,40,.35);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease}
+.icon-btn svg{width:20px;height:20px}
+.icon-btn.plus{color:#0F6E7A}
+.icon-btn:hover{transform:translateY(-2px);box-shadow:0 10px 20px -6px rgba(8,30,40,.45)}
+.icon-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+body{background:radial-gradient(90% 60% at 50% 0%,#E3F1F2 0%,var(--bg) 70%) fixed,var(--bg)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) body{background:var(--bg)}}
+:root[data-theme="dark"] body{background:var(--bg)}
+@media (max-width:640px){.topwrap{padding-inline:12px}header{padding-inline:18px}}
+.main{padding-inline:24px;padding-block:24px 48px}
+@media (max-width:640px){.main{padding-inline:12px}}
+.status-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:28px}
+.status-card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;text-align:center;box-shadow:var(--shadow)}
+.status-card .number{font-size:32px;font-weight:700;line-height:1.1;margin-bottom:6px;font-variant-numeric:tabular-nums;color:var(--accent)}
+.status-card .label{font-size:13px;color:var(--ink-2);font-weight:500}
+.status-card[data-k="exc"] .number{color:var(--ok)}
+.status-card[data-k="bom"] .number{color:var(--warn)}
+.status-card[data-k="crit"] .number{color:var(--err)}
+.tabs-section{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+.tabs-section > section{padding:24px}
+@media (max-width:640px){.tabs-section > section{padding:16px}}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);padding-inline:16px;overflow-x:auto}
+.tabs button{background:none;border:0;padding:16px 18px;cursor:pointer;font:inherit;font-size:14px;font-weight:600;color:var(--ink-2);border-bottom:3px solid transparent;white-space:nowrap}
+.tabs button[aria-current="page"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs button:hover{color:var(--accent)}
+.card{background:var(--surface-alt);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:20px}
+.card h3{margin:0 0 16px;font-size:14px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:.05em}
+.fg label{text-transform:uppercase;letter-spacing:.03em;font-size:13px !important}
+.btn.primary{background:linear-gradient(120deg,#0F6E7A 0%,#1D6FA3 100%) !important;border:0 !important}
+.info{background:var(--surface) !important;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px !important}
+textarea[readonly],input{background:var(--surface)}
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);padding:0;width:min(720px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(10,10,30,.5)}
+.dlg-in{padding:22px;display:flex;flex-direction:column;gap:14px}
+.dlg-in h3{margin:0;font-size:18px}
+.dlg-in pre{margin:0;max-height:55vh;overflow:auto;background:var(--surface-alt);border:1px solid var(--line);border-radius:8px;padding:14px;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+.form-row{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+@media (max-width:640px){.form-row{grid-template-columns:1fr}}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.fg label{font-weight:600;font-size:14px}
+.hint{font-size:12.5px;color:var(--ink-2)}
+input,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:14px;color:var(--ink);background:var(--surface)}
+textarea{resize:vertical;min-height:90px;white-space:pre-wrap}
+textarea[readonly]{background:var(--surface-alt)}
+input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{padding:10px 18px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;font:inherit;font-weight:600;font-size:14px;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08);color:#fff}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn.danger{color:var(--err)}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.info{background:var(--accent-soft);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13.5px}
+.info ol{margin:6px 0 0;padding-left:20px}
+.steps{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.steps li{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--ink-2)}
+.steps .dot{width:22px;height:22px;flex:none;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700}
+.steps li[data-s="active"]{color:var(--ink);font-weight:600}
+.steps li[data-s="active"] .dot{border-color:var(--accent);border-top-color:transparent;animation:spin .9s linear infinite}
+.steps li[data-s="done"] .dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.steps li[data-s="fail"] .dot{background:var(--err);border-color:var(--err);color:#fff}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.steps li[data-s="active"] .dot{animation:none}}
+.msg{padding:11px 14px;border-radius:10px;margin-top:14px;font-size:14px}
+.msg.ok{background:var(--ok-soft);color:var(--ok)}
+.msg.err{background:var(--err-soft);color:var(--err)}
+.msg.warn{background:var(--warn-soft);color:var(--warn)}
+.picks{display:flex;flex-direction:column;gap:6px;margin-top:12px}
+.picks button{text-align:left}
+details.paste{margin-top:14px}
+details.paste summary{cursor:pointer;color:var(--accent);font-weight:600;font-size:14px}
+.meta{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13.5px;color:var(--ink-2);margin-bottom:12px}
+.meta b{color:var(--ink)}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:10px;border-bottom:2px solid var(--line);font-size:13px;color:var(--ink-2);font-weight:700}
+td{padding:10px;border-bottom:1px solid var(--line);vertical-align:middle}
+td .desc{font-size:12.5px;color:var(--ink-2);line-height:1.4;margin-top:2px;max-width:520px}
+td.n{font-variant-numeric:tabular-nums;font-weight:700;width:70px;text-align:right}
+.bar{height:8px;border-radius:99px;background:var(--surface-alt);overflow:hidden;min-width:80px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px}
+.media{display:flex;align-items:baseline;gap:10px;margin-top:16px}
+.media strong{font-size:32px;color:var(--accent);font-variant-numeric:tabular-nums}
+.empty{color:var(--ink-2);text-align:center;padding:18px}
+.hist{display:flex;flex-direction:column;gap:10px}
+.hitem{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;background:var(--surface-alt);border-left:3px solid var(--accent);border-radius:8px;padding:12px 14px}
+.hitem .t{font-weight:700}
+.hitem .s{font-size:13px;color:var(--ink-2)}
+header #subtitulo{display:none}
+body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}h1{font-weight:700!important;letter-spacing:.2px!important}
+
+/* banner: azul-marinho e verde-água (padrão Gestão Fabio Iba) */
+.topwrap header{position:relative;overflow:hidden;background:radial-gradient(520px 240px at 92% -20%,rgba(76,199,194,.38),transparent 62%),radial-gradient(460px 220px at 8% 140%,rgba(46,134,193,.40),transparent 60%),linear-gradient(115deg,#0B1D2E 0%,#123150 52%,#0F4C5C 100%)!important;box-shadow:0 18px 38px -20px rgba(11,29,46,.65)!important}
+.topwrap header::before{content:""!important;position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px!important;-webkit-mask-image:linear-gradient(90deg,#000 0%,transparent 70%);mask-image:linear-gradient(90deg,#000 0%,transparent 70%);pointer-events:none}
+.topwrap header::after{content:"";position:absolute;right:-70px;top:-90px;width:260px;height:260px;border-radius:50%;border:38px solid rgba(76,199,194,.10);pointer-events:none}
+.topwrap header>*{position:relative;z-index:1}
+</style>
+
+<div class="container">
+  <div class="topwrap">
+  <header>
+    <div class="brand">
+      <div class="brand-row">
+        <span class="brand-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/></svg></span>
+        <h1>Validação de Materiais</h1>
+      </div>
+      <p id="subtitulo">Nenhuma avaliação salva ainda.</p>
+    </div>
+    <div class="header-icons">
+      <button type="button" class="icon-btn" id="btnInicio" title="Página inicial" aria-label="Página inicial"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg></button>
+      <button class="icon-btn" id="btnRelatorio" title="Relatório em PDF" aria-label="Relatório em PDF"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 20V10"/><path d="M12 20V4"/><path d="M19 20v-7"/><path d="M3 20h18"/></svg></button>
+      <button class="icon-btn" id="btnCriterios" title="Critérios de avaliação" aria-label="Critérios de avaliação"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h11"/><path d="M9 12h11"/><path d="M9 19h11"/><path d="M4 5l1 1 2-2"/><path d="M4 12l1 1 2-2"/><path d="M4 19l1 1 2-2"/></svg></button>
+      <button class="icon-btn" id="btnHistorico" title="Histórico" aria-label="Histórico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></button>
+      <button class="icon-btn plus" id="btnNovo" title="Nova análise" aria-label="Nova análise"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14"/><path d="M5 12h14"/></svg></button>
+    </div>
+  </header>
+  </div>
+
+  <div class="main">
+  <div class="status-cards">
+    <div class="status-card"><div class="number" id="totalAvaliados">0</div><div class="label">Total de análises</div></div>
+    <div class="status-card" data-k="exc"><div class="number" id="totalExcelente">0</div><div class="label">Excelente (≥ 9,0)</div></div>
+    <div class="status-card"><div class="number" id="totalMuitoBom">0</div><div class="label">Muito bom (8,0–8,9)</div></div>
+    <div class="status-card" data-k="bom"><div class="number" id="totalBom">0</div><div class="label">Bom (7,0–7,9)</div></div>
+    <div class="status-card" data-k="crit"><div class="number" id="totalCritico">0</div><div class="label">Crítico (&lt; 7,0)</div></div>
+  </div>
+
+  <div class="tabs-section">
+  <nav class="tabs" id="tabs">
+    <button data-tab="0" aria-current="page">📝 Novo Material</button>
+    <button data-tab="1">📊 Avaliação</button>
+    <button data-tab="2">💡 Análise Qualitativa</button>
+    <button data-tab="3">✓ Parecer Final</button>
+    <button data-tab="4">📋 Histórico</button>
+  </nav>
+
+  <section class="tab" data-tab="0">
+    <div class="card">
+      <h3>Informações do Material</h3>
+      <div class="info">
+        <strong>Como funciona</strong>
+        <ol>
+          <li>Digite o nome (ou parte do nome) do arquivo da pasta <b>Avaliação de Materiais</b> do Google Drive, ou clique em <b>Ver arquivos da pasta</b> para escolher na lista.</li>
+          <li>Clique em <b>Analisar automaticamente</b>. O painel busca o arquivo, lê o conteúdo e pede a análise ao Claude.</li>
+          <li>Na primeira vez, o Claude pede sua permissão para usar o Google Drive e para fazer a análise.</li>
+        </ol>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label for="nomeArquivo">Nome do arquivo *</label>
+          <input id="nomeArquivo" placeholder="Ex.: TEMA DE APRENDIZAGEM 1">
+        </div>
+        <div class="fg">
+          <label for="dataAvaliacao">Data da avaliação *</label>
+          <input type="date" id="dataAvaliacao">
+        </div>
+      </div>
+      <div class="fg">
+        <label for="observacoes">Observações</label>
+        <textarea id="observacoes" placeholder="Pontos que o Claude deve observar com atenção (opcional)"></textarea>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="btnAnalisar">🔍 Analisar automaticamente</button>
+        <button class="btn" id="btnListar">📂 Ver arquivos da pasta</button>
+        <button class="btn" id="btnParar" hidden>Parar</button>
+      </div>
+      <div id="picks" class="picks" hidden></div>
+      <ul class="steps" id="steps" hidden>
+        <li data-k="busca"><span class="dot"></span><span>Buscando o arquivo no Google Drive</span></li>
+        <li data-k="leitura"><span class="dot"></span><span>Lendo o conteúdo do arquivo</span></li>
+        <li data-k="analise"><span class="dot"></span><span>Claude analisando o material (pode levar 1 a 2 minutos)</span></li>
+      </ul>
+      <div id="status" class="msg" hidden></div>
+      <details class="paste" id="pasteBox">
+        <summary>Ou cole o texto do material</summary>
+        <p class="hint">Use se o arquivo não estiver no seu Google Drive ou se o Drive não estiver conectado.</p>
+        <div class="fg"><textarea id="textoColado" style="min-height:160px" placeholder="Cole aqui o conteúdo do tema de aprendizagem"></textarea></div>
+        <button class="btn" id="btnAnalisarTexto">Analisar texto colado</button>
+      </details>
+    </div>
+  </section>
+
+  <section class="tab" data-tab="1" hidden>
+    <div class="card">
+      <h3>Notas por dimensão</h3>
+      <div class="meta" id="meta1"></div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Dimensão</th><th>Desempenho</th><th style="text-align:right">Nota</th></tr></thead>
+          <tbody id="notas"></tbody>
+        </table>
+      </div>
+      <div class="media"><span>Média geral</span><strong id="mediaGeral">—</strong><span class="hint">de 10</span></div>
+      <div class="fg" style="max-width:420px;margin-top:16px">
+        <label for="plagioAval">Plágio localizado (%)</label>
+        <div class="hint" id="plagioOrigem" style="margin-bottom:4px"></div>
+        <div class="actions"><input id="plagioAval" inputmode="decimal" placeholder="Ex.: 8" style="max-width:140px"><button class="btn small" id="btnPlagio">Aplicar</button></div>
+        <span class="hint" id="plagioMsg">O percentual é estimado pelo Claude na análise. Se você tiver o relatório de um programa antiplágio, digite o valor dele e clique em Aplicar. Nota de originalidade: 0% = 10, 10% = 8, 25% = 5, 50% ou mais = 0.</span>
+      </div>
+      <div class="fg" style="margin-top:6px"><label for="plagioTrechos">Trechos com indício de plágio</label><textarea id="plagioTrechos" readonly style="min-height:110px"></textarea>
+      </div>
+    </div>
+  </section>
+
+  <section class="tab" data-tab="2" hidden>
+    <div class="card"><h3>Pontos fortes</h3><textarea id="pontosFortes" readonly style="min-height:140px"></textarea></div>
+    <div class="card"><h3>Pontos de melhoria</h3><textarea id="pontosMelhoria" readonly style="min-height:140px"></textarea></div>
+    <div class="card"><h3>Análise de conceitos e definições</h3><textarea id="conceitos" readonly style="min-height:120px"></textarea></div>
+    <div class="card"><h3>Plano de ação por fases</h3><textarea id="planoAcao" readonly style="min-height:140px"></textarea></div>
+  </section>
+
+  <section class="tab" data-tab="3" hidden>
+    <div class="card"><h3>Parecer descritivo</h3><textarea id="parecerDescritivo" readonly style="min-height:180px"></textarea></div>
+    <div class="card"><h3>Recomendação</h3><textarea id="recomendacao" readonly style="min-height:80px"></textarea></div>
+    <div class="actions">
+      <button class="btn primary" id="btnSalvar">💾 Salvar no histórico</button>
+      <span id="saveMsg" class="hint"></span>
+    </div>
+  </section>
+
+  <section class="tab" data-tab="4" hidden>
+    <div class="card">
+      <h3>Histórico de avaliações</h3>
+      <div class="fg"><label for="filtroTema">Filtrar por tema</label><input id="filtroTema" placeholder="Digite para filtrar"></div>
+      <div id="historicoList" class="hist"></div>
+      <p class="hint" style="margin-top:12px">O histórico fica guardado neste navegador.</p>
+    </div>
+  </section>
+  </div>
+  </div>
+</div>
+
+<dialog id="dlgRel">
+  <div class="dlg-in">
+    <h3>Relatório da avaliação</h3>
+    <pre id="relTexto"></pre>
+    <p class="hint" id="relMsg"></p>
+    <div class="actions" style="justify-content:flex-end">
+      <button class="btn" id="relFechar">Fechar</button>
+      <button class="btn" id="relCopiar">Copiar</button>
+      <button class="btn primary" id="relBaixar" hidden>Baixar PDF</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgCrit">
+  <div class="dlg-in">
+    <h3>Critérios de avaliação</h3>
+    <p class="hint" id="critFonte"></p>
+    <textarea id="critTexto" style="min-height:52vh;font:13px/1.55 ui-monospace,Menlo,Consolas,monospace" placeholder="Carregando critérios..."></textarea>
+    <p class="hint" id="critMsg"></p>
+    <div class="actions" style="justify-content:space-between">
+      <button class="btn" id="critRestaurar">Restaurar do Drive</button>
+      <div class="actions">
+        <button class="btn" id="critFechar">Fechar</button>
+        <button class="btn primary" id="critSalvar">Salvar critérios</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(function(){
+  const $ = s => document.querySelector(s);
+  const FOLDER = '1YJaldKK2Pzka55R9cIKJy_3V6EFhaV6e';
+  const DRIVE = 'Google Drive';
+  const HKEY = 'avaliacao_historico';
+  const DIMS = [
+    ['qualidade','Qualidade de Escrita'],['dominio','Domínio do Conteúdo'],['conceitos','Conceitos e Definições'],
+    ['pedagogica','Estrutura Pedagógica']
+  ];
+  const DESC = {
+    qualidade: 'Clareza, coesão, correção gramatical e tom adequado ao estudante EaD.',
+    dominio: 'Profundidade, atualidade e precisão do conteúdo, com referências confiáveis.',
+    conceitos: 'Definições corretas, com fonte, e uso consistente dos conceitos ao longo do texto.',
+    pedagogica: 'Objetivos claros, progressão lógica, exemplos e atividades que apoiam a aprendizagem.',
+    originalidade: 'Percentual de texto copiado sem citação. Quanto menor o plágio, maior a nota.'
+  };
+  // Plágio: percentual informado pelo relatório antiplágio. Quanto menor o percentual, maior a nota (0% = 10; cada 5 pontos percentuais tiram 1 ponto; 50% ou mais = 0)
+  const temPlagio = x => x && x.plagio !== null && x.plagio !== undefined && x.plagio !== '' && !isNaN(Number(x.plagio));
+  const notaPlagio = p => Math.max(0, Math.min(10, 10 - Number(p) / 5));
+  const lerPct = v => { const t = String(v ?? '').replace('%','').replace(',','.').trim(); if (t === '') return null; const n = Number(t); return isFinite(n) && n >= 0 && n <= 100 ? Math.round(n * 10) / 10 : NaN; };
+  const pctTxt = p => String(p).replace('.', ',') + '%';
+  const mediaDe = x => { const n = (x && x.notas) || {}; const vals = DIMS.map(([k]) => Number(n[k]) || 0); if (temPlagio(x)) vals.push(notaPlagio(x.plagio)); return (vals.reduce((t,v) => t + v, 0) / vals.length).toFixed(2); };
+  let atual = null, ctl = null, busy = false;
+  const use = n => (window.claude && typeof window.claude.use === 'function') ? window.claude.use(n).catch(() => null) : Promise.resolve(null);
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmt = d => { const [y,m,dd] = (d||'').split('-'); return y ? `${dd}/${m}/${y}` : ''; };
+  const hojeISO = () => { const t = new Date(), p = n => String(n).padStart(2,'0'); return `${t.getFullYear()}-${p(t.getMonth()+1)}-${p(t.getDate())}`; };
+  $('#dataAvaliacao').value = hojeISO();
+
+  // Tabs
+  function tab(i){
+    document.querySelectorAll('#tabs button').forEach(b => { if (b.dataset.tab == i) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
+    document.querySelectorAll('section.tab').forEach(s => s.hidden = s.dataset.tab != i);
+    if (i == 4) renderHist();
+  }
+  $('#tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) tab(b.dataset.tab); });
+
+  // Status helpers
+  function status(msg, kind){ const s = $('#status'); if (!msg){ s.hidden = true; return; } s.className = 'msg ' + kind; s.textContent = msg; s.hidden = false; }
+  function step(k, st){ const li = document.querySelector(`#steps li[data-k="${k}"]`); if (!li) return; li.dataset.s = st; li.querySelector('.dot').textContent = st === 'done' ? '✓' : st === 'fail' ? '!' : ''; }
+  function resetSteps(show, skipDrive){ $('#steps').hidden = !show; ['busca','leitura','analise'].forEach(k => step(k, skipDrive && k !== 'analise' ? 'done' : '')); }
+  function setBusy(b){ busy = b; $('#btnAnalisar').disabled = b; $('#btnListar').disabled = b; $('#btnAnalisarTexto').disabled = b; $('#btnParar').hidden = !b; }
+
+  const mcpCopy = e => ({
+    server_not_connected: 'O Google Drive não está conectado à sua conta. Conecte em claude.ai → Configurações → Conectores e tente de novo, ou cole o texto do material abaixo.',
+    needs_reauth: 'A conexão com o Google Drive expirou. Reconecte em claude.ai → Configurações → Conectores.',
+    not_in_manifest: 'O acesso ao Google Drive não foi permitido para este painel. Recarregue a página e permita quando for perguntado, ou cole o texto abaixo.',
+    selection_required: 'Você tem mais de uma conexão do Google Drive. Escolha qual usar quando o Claude perguntar.',
+    blocked_by_policy: 'Sua organização bloqueou o uso do Google Drive aqui.',
+    server_unavailable: 'O Google Drive não respondeu agora. Tente de novo em instantes.',
+    tool_error: 'O Google Drive recusou a operação: ' + (e && e.message || ''),
+    cancelled: 'Análise interrompida.'
+  })[e && e.code] || 'Não foi possível acessar o Google Drive agora. Tente de novo ou cole o texto abaixo.';
+  const sampleCopy = e => ({
+    not_granted: 'O painel não recebeu permissão para usar o Claude. Recarregue a página e permita quando for perguntado.',
+    sampling_disabled: 'O Claude não está disponível para esta conta.',
+    rate_limited: 'Limite de uso atingido por agora. Aguarde alguns minutos e tente de novo.',
+    invalid_json: 'A resposta veio fora do formato esperado. Clique em analisar de novo.',
+    prompt_too_large: 'O material é grande demais para uma análise só. Cole um trecho menor.',
+    refused: 'O Claude não conseguiu analisar este conteúdo.',
+    session_expired: 'Sua sessão expirou. Entre de novo no claude.ai.',
+    cancelled: 'Análise interrompida.'
+  })[e && e.code] || 'A análise falhou por um problema temporário. Tente de novo.';
+
+  // Drive
+  const q = s => s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const PASTA = 'application/vnd.google-apps.folder';
+  const semAcento = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  // lista TODOS os arquivos da pasta (e das subpastas), página por página
+  async function listarPasta(mcp, signal){
+    const todos = [], vistos = {}, filas = [FOLDER];
+    while (filas.length && todos.length < 500){
+      const pasta = filas.shift(); let token = '';
+      for (let pg = 0; pg < 10; pg++){
+        const args = { query: `parentId = '${pasta}'`, excludeContentSnippets: true, pageSize: 100 };
+        if (token) args.pageToken = token;
+        const r = await mcp.callTool(DRIVE, 'search_files', args, { signal });
+        const p = r.payload || {};
+        (Array.isArray(p.files) ? p.files : []).forEach(f => {
+          if (vistos[f.id]) return; vistos[f.id] = 1;
+          if (f.mimeType === PASTA) filas.push(f.id);
+          else if (!/^CRITERIOS/i.test(f.title || '')) todos.push(f);
+        });
+        token = p.nextPageToken || p.next_page_token || '';
+        if (!token) break;
+      }
+    }
+    return todos.sort((a, b) => String(b.modifiedTime || '').localeCompare(String(a.modifiedTime || '')));
+  }
+  // procura pelo nome no Drive inteiro (para arquivos fora da pasta)
+  async function buscarNoDrive(mcp, nome, signal){
+    const palavras = nome.split(/\s+/).filter(w => w.length > 1).slice(0, 4);
+    if (!palavras.length) return [];
+    const r = await mcp.callTool(DRIVE, 'search_files', { query: palavras.map(w => `title contains '${q(w)}'`).join(' and ') + ` and mimeType != '${PASTA}'`, excludeContentSnippets: true, pageSize: 20 }, { signal });
+    const p = r.payload || {};
+    return (Array.isArray(p.files) ? p.files : []).filter(f => !/^CRITERIOS/i.test(f.title || ''));
+  }
+  const casa = (f, nome) => { const t = semAcento(f.title); return semAcento(nome).split(/\s+/).filter(Boolean).every(w => t.includes(w)); };
+  function texto(r){
+    const p = r && r.payload;
+    if (typeof p === 'string') return p;
+    if (p && typeof p === 'object') for (const k of ['fileContent','content','text','body','markdown']) if (typeof p[k] === 'string') return p[k];
+    const t = ((r && r.content) || []).filter(b => b.type === 'text').map(b => b.text).join('\n');
+    return t || (p ? JSON.stringify(p) : '');
+  }
+
+  // Critérios (documento CRITERIOS_AVALIACAO_MATERIAIS na pasta)
+  let criteriosDrive = null;
+  const CKEY = 'criterios_personalizados';
+  const lerCustom = () => { try { return localStorage.getItem(CKEY) || ''; } catch { return ''; } };
+  async function carregarCriterios(mcp){
+    await lerCriteriosDrive(mcp);
+    return lerCustom() || criteriosDrive || '';
+  }
+  async function lerCriteriosDrive(mcp){
+    if (criteriosDrive !== null || !mcp) return criteriosDrive || '';
+    let criterios = '';
+    try {
+      const r = await mcp.callTool(DRIVE, 'search_files', { query: `parentId = '${FOLDER}' and title contains 'CRITERIOS'`, excludeContentSnippets: true, pageSize: 3 });
+      const f = r.payload && r.payload.files && r.payload.files[0];
+      if (f){
+        const t = texto(await mcp.callTool(DRIVE, 'read_file_content', { fileId: f.id }));
+        criterios = t.replace(/\\([#*<>|\\])/g, '$1').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+      }
+      criteriosDrive = criterios;
+    } catch { criteriosDrive = null; }
+    return criterios;
+  }
+
+  // Análise
+  function prompt(nome, obs, conteudo, criterios){
+    const corpo = conteudo.length > 30000 ? conteudo.slice(0, 30000) + '\n\n[conteúdo cortado por tamanho]' : conteudo;
+    const crit = criterios ? `\nSiga estes CRITÉRIOS DE AVALIAÇÃO oficiais da coordenação (subcritérios, tetos de nota e matriz de decisão):\n${criterios.slice(0, 12000)}\n` : '';
+    return `Você é avaliador(a) de materiais didáticos de cursos de graduação EaD (Administração, RH, Psicologia Aplicada, Processos Gerenciais).
+Avalie o material "${nome}" abaixo com rigor, em português do Brasil.
+
+Dimensões (nota de 0 a 10, uma casa decimal):
+- qualidade: qualidade de escrita (clareza, coesão, correção gramatical, tom)
+- dominio: domínio do conteúdo (profundidade, atualidade, precisão, referências)
+- conceitos: conceitos e definições (precisão, fontes, consistência)
+- pedagogica: estrutura pedagógica (objetivos, progressão, exemplos, atividades)
+NÃO avalie formatação técnica nem aplicabilidade prática: essas dimensões foram retiradas pela coordenação. Ignore-as mesmo que apareçam nos critérios.
+${crit}${obs ? `\nObservações do coordenador: ${obs}\n` : ''}
+VERIFICAÇÃO DE PLÁGIO: estime o percentual do texto que parece copiado de outras fontes sem citação (definições ou parágrafos idênticos aos de livros, artigos, sites, leis ou Wikipédia que você reconheça; mudanças bruscas de estilo; trechos longos sem referência). Paráfrase com citação correta NÃO é plágio. Liste os trechos suspeitos com a provável fonte. Não dê nota para isso (o painel calcula a nota de originalidade), mas considere o resultado no parecer e no plano de ação.
+
+Responda SOMENTE com um objeto JSON neste formato:
+{"tema":"título do tema","autor":"autor, se identificado, senão \\"Não identificado\\"","notas":{"qualidade":0,"dominio":0,"conceitos":0,"pedagogica":0},"analises":{"pontosFortes":"lista com ✅, citando trechos","pontosMelhoria":"lista com 🔴 crítico / 🟡 moderado / ⚠️ leve","conceitos":"análise dos conceitos-chave","planoAcao":"FASE 1 (crítica): ... FASE 2: ... FASE 3: ..."},"plagio":{"percentual":0,"trechos":"lista de trechos suspeitos (início do trecho entre aspas, provável fonte e motivo), ou \\"Nenhum trecho suspeito.\\""},"parecer":{"descritivo":"parecer de 200 a 300 palavras","recomendacao":"✅ PUBLICAR / ⚠️ PUBLICAR APÓS AJUSTES DA FASE X / ❌ REFAZER, com uma frase de justificativa"}}
+Use quebras de linha (\\n) dentro dos textos para separar itens.\nOBRIGATÓRIO: preencha parecer.descritivo (200 a 300 palavras, com síntese de forças, lacunas, plano por fases com horas estimadas) e parecer.recomendacao. Nunca deixe esses campos vazios.
+
+MATERIAL:
+${corpo}`;
+  }
+
+  async function analisar(nome, conteudo){
+    const sample = await use('sample');
+    if (!sample){ step('analise','fail'); status('A análise pelo Claude não está disponível nesta visualização. Abra o painel no claude.ai.', 'err'); return; }
+    step('analise','active');
+    const critUsados = await carregarCriterios(await use('mcp'));
+    try {
+      const r0 = await sample.json(prompt(nome, $('#observacoes').value.trim(), conteudo, critUsados), { signal: ctl.signal, cache: false });
+      if (!r0 || !r0.notas) throw { code: 'invalid_json' };
+      const r = normParecer(r0);
+      if (!r.parecer.descritivo) status('A análise veio sem o parecer descritivo. Clique em analisar de novo para gerar o parecer completo.', 'warn');
+      step('analise','done');
+      const pr = r.plagio && typeof r.plagio === 'object' ? r.plagio : { percentual: r.plagio };
+      const pl0 = lerPct(pr.percentual);
+      const trechos = Array.isArray(pr.trechos) ? pr.trechos.join('\n') : String(pr.trechos || '');
+      delete r.plagio;
+      atual = { id: Date.now(), arquivo: nome, data: $('#dataAvaliacao').value, observacoes: $('#observacoes').value.trim(), ...r, plagio: (pl0 === null || isNaN(pl0)) ? null : pl0, plagioOrigem: 'estimado', plagioTrechos: trechos, criterios: critUsados, criteriosFonte: lerCustom() ? 'editados' : 'drive' };
+      preencher(atual);
+      if (atual.parecer.descritivo) status('Análise concluída. Revise as abas e salve no histórico.', 'ok');
+      setTimeout(() => tab(1), 900);
+    } catch (e){
+      step('analise','fail'); status(sampleCopy(e), e && e.code === 'cancelled' ? 'warn' : 'err');
+    }
+  }
+
+  async function lerEAnalisar(mcp, f){
+    $('#picks').hidden = true;
+    step('busca','done'); step('leitura','active');
+    try {
+      const r = await mcp.callTool(DRIVE, 'read_file_content', { fileId: f.id }, { signal: ctl.signal });
+      const t = texto(r).trim();
+      if (t.length < 200) throw { code: 'tool_error', message: 'o arquivo está vazio ou num formato que não pôde ser lido.' };
+      step('leitura','done');
+      await analisar(f.title, t);
+    } catch (e){
+      if (!e || e.code !== 'invalid_json') { step('leitura','fail'); status(mcpCopy(e), e && e.code === 'cancelled' ? 'warn' : 'err'); }
+    }
+  }
+
+  let forcarLista = false;
+  $('#btnListar').addEventListener('click', () => { forcarLista = true; $('#btnAnalisar').click(); });
+  $('#btnAnalisar').addEventListener('click', async () => {
+    const listar = forcarLista; forcarLista = false;
+    const nome = listar ? '' : $('#nomeArquivo').value.trim();
+    if (!$('#dataAvaliacao').value){ status('Preencha a data da avaliação.', 'warn'); return; }
+    if (!nome && !listar){ status('Digite o nome do arquivo ou clique em "Ver arquivos da pasta" para escolher na lista.', 'warn'); return; }
+    status(); $('#picks').hidden = true; resetSteps(true); setBusy(true);
+    ctl = new AbortController();
+    try {
+      const mcp = await use('mcp');
+      if (!mcp){ step('busca','fail'); status('O acesso ao Google Drive não está disponível nesta visualização. Abra o painel no claude.ai ou cole o texto abaixo.', 'err'); return; }
+      step('busca','active');
+      const daPasta = await listarPasta(mcp, ctl.signal);
+      let achados = nome ? daPasta.filter(f => casa(f, nome)) : [];
+      let fora = [];
+      if (nome && !achados.length){ try { fora = (await buscarNoDrive(mcp, nome, ctl.signal)).filter(f => !daPasta.some(x => x.id === f.id)); } catch (e2){ if (e2 && e2.code === 'cancelled') throw e2; } }
+      if (nome && achados.length === 1 && !listar){ await lerEAnalisar(mcp, achados[0]); return; }
+      if (!daPasta.length && !fora.length){ step('busca','fail'); status('A pasta "Avaliação de Materiais" aparece vazia para a conta do Google conectada ao Claude. Compartilhe a pasta (como Editor ou Leitor) com essa conta e tente de novo, ou cole o texto abaixo.', 'err'); return; }
+      step('busca','done');
+      const outros = daPasta.filter(f => !achados.includes(f));
+      const grupos = [];
+      if (achados.length) grupos.push(['Arquivos com esse nome', achados]);
+      if (fora.length) grupos.push(['Encontrados fora da pasta "Avaliação de Materiais"', fora]);
+      grupos.push([achados.length || fora.length ? 'Outros arquivos da pasta' : 'Todos os arquivos da pasta', outros]);
+      const lista = [];
+      status(!nome || listar ? `A pasta tem ${daPasta.length} ${daPasta.length === 1 ? 'arquivo' : 'arquivos'}. Escolha qual analisar:`
+        : achados.length ? `Encontrei ${achados.length} arquivos com "${nome}". Escolha qual analisar (os demais arquivos da pasta aparecem abaixo):`
+        : fora.length ? `Nenhum arquivo com "${nome}" na pasta, mas encontrei ${fora.length} em outro lugar do seu Drive. Escolha qual analisar:`
+        : `Nenhum arquivo com "${nome}" no seu Google Drive. Se você acabou de enviar o arquivo, aguarde 1 ou 2 minutos e clique em "Ver arquivos da pasta" de novo. Estes são os arquivos da pasta:`, achados.length || fora.length || !nome || listar ? 'warn' : 'err');
+      const box = $('#picks');
+      box.innerHTML = grupos.filter(g => g[1].length).map(([tit, fs]) => `<p class="hint" style="margin:10px 0 2px;font-weight:700">${esc(tit)}</p>` + fs.map(f => { lista.push(f); const i = lista.length - 1; return `<button class="btn small" data-i="${i}">${esc(f.title)}${f.modifiedTime ? ` <span class="hint">· alterado em ${fmt(f.modifiedTime.slice(0,10))}</span>` : ''}</button>`; }).join('')).join('');
+      box.hidden = false; setBusy(false);
+      box.onclick = async ev => {
+        const b = ev.target.closest('button[data-i]'); if (!b || busy) return;
+        status(); setBusy(true); ctl = new AbortController();
+        try { await lerEAnalisar(mcp, lista[+b.dataset.i]); } finally { setBusy(false); }
+      };
+      return;
+    } catch (e){
+      step('busca','fail'); status(mcpCopy(e), e && e.code === 'cancelled' ? 'warn' : 'err');
+    } finally { if ($('#picks').hidden) setBusy(false); }
+  });
+
+  $('#btnAnalisarTexto').addEventListener('click', async () => {
+    const t = $('#textoColado').value.trim();
+    const nome = $('#nomeArquivo').value.trim() || 'Material colado';
+    if (t.length < 200){ status('Cole o texto completo do material (pelo menos alguns parágrafos).', 'warn'); return; }
+    status(); $('#picks').hidden = true; resetSteps(true, true); setBusy(true);
+    ctl = new AbortController();
+    try { await analisar(nome, t); } finally { setBusy(false); }
+  });
+
+  $('#btnParar').addEventListener('click', () => ctl && ctl.abort());
+
+  // Normaliza o parecer (aceita variações de formato na resposta)
+  function normParecer(a){
+    const txt = v => typeof v === 'string' ? v : Array.isArray(v) ? v.map(txt).join('\n') : (v && typeof v === 'object') ? Object.entries(v).map(([k,x]) => `${k}: ${txt(x)}`).join('\n') : (v == null ? '' : String(v));
+    let p = a.parecer ?? a.parecerFinal ?? a.parecer_final;
+    if (typeof p === 'string') p = { descritivo: p };
+    p = (p && typeof p === 'object') ? { ...p } : {};
+    const rec = p.recomendacao ?? p.recomendacaoGeral ?? p.recomendacao_geral ?? a.recomendacao;
+    let desc = p.descritivo ?? p.parecerDescritivo ?? p.texto ?? p.narrativa ?? a.parecerDescritivo;
+    if (!desc){ const rest = { ...p }; ['recomendacao','recomendacaoGeral','recomendacao_geral'].forEach(k => delete rest[k]); desc = Object.keys(rest).length ? rest : ''; }
+    a.parecer = { descritivo: txt(desc).trim(), recomendacao: txt(rec).trim() };
+    return a;
+  }
+
+  // Preencher
+  function preencher(a){
+    normParecer(a);
+    const n = a.notas || {};
+    $('#meta1').innerHTML = `<span>Tema: <b>${esc(a.tema || a.arquivo)}</b></span><span>Autor: <b>${esc(a.autor || '—')}</b></span><span>Avaliado em: <b>${esc(fmt(a.data))}</b></span>`;
+    $('#notas').innerHTML = DIMS.map(([k,l]) => {
+      const v = Math.max(0, Math.min(10, Number(n[k]) || 0));
+      return `<tr><td>${l}<div class="desc">${DESC[k]}</div></td><td><div class="bar"><i style="width:${v*10}%"></i></div></td><td class="n">${v.toFixed(1)}</td></tr>`;
+    }).join('') + (temPlagio(a)
+      ? `<tr><td>Originalidade <span class="hint">(plágio ${a.plagioOrigem === 'relatorio' ? 'do relatório antiplágio' : 'estimado pelo Claude'}: ${esc(pctTxt(a.plagio))})</span><div class="desc">${DESC.originalidade}</div></td><td><div class="bar"><i style="width:${notaPlagio(a.plagio)*10}%"></i></div></td><td class="n">${notaPlagio(a.plagio).toFixed(1)}</td></tr>`
+      : `<tr><td>Originalidade <span class="hint">(plágio não informado, fora da média)</span><div class="desc">${DESC.originalidade}</div></td><td><div class="bar"></div></td><td class="n">—</td></tr>`);
+    $('#plagioAval').value = temPlagio(a) ? String(a.plagio).replace('.', ',') : '';
+    $('#plagioOrigem').textContent = !temPlagio(a) ? 'Sem percentual nesta avaliação.' : a.plagioOrigem === 'relatorio' ? 'Valor informado por você (relatório antiplágio).' : 'Estimativa do Claude pela leitura do texto (sem comparação com bases da internet).';
+    $('#plagioTrechos').value = a.plagioTrechos || (temPlagio(a) ? 'Nenhum trecho suspeito.' : '');
+    a.media = mediaDe(a);
+    $('#mediaGeral').textContent = a.media.replace('.', ',');
+    const an = a.analises || {}, pa = a.parecer || {};
+    $('#pontosFortes').value = an.pontosFortes || '';
+    $('#pontosMelhoria').value = an.pontosMelhoria || '';
+    $('#conceitos').value = an.conceitos || '';
+    $('#planoAcao').value = an.planoAcao || '';
+    $('#parecerDescritivo').value = pa.descritivo || '';
+    $('#recomendacao').value = pa.recomendacao || '';
+    $('#saveMsg').textContent = '';
+  }
+  $('#btnPlagio').addEventListener('click', () => {
+    if (!atual){ $('#plagioMsg').textContent = 'Faça ou abra uma análise primeiro.'; return; }
+    const v = lerPct($('#plagioAval').value);
+    if (isNaN(v)){ $('#plagioMsg').textContent = 'Use um percentual entre 0 e 100, como 8 ou 12,5.'; return; }
+    atual.plagio = v; atual.plagioOrigem = 'relatorio'; preencher(atual);
+    $('#plagioMsg').textContent = v === null ? 'Plágio removido. A média voltou a considerar só as outras dimensões.' : `Nota de originalidade ${notaPlagio(v).toFixed(1).replace('.', ',')} incluída na média. Salve no histórico para guardar.`;
+  });
+  function vazio(){
+    $('#notas').innerHTML = `<tr><td colspan="3" class="empty">Nenhuma análise ainda. Comece pela aba Novo Material.</td></tr>`;
+  }
+  vazio();
+
+  // Histórico
+  const lerHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch { return []; } };
+  const gravarHist = h => { try { localStorage.setItem(HKEY, JSON.stringify(h)); return true; } catch { return false; } };
+
+  $('#btnSalvar').addEventListener('click', () => {
+    if (!atual){ $('#saveMsg').textContent = 'Faça uma análise primeiro.'; return; }
+    const h = lerHist().filter(x => x.id !== atual.id); h.push(atual);
+    $('#saveMsg').textContent = gravarHist(h) ? 'Avaliação salva no histórico.' : 'Este navegador não permitiu salvar o histórico.';
+    atualizarCards();
+  });
+
+  function renderHist(){
+    const f = $('#filtroTema').value.toLowerCase();
+    const h = lerHist().filter(x => ((x.tema || '') + ' ' + (x.arquivo || '')).toLowerCase().includes(f)).reverse();
+    $('#historicoList').innerHTML = h.length ? h.map(x => `
+      <div class="hitem">
+        <div><div class="t">${esc(x.tema || x.arquivo || 'Sem título')}</div>
+        <div class="s">Média ${esc(mediaDe(x).replace('.', ','))} · ${esc(fmt(x.data))}${x.autor ? ' · ' + esc(x.autor) : ''}</div></div>
+        <div class="actions"><button class="btn small" data-open="${x.id}">Abrir</button><button class="btn small danger" data-del="${x.id}">Excluir</button></div>
+      </div>`).join('') : '<p class="empty">Nenhuma avaliação salva ainda.</p>';
+  }
+  $('#filtroTema').addEventListener('input', renderHist);
+
+  // Cartões de status
+  function atualizarCards(){
+    const h = lerHist(); let e = 0, mb = 0, b = 0, c = 0;
+    h.forEach(x => { const m = parseFloat(mediaDe(x)) || 0; if (m >= 9) e++; else if (m >= 8) mb++; else if (m >= 7) b++; else c++; });
+    const ult = h.length ? h.reduce((x,y) => (y.id > x.id ? y : x)) : null;
+    $('#subtitulo').textContent = h.length ? `${h.length} ${h.length === 1 ? 'avaliação salva' : 'avaliações salvas'} · última: ${ult.tema || ult.arquivo} (${fmt(ult.data)})` : 'Nenhuma avaliação salva ainda.';
+    $('#totalAvaliados').textContent = h.length; $('#totalExcelente').textContent = e;
+    $('#totalMuitoBom').textContent = mb; $('#totalBom').textContent = b; $('#totalCritico').textContent = c;
+  }
+  atualizarCards();
+  $('#btnHistorico').addEventListener('click', () => tab(4));
+  $('#btnInicio').addEventListener('click', () => { document.querySelectorAll('dialog[open]').forEach(d => d.close()); tab(0); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('#btnNovo').addEventListener('click', () => {
+    if (busy) { tab(0); return; }
+    $('#nomeArquivo').value = ''; $('#observacoes').value = ''; $('#textoColado').value = '';
+    $('#dataAvaliacao').value = hojeISO(); status(); $('#picks').hidden = true; $('#steps').hidden = true;
+    tab(0); $('#nomeArquivo').focus();
+  });
+
+  // Relatório
+  function relatorio(a){
+    const n = a.notas || {}, an = a.analises || {}, pa = a.parecer || {};
+    return ['RELATÓRIO DE AVALIAÇÃO DE MATERIAL', a.tema || a.arquivo, 'Autor: ' + (a.autor || '—'), 'Data da avaliação: ' + fmt(a.data), '',
+      'NOTAS POR DIMENSÃO', ...DIMS.map(([k,l]) => `${l}: ${(Number(n[k]) || 0).toFixed(1).replace('.', ',')}`),
+      temPlagio(a) ? `Originalidade (plágio ${a.plagioOrigem === 'relatorio' ? 'do relatório antiplágio' : 'estimado pelo Claude'}: ${pctTxt(a.plagio)}): ${notaPlagio(a.plagio).toFixed(1).replace('.', ',')}` : 'Originalidade: plágio não informado (fora da média)',
+      '', 'MÉDIA GERAL: ' + String(a.media).replace('.', ','), '',
+      ...(a.plagioTrechos ? ['TRECHOS COM INDÍCIO DE PLÁGIO', a.plagioTrechos, ''] : []),
+      'PONTOS FORTES', an.pontosFortes || '', '', 'PONTOS DE MELHORIA', an.pontosMelhoria || '', '',
+      'CONCEITOS E DEFINIÇÕES', an.conceitos || '', '', 'PLANO DE AÇÃO', an.planoAcao || '', '',
+      'PARECER', pa.descritivo || '', '', 'RECOMENDAÇÃO', pa.recomendacao || ''].join('\n');
+  }
+  let downloads = null;
+  use('downloads').then(d => { downloads = d; $('#relBaixar').hidden = !d; });
+  $('#btnRelatorio').addEventListener('click', () => {
+    $('#relMsg').textContent = '';
+    $('#relTexto').textContent = atual ? relatorio(atual) : 'Faça ou abra uma análise primeiro. Depois o relatório aparece aqui.';
+    $('#relCopiar').disabled = $('#relBaixar').disabled = !atual;
+    $('#dlgRel').showModal();
+  });
+  $('#relFechar').addEventListener('click', () => $('#dlgRel').close());
+  $('#relCopiar').addEventListener('click', () => {
+    const t = $('#relTexto').textContent;
+    navigator.clipboard.writeText(t).then(() => { $('#relMsg').textContent = 'Relatório copiado.'; }, () => {
+      const r = document.createRange(); r.selectNodeContents($('#relTexto')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+      $('#relMsg').textContent = 'Texto selecionado. Use Ctrl+C para copiar.';
+    });
+  });
+  // PDF
+  const classe = m => m >= 9 ? 'Excelente' : m >= 8 ? 'Muito bom' : m >= 7 ? 'Bom' : m >= 6 ? 'Insuficiente' : 'Crítico';
+  function limpa(t){
+    return String(t || '').replace(/\*\*/g, '').replace(/\\n/g, '\n')
+      .replace(/✅/g, '(+)').replace(/🔴/g, '[crítico]').replace(/🟡/g, '[moderado]').replace(/🟢/g, '[ok]').replace(/⚠️?/g, '[atenção]').replace(/❌/g, '(x)').replace(/⭐/g, '*')
+      .replace(/[\u{1F000}-\u{1FFFF}☀-➿️‍]/gu, '').replace(/[^\x09\x0A\x0D\x20-\xFF–—“”‘’•…€]/g, '');
+  }
+  function gerarPDF(a){
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const M = 18, W = 174, BOTTOM = 280, ROXO = [108, 79, 246], TINTA = [30, 30, 38], CINZA = [98, 98, 111];
+    let y = 0;
+    const ensure = h => { if (y + h > BOTTOM){ doc.addPage(); y = 20; } };
+    const para = (t, size = 10, color = TINTA, style = 'normal', lh = 4.9) => {
+      doc.setFont('helvetica', style); doc.setFontSize(size); doc.setTextColor(...color);
+      for (const bloco of limpa(t).split('\n')){
+        const linhas = bloco.trim() ? doc.splitTextToSize(bloco, W) : [''];
+        for (const l of linhas){ ensure(lh); doc.text(l, M, y); y += lh; }
+      }
+    };
+    const secao = titulo => { y += 4; ensure(14); doc.setFont('helvetica','bold'); doc.setFontSize(11.5); doc.setTextColor(...ROXO); doc.text(titulo.toUpperCase(), M, y); y += 2; doc.setDrawColor(...ROXO); doc.setLineWidth(.4); doc.line(M, y, M + W, y); y += 6; };
+
+    doc.setFillColor(...ROXO); doc.rect(0, 0, 210, 32, 'F');
+    doc.setFillColor(47, 128, 237); doc.rect(140, 0, 70, 32, 'F');
+    doc.setTextColor(255); doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.text('Relatório de Avaliação de Material', M, 15);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.text('Validação de Materiais · Coordenação Fabio Luiz Iba', M, 22);
+    doc.text('Emitido em ' + new Date().toLocaleDateString('pt-BR'), 192, 22, { align: 'right' });
+    y = 44;
+    para(a.tema || a.arquivo, 14, TINTA, 'bold', 6.2);
+    y += 1;
+    para(`Autor: ${a.autor || '—'}    ·    Avaliado em: ${fmt(a.data)}    ·    Arquivo: ${a.arquivo || '—'}`, 9.5, CINZA);
+
+    secao('Notas por dimensão');
+    const n = a.notas || {};
+    for (const [k, l] of DIMS){
+      const v = Math.max(0, Math.min(10, Number(n[k]) || 0));
+      ensure(8);
+      ensure(13);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TINTA); doc.text(l, M, y);
+      doc.setFillColor(236, 236, 243); doc.roundedRect(88, y - 3.4, 84, 4, 2, 2, 'F');
+      if (v > 0){ doc.setFillColor(...ROXO); doc.roundedRect(88, y - 3.4, Math.max(4, 8.4 * v), 4, 2, 2, 'F'); }
+      doc.setFont('helvetica','bold'); doc.text(v.toFixed(1).replace('.', ','), 192, y, { align: 'right' });
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...CINZA); doc.text(limpa(DESC[k]), M, y + 4.2);
+      y += 11;
+    }
+    {
+      ensure(8);
+      doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.setTextColor(...TINTA); doc.text('Originalidade', M, y);
+      doc.setFontSize(8.5); doc.setTextColor(...CINZA); doc.text(temPlagio(a) ? `plágio ${a.plagioOrigem === 'relatorio' ? 'do relatório' : 'estimado'}: ${pctTxt(a.plagio)}` : 'plágio não informado', M + 26, y);
+      doc.setFillColor(236, 236, 243); doc.roundedRect(88, y - 3.4, 84, 4, 2, 2, 'F');
+      if (temPlagio(a)){ const v = notaPlagio(a.plagio); if (v > 0){ doc.setFillColor(...ROXO); doc.roundedRect(88, y - 3.4, Math.max(4, 8.4 * v), 4, 2, 2, 'F'); } doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...TINTA); doc.text(v.toFixed(1).replace('.', ','), 192, y, { align: 'right' }); }
+      else { doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(...CINZA); doc.text('—', 192, y, { align: 'right' }); }
+      doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...CINZA); doc.text(limpa(DESC.originalidade), M, y + 4.2);
+      y += 11;
+    }
+    a.media = mediaDe(a);
+    const m = parseFloat(a.media) || 0;
+    ensure(22); y += 1;
+    doc.setFillColor(238, 234, 254); doc.roundedRect(M, y, W, 18, 3, 3, 'F');
+    doc.setTextColor(...CINZA); doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.text('MÉDIA GERAL', M + 6, y + 7.5);
+    doc.setTextColor(...TINTA); doc.setFont('helvetica','normal'); doc.setFontSize(10.5); doc.text('Classificação: ' + classe(m), M + 6, y + 13.5);
+    doc.setTextColor(...ROXO); doc.setFont('helvetica','bold'); doc.setFontSize(24); doc.text(m.toFixed(2).replace('.', ','), 186, y + 12.5, { align: 'right' });
+    y += 24;
+
+    const an = a.analises || {}, pa = a.parecer || {};
+    secao('Parecer final'); para(pa.descritivo || '—');
+    y += 2; ensure(10); para('Recomendação', 10.5, TINTA, 'bold'); para(pa.recomendacao || '—');
+    if (a.plagioTrechos){ secao('Trechos com indício de plágio'); para(a.plagioTrechos); }
+    secao('Pontos fortes'); para(an.pontosFortes || '—');
+    secao('Pontos de melhoria'); para(an.pontosMelhoria || '—');
+    secao('Conceitos e definições'); para(an.conceitos || '—');
+    secao('Plano de ação por fases'); para(an.planoAcao || '—');
+    if (a.observacoes){ secao('Observações do coordenador'); para(a.observacoes); }
+    if (a.criterios){
+      doc.addPage(); y = 20;
+      secao('Anexo · Critérios aplicados na avaliação');
+      para(a.criteriosFonte === 'editados' ? 'Versão dos critérios editada pela coordenação.' : 'Documento CRITERIOS_AVALIACAO_MATERIAIS (Google Drive).', 9, CINZA, 'italic');
+      y += 2; para(a.criterios, 8.8, TINTA, 'normal', 4.3);
+    }
+    const total = doc.getNumberOfPages();
+    for (let i = 1; i <= total; i++){
+      doc.setPage(i); doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...CINZA);
+      doc.text(limpa(a.tema || a.arquivo || '').slice(0, 90), M, 290);
+      doc.text(`Página ${i} de ${total}`, 192, 290, { align: 'right' });
+    }
+    return doc.output('blob');
+  }
+  $('#relBaixar').addEventListener('click', async () => {
+    if (!downloads || !atual) return;
+    if (!window.jspdf){ $('#relMsg').textContent = 'O gerador de PDF não carregou. Recarregue a página e tente de novo.'; return; }
+    const nome = 'relatorio-' + String(atual.tema || atual.arquivo || 'material').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w-]+/g,'-').replace(/-+/g,'-').slice(0,60) + '.pdf';
+    try {
+      $('#relMsg').textContent = 'Gerando PDF...';
+      const blob = gerarPDF(atual);
+      await downloads.save({ filename: nome, data: blob });
+      $('#relMsg').textContent = 'PDF gerado.';
+    } catch (e){
+      $('#relMsg').textContent = e && e.code === 'unavailable' ? 'O download não está disponível nesta visualização.' : (e && e.code ? 'O PDF não foi salvo.' : 'Não foi possível gerar o PDF.');
+    }
+  });
+
+  // Critérios (popup editável)
+  async function abrirCriterios(){
+    $('#critMsg').textContent = '';
+    const ta = $('#critTexto');
+    $('#dlgCrit').showModal();
+    if (atual && atual.criterios){
+      ta.value = atual.criterios;
+      $('#critFonte').textContent = `Critérios aplicados na avaliação de "${atual.tema || atual.arquivo}". Ao salvar, esta versão passa a valer para as próximas análises.`;
+      return;
+    }
+    ta.value = ''; ta.placeholder = 'Carregando critérios do Google Drive...';
+    const t = await carregarCriterios(await use('mcp'));
+    ta.placeholder = 'Escreva aqui os critérios de avaliação.';
+    ta.value = t;
+    $('#critFonte').textContent = lerCustom() ? 'Versão editada por você. Vale para as próximas análises.' : (t ? 'Documento CRITERIOS_AVALIACAO_MATERIAIS da pasta do Google Drive. Edite e salve para usar a sua versão nas próximas análises.' : 'Não consegui carregar os critérios do Drive. Você pode escrevê-los aqui.');
+  }
+  $('#btnCriterios').addEventListener('click', abrirCriterios);
+  $('#critFechar').addEventListener('click', () => $('#dlgCrit').close());
+  $('#critSalvar').addEventListener('click', () => {
+    const v = $('#critTexto').value.trim();
+    try { if (v) localStorage.setItem(CKEY, v); else localStorage.removeItem(CKEY); } catch { $('#critMsg').textContent = 'Este navegador não permitiu salvar os critérios.'; return; }
+    if (atual && v){ atual.criterios = v; atual.criteriosFonte = 'editados'; }
+    $('#critFonte').textContent = 'Versão editada por você. Vale para as próximas análises.';
+    $('#critMsg').textContent = 'Critérios salvos. As próximas análises vão usar esta versão.';
+  });
+  $('#critRestaurar').addEventListener('click', async () => {
+    try { localStorage.removeItem(CKEY); } catch {}
+    criteriosDrive = null;
+    $('#critMsg').textContent = 'Buscando no Google Drive...';
+    const t = await lerCriteriosDrive(await use('mcp'));
+    $('#critTexto').value = t;
+    if (atual && t){ atual.criterios = t; atual.criteriosFonte = 'drive'; }
+    $('#critFonte').textContent = 'Documento CRITERIOS_AVALIACAO_MATERIAIS da pasta do Google Drive.';
+    $('#critMsg').textContent = t ? 'Critérios restaurados do Drive.' : 'Não consegui ler os critérios do Drive agora.';
+  });
+  $('#historicoList').addEventListener('click', e => {
+    const o = e.target.closest('[data-open]'), d = e.target.closest('[data-del]');
+    if (o){ const x = lerHist().find(y => String(y.id) === o.dataset.open); if (x){ atual = x; preencher(x); tab(1); } }
+    if (d){
+      if (!d.dataset.confirm){ d.dataset.confirm = '1'; d.textContent = 'Confirmar exclusão'; return; }
+      gravarHist(lerHist().filter(y => String(y.id) !== d.dataset.del)); renderHist(); atualizarCards();
+    }
+  });
+})();
+</script>
+
+</body></html>

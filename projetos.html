@@ -1,0 +1,2074 @@
+<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='kanban';window.GFI_LS=[]</script><script src="config.js"></script><script src="gfi.js"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Painel de Projetos dos Cursos</title>
+<style>
+  :root {
+    box-sizing: border-box;
+    --bg: #F3F6F8;
+    --surface: #FFFFFF;
+    --surface-alt: #F1F6F8;
+    --ink: #221D35;
+    --ink-soft: #5B5470;
+    --ink-faint: #8D87A0;
+    --line: #DCE6EA;
+    --accent: #0F6E7A;
+    --accent-strong: #0B4F5C;
+    --accent-soft: #DDF1F1;
+    --accent2: #1D6FA3;
+    --accent2-soft: #E3EFF7;
+    --status-afazer: #E8590C;
+    --status-afazer-bg: #FFEEE3;
+    --status-andamento: #1971C2;
+    --status-andamento-bg: #E7F3FF;
+    --status-concluido: #0CA678;
+    --status-concluido-bg: #E3FBF2;
+    --team-chip: #D9480F;
+    --team-chip-bg: #FFF1E6;
+    --danger: #E03131;
+    --danger-bg: #FFE3E3;
+    --shadow: 0 2px 10px rgba(11,79,92,0.08);
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #191527;
+      --surface: #221D38;
+      --surface-alt: #2A2444;
+      --ink: #F1EEFB;
+      --ink-soft: #BCB4DA;
+      --ink-faint: #857CA3;
+      --line: #362E56;
+      --accent: #4CC7C2;
+      --accent-strong: #8FE0DA;
+      --accent-soft: #12302F;
+      --accent2: #6FA8FF;
+      --accent2-soft: #23324F;
+      --status-afazer: #FF9257;
+      --status-afazer-bg: #3A2A20;
+      --status-andamento: #6FB2FF;
+      --status-andamento-bg: #1E2E44;
+      --status-concluido: #4FDBA8;
+      --status-concluido-bg: #163A2E;
+      --team-chip: #FFB088;
+      --team-chip-bg: #3A2A20;
+      --danger: #FF8A8A;
+      --danger-bg: #3A1F24;
+      --shadow: 0 2px 14px rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #191527;
+    --surface: #221D38;
+    --surface-alt: #2A2444;
+    --ink: #F1EEFB;
+    --ink-soft: #BCB4DA;
+    --ink-faint: #857CA3;
+    --line: #362E56;
+    --accent: #4CC7C2;
+    --accent-strong: #8FE0DA;
+    --accent-soft: #12302F;
+    --accent2: #6FA8FF;
+    --accent2-soft: #23324F;
+    --status-afazer: #FF9257;
+    --status-afazer-bg: #3A2A20;
+    --status-andamento: #6FB2FF;
+    --status-andamento-bg: #1E2E44;
+    --status-concluido: #4FDBA8;
+    --status-concluido-bg: #163A2E;
+    --team-chip: #FFB088;
+    --team-chip-bg: #3A2A20;
+    --danger: #FF8A8A;
+    --danger-bg: #3A1F24;
+    --shadow: 0 2px 14px rgba(0,0,0,0.4);
+  }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+  html { scroll-padding-top: env(safe-area-inset-top, 0px); }
+  * { box-sizing: border-box; }
+  body {
+    background:
+      radial-gradient(circle at 8% 0%, rgba(15,110,122,0.10) 0%, transparent 38%),
+      radial-gradient(circle at 92% 8%, rgba(47,128,237,0.10) 0%, transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(12,166,120,0.08) 0%, transparent 45%),
+      var(--bg);
+    color: var(--ink);
+    font-family: Arial, Helvetica, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+  h1, h2, h3, .display {
+    font-family: Arial, Helvetica, sans-serif;
+    letter-spacing: 0;
+    margin: 0;
+  }
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 20px 64px;
+  }
+  header.top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 26px;
+    padding: 24px 26px;
+    border-radius: 18px;
+    background: linear-gradient(120deg, var(--accent) 0%, var(--accent2) 100%);
+    box-shadow: 0 8px 24px rgba(11,79,92,0.25);
+  }
+  header.top h1 {
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    font-weight: 700;
+    color: #fff;
+  }
+  header.top p {
+    margin: 6px 0 0;
+    color: rgba(255,255,255,0.88);
+    font-size: 0.92rem;
+    max-width: 46ch;
+  }
+  .report-header { margin-bottom: 18px; }
+  .report-header h2 { font-size: 1.2rem; font-weight: 700; }
+  .report-header p { font-size: 0.85rem; color: var(--ink-soft); margin-top: 6px; max-width: 60ch; }
+  .report-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 22px 0 12px;
+  }
+  .report-section-title .dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-andamento { background: var(--status-andamento); }
+  .dot-afazer { background: var(--status-afazer); }
+  .report-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--status-andamento);
+    border-radius: 12px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow);
+    display: flex;
+    gap: 18px;
+    align-items: flex-start;
+  }
+  .report-card.rc-afazer { border-left-color: var(--status-afazer); }
+  @media (max-width: 560px) {
+    .report-card { flex-direction: column; align-items: stretch; }
+  }
+  .report-ring-wrap { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; gap: 6px; }
+  .progress-ring {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .progress-ring-inner {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--ink);
+  }
+  .report-ring-label { font-size: 0.7rem; color: var(--ink-faint); font-weight: 600; text-align: center; }
+  .report-card-main { flex: 1; min-width: 0; }
+  .report-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+  .report-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .report-pending {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+  .report-pending .pending-label { font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+  .report-pending ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+  .report-pending li { display: flex; align-items: flex-start; gap: 7px; }
+  .report-pending li::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--status-afazer);
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+  .report-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--ink-soft);
+  }
+  .header-icons {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.9);
+    color: #221D35;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    transition: transform .12s ease, background .12s ease;
+  }
+  .icon-btn:hover { background: #fff; transform: translateY(-1px); }
+  .icon-btn.active { background: #221D35; color: #fff; }
+  .who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: #fff;
+    background: rgba(255,255,255,0.16);
+    padding: 6px 12px 6px 6px;
+    border-radius: 999px;
+  }
+  .who img {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.8);
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 9px 18px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    transition: border-color .15s ease, transform .1s ease, box-shadow .15s ease;
+  }
+  .btn:hover { border-color: var(--accent); box-shadow: 0 2px 8px rgba(15,110,122,0.15); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(11,79,92,0.3);
+  }
+  .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 6px 18px rgba(11,79,92,0.4); }
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: var(--shadow);
+    border-top: 4px solid var(--line);
+  }
+  .stat-card .num { font-size: 1.7rem; font-weight: 700; line-height: 1; color: var(--ink); }
+  .stat-card .label { font-size: 0.76rem; color: var(--ink-soft); margin-top: 6px; font-weight: 600; }
+  .stat-afazer { border-top-color: var(--status-afazer); }
+  .stat-afazer .num { color: var(--status-afazer); }
+  .stat-andamento { border-top-color: var(--status-andamento); }
+  .stat-andamento .num { color: var(--status-andamento); }
+  .stat-concluido { border-top-color: var(--status-concluido); }
+  .stat-concluido .num { color: var(--status-concluido); }
+  .stat-ontime { border-top-color: var(--status-concluido); }
+  .stat-ontime .num { color: var(--status-concluido); }
+  .stat-late { border-top-color: var(--danger); }
+  .stat-late .num { color: var(--danger); }
+  .deadlines-section {
+    background: var(--surface-alt);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .deadlines-section h2 {
+    font-size: 0.98rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .deadline-list { display: flex; flex-direction: column; gap: 8px; }
+  .deadline-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+  .deadline-item .dl-title { font-weight: 600; color: var(--ink); }
+  .btn-ghost {
+    border: 1px solid #D9D9D9;
+    background: transparent;
+    color: #111;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-weight: 400;
+  }
+  .btn-ghost:hover { color: var(--ink); background: var(--surface-alt); }
+  .btn-danger { color: var(--danger); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+
+  .banner {
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    margin-bottom: 20px;
+    display: none;
+  }
+  .banner.show { display: block; }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+    align-items: start;
+  }
+  @media (max-width: 820px) {
+    .board {
+      grid-template-columns: 1fr;
+    }
+  }
+  .column {
+    background: var(--surface-alt);
+    border-radius: 16px;
+    padding: 14px;
+    min-height: 160px;
+    border-top: 4px solid var(--line);
+  }
+  .column[data-status="afazer"] { border-top-color: var(--status-afazer); }
+  .column[data-status="andamento"] { border-top-color: var(--status-andamento); }
+  .column[data-status="concluido"] { border-top-color: var(--status-concluido); }
+  .column-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 4px 4px 12px;
+  }
+  .column-head h2 {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .count-pill {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    border-radius: 20px;
+    padding: 2px 10px;
+  }
+  .column[data-status="afazer"] .count-pill { background: var(--status-afazer); }
+  .column[data-status="andamento"] .count-pill { background: var(--status-andamento); }
+  .column[data-status="concluido"] .count-pill { background: var(--status-concluido); }
+  .cards { display: flex; flex-direction: column; gap: 10px; min-height: 40px; }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 14px 12px;
+    box-shadow: var(--shadow);
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(11,79,92,0.14); }
+  .card.st-afazer { border-left-color: var(--status-afazer); }
+  .card.st-andamento { border-left-color: var(--status-andamento); }
+  .card.st-concluido { border-left-color: var(--status-concluido); }
+  .card h3 {
+    font-size: 1.02rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+  .card .curso {
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    margin-top: 2px;
+    font-weight: 600;
+  }
+  .card .desc {
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+    margin-top: 8px;
+    line-height: 1.45;
+  }
+  .card .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .chip {
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .chip b { font-weight: 700; }
+  .chip-ontime { background: var(--status-concluido-bg); color: var(--status-concluido); }
+  .chip-late { background: var(--danger-bg); color: var(--danger); }
+  .chip-coord { background: var(--accent-soft); color: var(--accent-strong); }
+  .chip-dates { background: var(--status-concluido-bg); color: var(--status-concluido); }
+  .chip-team { background: var(--team-chip-bg); color: var(--team-chip); white-space: normal; }
+  .card .actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+  }
+  .card .actions .spacer { flex: 1; }
+  .move-btn {
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--ink-soft);
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .move-btn:hover { color: var(--ink); border-color: var(--accent); }
+  .claim-btn {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(120deg, var(--status-andamento), var(--accent2));
+    border: none;
+    border-radius: 999px;
+    padding: 6px 12px;
+  }
+  .atividade-row {
+    display: grid;
+    grid-template-columns: auto 2fr 1fr auto;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  @media (max-width: 480px) {
+    .atividade-row { grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; }
+    .atividade-row .atividade-resp { grid-column: 2 / 3; grid-row: 2; }
+  }
+  .atividade-row input[type="checkbox"] {
+    width: 17px; height: 17px;
+    accent-color: var(--accent);
+  }
+  .atividade-row input[type="text"] {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 8px 9px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    width: 100%;
+  }
+  .checklist {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: var(--surface-alt);
+    border-radius: 10px;
+    padding: 10px 12px;
+  }
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    font-size: 0.83rem;
+    color: var(--ink-soft);
+  }
+  .checklist-item input[type="checkbox"] {
+    margin-top: 2px;
+    width: 15px; height: 15px;
+    flex-shrink: 0;
+    accent-color: var(--status-concluido);
+  }
+  .checklist-item.done span { color: var(--ink-faint); text-decoration: line-through; }
+  .progress-track {
+    height: 6px;
+    border-radius: 999px;
+    background: var(--line);
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--status-concluido);
+    transition: width .2s ease;
+  }
+  .checklist-progress {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--ink-faint);
+    margin-top: 5px;
+  }
+  .equipe-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr auto;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  @media (max-width: 480px) {
+    .equipe-row { grid-template-columns: 1fr 1fr; grid-template-rows: auto auto; }
+    .equipe-row .eq-email { grid-column: 1 / 3; }
+    .equipe-row .eq-remove { grid-column: 1 / 3; justify-self: end; }
+  }
+  .equipe-row input {
+    font-family: inherit;
+    font-size: 0.85rem;
+    padding: 8px 9px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+    width: 100%;
+  }
+  .eq-remove {
+    border: none;
+    background: transparent;
+    color: var(--ink-faint);
+    font-size: 1.1rem;
+    width: 30px;
+    border-radius: 6px;
+  }
+  .eq-remove:hover { color: var(--danger); background: var(--surface-alt); }
+  .add-equipe-btn {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 6px 12px;
+    margin-top: 2px;
+  }
+  .field-hint {
+    font-size: 0.74rem;
+    color: var(--ink-faint);
+    margin-top: -8px;
+    margin-bottom: 10px;
+  }
+  .notify-btn {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--status-concluido);
+    background: var(--status-concluido-bg);
+    border: 1px solid var(--status-concluido);
+    border-radius: 999px;
+    padding: 5px 12px;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .notify-btn:hover { filter: brightness(0.95); }
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .btn-danger-solid {
+    background: var(--danger);
+    border-color: transparent;
+    color: #fff;
+  }
+  .btn-danger-solid:hover { filter: brightness(0.92); }
+  .empty-col {
+    font-size: 0.82rem;
+    color: var(--ink-faint);
+    padding: 10px 4px;
+  }
+  .empty-board {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .empty-board h2 { font-size: 1.3rem; color: var(--ink); margin-bottom: 8px; }
+  .empty-board p { max-width: 40ch; margin: 0 auto 18px; font-size: 0.92rem; }
+
+  /* modal */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(34,29,56,0.5);
+    display: none;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 8vh 16px 16px;
+    overflow-y: auto;
+    z-index: 50;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 460px;
+    padding: 22px 22px 18px;
+    box-shadow: 0 16px 40px rgba(34,29,56,0.3);
+    border-top: 5px solid var(--accent);
+  }
+  .modal h2 { font-size: 1.15rem; margin-bottom: 4px; }
+  .modal .sub { font-size: 0.82rem; color: var(--ink-faint); margin-bottom: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+  }
+  .field input, .field textarea {
+    width: 100%;
+    font-family: inherit;
+    font-size: 0.9rem;
+    padding: 9px 10px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .field textarea { resize: vertical; min-height: 64px; }
+  .field input:focus, .field textarea:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 18px;
+    gap: 10px;
+  }
+  .modal-actions .right { display: flex; gap: 8px; }
+  .footnote {
+    margin-top: 34px;
+    font-size: 0.78rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  a.link-reset {
+    color: var(--danger);
+    font-size: 0.78rem;
+    background: none;
+    border: none;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* cabeçalho no padrão Gestão Docente / Validação de Materiais */
+  header.top{position:relative;overflow:hidden;border-radius:20px;padding:24px 28px;margin-bottom:22px;
+    background:radial-gradient(120% 160% at 0% 0%,rgba(255,255,255,.22) 0%,rgba(255,255,255,0) 42%),linear-gradient(110deg,#12808A 0%,#0F6E7A 35%,#145E78 70%,#1D6FA3 100%);
+    box-shadow:0 18px 40px -18px rgba(15,110,122,.55),0 2px 6px rgba(11,79,92,.12)}
+  .brand-row{display:flex;align-items:center;gap:12px}
+  .brand-ico{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);display:grid;place-items:center;flex:none;color:#fff}
+  .brand-ico svg{width:19px;height:19px}
+  header.top h1{font-size:clamp(1.6rem,3.4vw,2rem);font-weight:800;letter-spacing:-.02em;line-height:1.1}
+  header.top p{margin:8px 0 0;font-size:.86rem;color:rgba(255,255,255,.92);max-width:none}
+  .header-icons{gap:12px}
+  .icon-btn{width:46px;height:46px;background:#fff;color:#1E1E26;box-shadow:0 6px 16px -4px rgba(8,30,40,.35);text-decoration:none;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+  .icon-btn:hover{background:#fff;transform:translateY(-2px);box-shadow:0 10px 20px -6px rgba(8,30,40,.45)}
+  .icon-btn.plus{color:#0F6E7A;font-size:0}
+  .icon-btn.active{background:#221D35;color:#fff}
+  .icon-btn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+  @media (max-width:560px){header.top{padding:18px}}
+
+  header.top #subtitulo{display:none}
+  header.top h1{font-weight:700;letter-spacing:.2px}
+  @media print {
+    header.top .header-icons,
+    .banner,
+    #boardView,
+    .footnote,
+    .modal-backdrop,
+    #btnExportPdf {
+      display: none !important;
+    }
+    #reportView { display: block !important; }
+    body { background: #fff !important; }
+    .report-card { break-inside: avoid; box-shadow: none; }
+    header.top { background: none !important; box-shadow: none !important; padding: 0 0 12px; }
+    header.top h1 { color: var(--ink) !important; }
+  }
+
+/* banner: azul-marinho e verde-água (padrão Gestão Fabio Iba) */
+header.top{position:relative;overflow:hidden;background:radial-gradient(520px 240px at 92% -20%,rgba(76,199,194,.38),transparent 62%),radial-gradient(460px 220px at 8% 140%,rgba(46,134,193,.40),transparent 60%),linear-gradient(115deg,#0B1D2E 0%,#123150 52%,#0F4C5C 100%)!important;box-shadow:0 18px 38px -20px rgba(11,29,46,.65)!important}
+header.top::before{content:""!important;position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px!important;-webkit-mask-image:linear-gradient(90deg,#000 0%,transparent 70%);mask-image:linear-gradient(90deg,#000 0%,transparent 70%);pointer-events:none}
+header.top::after{content:"";position:absolute;right:-70px;top:-90px;width:260px;height:260px;border-radius:50%;border:38px solid rgba(76,199,194,.10);pointer-events:none}
+header.top>*{position:relative;z-index:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brand-row">
+        <span class="brand-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/></svg></span>
+        <h1>Kanban</h1>
+      </div>
+      <p id="subtitulo">Carregando projetos…</p>
+    </div>
+    <div class="header-icons">
+      <button type="button" class="icon-btn" id="btnHome" title="Tela inicial (quadro)">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8"></path><path d="M5 10v10a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V10"></path></svg>
+      </button>
+      <button type="button" class="icon-btn" id="btnReport" title="Relatório gerencial">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="8" y1="17" x2="8" y2="11"></line><line x1="12" y1="17" x2="12" y2="7"></line><line x1="16" y1="17" x2="16" y2="14"></line></svg>
+      </button>
+      <button type="button" class="icon-btn plus" id="btnNovo" title="Novo projeto" aria-label="Novo projeto" style="display:none;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="banner" id="banner"></div>
+
+  <div id="boardView">
+    <div class="dashboard" id="dashboard"></div>
+
+    <div class="deadlines-section">
+      <h2>Próximos prazos</h2>
+      <div class="deadline-list" id="deadlineList"></div>
+    </div>
+
+
+    <div class="board" id="board">
+      <div class="column" data-status="afazer">
+        <div class="column-head"><h2>🟠 A fazer</h2><span class="count-pill" id="count-afazer">0</span></div>
+        <div class="cards" id="cards-afazer"></div>
+      </div>
+      <div class="column" data-status="andamento">
+        <div class="column-head"><h2>🔵 Em andamento</h2><span class="count-pill" id="count-andamento">0</span></div>
+        <div class="cards" id="cards-andamento"></div>
+      </div>
+      <div class="column" data-status="concluido">
+        <div class="column-head"><h2>🟢 Concluído</h2><span class="count-pill" id="count-concluido">0</span></div>
+        <div class="cards" id="cards-concluido"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="reportView" style="display:none;">
+    <div class="report-header">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+        <div>
+          <h2>Relatório gerencial — projetos</h2>
+          <p>Situação atual, atividades pendentes e prazo de conclusão de cada projeto, para apoiar a tomada de decisão.</p>
+        </div>
+        <button type="button" class="btn" id="btnExportPdf">Relatório em PDF</button>
+      </div>
+    </div>
+    <h3 class="report-section-title"><span class="dot dot-andamento"></span>Em andamento</h3>
+    <div id="reportList"></div>
+    <h3 class="report-section-title"><span class="dot dot-afazer"></span>A fazer</h3>
+    <div id="reportListAfazer"></div>
+  </div>
+
+  <p class="footnote">Os dados deste painel ficam salvos de forma compartilhada e são visíveis a quem tiver o link. A edição depende da permissão concedida no compartilhamento e de estar vinculado como coordenador do projeto. O botão "Notificar" abre um e-mail pronto no seu programa de e-mail padrão (Outlook, fabio.iba@unicesumar.edu.br), endereçado a todos os integrantes cadastrados — o envio é feito por quem clicar, não é automático em segundo plano.</p>
+</div>
+
+<div class="modal-backdrop" id="confirmBackdrop">
+  <div class="modal" style="max-width:380px;">
+    <h2 id="confirmTitle">Confirmar ação</h2>
+    <p class="sub" id="confirmMessage" style="margin-bottom:20px;"></p>
+    <div class="modal-actions" style="justify-content:flex-end;">
+      <button type="button" class="btn" id="confirmCancelBtn">Cancelar</button>
+      <button type="button" class="btn btn-danger-solid" id="confirmOkBtn">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">Novo projeto</h2>
+    <p class="sub" id="modalSub">Preencha os dados do projeto.</p>
+    <form id="projectForm" autocomplete="off">
+      <div class="field">
+        <label for="f-titulo">Título do projeto</label>
+        <input id="f-titulo" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-curso">Curso</label>
+        <input id="f-curso" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="f-coordenador">Coordenador(a) do projeto</label>
+        <input id="f-coordenador" required maxlength="120" autocomplete="off">
+      </div>
+      <div class="field two-col">
+        <div>
+          <label for="f-data-inicio">Data de início</label>
+          <input id="f-data-inicio" type="date" required>
+        </div>
+        <div>
+          <label for="f-data-fim">Término previsto</label>
+          <input id="f-data-fim" type="date" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-descricao">Descrição</label>
+        <textarea id="f-descricao" maxlength="600" autocomplete="off"></textarea>
+      </div>
+      <div class="field">
+        <label>Atividades</label>
+        <div class="field-hint">A etapa do projeto é definida automaticamente pelas atividades: nenhuma realizada = A fazer; algumas realizadas = Em andamento; todas realizadas = Concluído.</div>
+        <div id="atividadeRows"></div>
+        <button type="button" class="add-equipe-btn" id="btnAddAtividade">+ Adicionar atividade</button>
+      </div>
+      <div class="field">
+        <label>Equipe do projeto</label>
+        <div class="field-hint">Nome, responsabilidade e e-mail de cada integrante. O e-mail é usado para notificar a equipe.</div>
+        <div id="equipeRows"></div>
+        <button type="button" class="add-equipe-btn" id="btnAddMembro">+ Adicionar integrante</button>
+      </div>
+      <div id="resetLinkWrap" style="display:none; margin-bottom:6px;">
+        <button type="button" class="link-reset" id="btnResetVinculo">Desvincular coordenador desta edição (permite novo vínculo)</button>
+      </div>
+      <div class="modal-actions">
+        <div>
+          <button type="button" class="btn btn-ghost btn-danger" id="btnDelete" style="display:none;">Excluir projeto</button>
+        </div>
+        <div class="right">
+          <a href="#" id="btnNotifyModal" class="notify-btn" target="_blank" rel="noopener noreferrer" style="display:none;">Notificar</a>
+          <button type="button" class="btn" id="btnCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+  const STATUSES = ['afazer','andamento','concluido'];
+  const STATUS_LABEL = { afazer:'A fazer', andamento:'Em andamento', concluido:'Concluído' };
+
+  let db = null, userNs = null;
+  let myId = null, isOwner = false, canWrite = false;
+  let projects = [];
+  let editingId = null; // null = creating new
+  let currentEquipe = []; // working array while modal is open
+  let currentAtividades = []; // working array while modal is open
+
+  function computeStatus(atividades){
+    const list = Array.isArray(atividades) ? atividades : [];
+    const total = list.length;
+    const done = list.filter(a => a.feita).length;
+    if(total === 0 || done === 0) return 'afazer';
+    if(done === total) return 'concluido';
+    return 'andamento';
+  }
+
+  function computeTimestamps(existing, newStatus){
+    const today = new Date().toISOString().slice(0,10);
+    let iniciadoEm = existing.iniciadoEm || null;
+    let concluidoEm = existing.concluidoEm || null;
+    if(newStatus === 'afazer'){
+      iniciadoEm = null;
+      concluidoEm = null;
+    } else {
+      if(!iniciadoEm) iniciadoEm = today;
+      if(newStatus === 'concluido'){
+        if(!concluidoEm) concluidoEm = today;
+      } else {
+        concluidoEm = null;
+      }
+    }
+    return { iniciadoEm: iniciadoEm, concluidoEm: concluidoEm };
+  }
+
+  function buildMailto(data){
+    const equipe = Array.isArray(data.equipe) ? data.equipe : [];
+    const emails = equipe.map(m => (m.email||'').trim()).filter(Boolean).join(',');
+    const subject = 'Atualização do projeto: ' + (data.titulo || '');
+    const atividades = Array.isArray(data.atividades) ? data.atividades : [];
+    const pendentes = atividades.filter(a => !a.feita);
+    const linhas = [
+      'Olá equipe do projeto "' + (data.titulo || '') + '",',
+      '',
+      'Status do projeto: ' + (STATUS_LABEL[data.status] || 'A fazer'),
+      'Início: ' + (fmtDate(data.dataInicio) || 'a definir'),
+      'Término previsto: ' + (fmtDate(data.dataFimPrevista) || 'a definir'),
+      ''
+    ];
+    if(pendentes.length){
+      linhas.push('Atividades pendentes:');
+      pendentes.forEach(function(a){ linhas.push('- ' + a.texto + (a.responsavel ? ' (Responsável: ' + a.responsavel + ')' : '')); });
+      linhas.push('');
+    }
+    linhas.push(
+      data.descricao || '',
+      '',
+      'Acesse o painel de projetos: projetos.html',
+      '',
+      '—',
+      'Mensagem gerada a partir do Painel de Projetos dos Cursos.'
+    );
+    return 'mailto:' + emails +
+      '?subject=' + encodeURIComponent(subject) +
+      '&body=' + encodeURIComponent(linhas.join('\n'));
+  }
+
+  const $ = (sel) => document.querySelector(sel);
+  const banner = $('#banner');
+  const btnNovo = $('#btnNovo');
+  const modalBackdrop = $('#modalBackdrop');
+  const confirmBackdrop = $('#confirmBackdrop');
+  let confirmCallback = null;
+
+  function showConfirm(title, message, onConfirm){
+    $('#confirmTitle').textContent = title;
+    $('#confirmMessage').textContent = message;
+    confirmCallback = onConfirm;
+    confirmBackdrop.classList.add('show');
+  }
+  $('#confirmCancelBtn').addEventListener('click', function(){
+    confirmBackdrop.classList.remove('show');
+    confirmCallback = null;
+  });
+  $('#confirmOkBtn').addEventListener('click', function(){
+    const cb = confirmCallback;
+    confirmBackdrop.classList.remove('show');
+    confirmCallback = null;
+    if(cb) cb();
+  });
+  confirmBackdrop.addEventListener('click', function(e){
+    if(e.target === confirmBackdrop){
+      confirmBackdrop.classList.remove('show');
+      confirmCallback = null;
+    }
+  });
+
+  function showBanner(msg){
+    banner.textContent = msg;
+    banner.classList.add('show');
+  }
+
+  function fmtDate(iso){
+    if(!iso) return '';
+    try{
+      const [y,m,d] = iso.split('-');
+      return d + '/' + m + '/' + y;
+    }catch(e){ return iso; }
+  }
+
+  function canEditCard(p){
+    if(isOwner) return true;
+    return !!canWrite;
+  }
+
+  function canClaimCard(p){
+    return false;
+  }
+
+  async function init(){
+    showView('board');
+    try { db = await claude.use('db'); } catch(e){ db = null; }
+    try { userNs = await claude.use('user'); } catch(e){ userNs = null; }
+
+    if(userNs){
+      try{
+        const me = await userNs.me();
+        myId = me.id;
+        isOwner = me.isOwner;
+      }catch(e){}
+      try{
+        const cw = await userNs.can('data.write');
+        canWrite = cw !== false;
+      }catch(e){ canWrite = true; }
+    }
+
+    btnNovo.style.display = isOwner ? '' : 'none';
+    render();
+
+    if(db){
+      const col = db.collection('projetos');
+      col.onSnapshot(function(snap){
+        projects = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()||{}); });
+        render();
+      }, function(err){
+        console.error(err);
+        showBanner('Não foi possível sincronizar as atualizações agora. Tente recarregar a página em instantes.');
+      });
+    } else {
+      showBanner('Este painel não conseguiu se conectar ao armazenamento compartilhado nesta janela.');
+    }
+  }
+
+  function computeStats(){
+    const today = new Date().toISOString().slice(0,10);
+    const counts = { afazer: 0, andamento: 0, concluido: 0 };
+    let concluidosNoPrazo = 0, concluidosAtraso = 0, emAtrasoAberto = 0;
+    projects.forEach(function(p){
+      const s = STATUSES.includes(p.status) ? p.status : 'afazer';
+      counts[s]++;
+      if(s === 'concluido' && p.concluidoEm && p.dataFimPrevista){
+        if(p.concluidoEm <= p.dataFimPrevista) concluidosNoPrazo++; else concluidosAtraso++;
+      }
+      if(s !== 'concluido' && p.dataFimPrevista && p.dataFimPrevista < today){
+        emAtrasoAberto++;
+      }
+    });
+    return { total: projects.length, counts: counts, concluidosNoPrazo: concluidosNoPrazo, concluidosAtraso: concluidosAtraso, emAtrasoAberto: emAtrasoAberto };
+  }
+
+  let currentView = 'board';
+
+  function showView(view){
+    currentView = view;
+    $('#boardView').style.display = view === 'board' ? '' : 'none';
+    $('#reportView').style.display = view === 'report' ? '' : 'none';
+    $('#btnHome').classList.toggle('active', view === 'board');
+    $('#btnReport').classList.toggle('active', view === 'report');
+    if(view === 'report') renderReport();
+  }
+  $('#btnHome').addEventListener('click', function(){ showView('board'); });
+  $('#btnReport').addEventListener('click', function(){ showView('report'); });
+  $('#btnExportPdf').addEventListener('click', exportReportPdf);
+
+  function slugify(text){
+    return (text || 'projeto')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '') || 'projeto';
+  }
+
+  async function exportProjectPdf(p){
+    if(!window.jspdf || !window.jspdf.jsPDF){
+      showBanner('Não foi possível carregar o gerador de PDF agora. Tente recarregar a página.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const marginX = 40;
+    const pageBottom = 780;
+    let y = 50;
+    function ensureSpace(needed){
+      if(y + needed > pageBottom){ doc.addPage(); y = 50; }
+    }
+
+    const atividades = Array.isArray(p.atividades) ? p.atividades : [];
+    const done = atividades.filter(function(a){ return a.feita; }).length;
+    const pct = atividades.length ? Math.round((done / atividades.length) * 100) : 0;
+    const today = new Date().toISOString().slice(0,10);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(p.titulo || 'Sem título', marginX, y);
+    y += 20;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Relatório gerado em ' + fmtDate(today), marginX, y);
+    y += 22;
+
+    doc.setFontSize(10);
+    if(p.curso){ doc.text('Curso: ' + p.curso, marginX, y); y += 14; }
+    if(p.coordenadorNome){ doc.text('Coordenador(a) do projeto: ' + p.coordenadorNome, marginX, y); y += 14; }
+    doc.text('Status: ' + (STATUS_LABEL[p.status] || 'A fazer'), marginX, y); y += 14;
+    doc.text('Progresso: ' + pct + '% (' + done + ' de ' + atividades.length + ' atividades)', marginX, y); y += 14;
+
+    if(p.dataInicio){ doc.text('Início planejado: ' + fmtDate(p.dataInicio), marginX, y); y += 14; }
+    if(p.dataFimPrevista){
+      const diffDays = Math.round((new Date(p.dataFimPrevista) - new Date(today)) / 86400000);
+      let prazoTxt;
+      if(p.status === 'concluido' && p.concluidoEm){
+        const diffConc = Math.round((new Date(p.concluidoEm) - new Date(p.dataFimPrevista)) / 86400000);
+        if(diffConc === 0) prazoTxt = 'concluído no prazo';
+        else if(diffConc < 0) prazoTxt = 'concluído ' + Math.abs(diffConc) + ' dia(s) antes do prazo';
+        else prazoTxt = 'concluído com ' + diffConc + ' dia(s) de atraso';
+      } else if(diffDays < 0){
+        prazoTxt = 'atrasado há ' + Math.abs(diffDays) + ' dia(s)';
+      } else if(diffDays === 0){
+        prazoTxt = 'vence hoje';
+      } else {
+        prazoTxt = 'faltam ' + diffDays + ' dia(s)';
+      }
+      doc.text('Término previsto: ' + fmtDate(p.dataFimPrevista) + ' (' + prazoTxt + ')', marginX, y);
+      y += 14;
+    }
+    if(p.iniciadoEm && p.dataInicio){
+      const onTime = p.iniciadoEm <= p.dataInicio;
+      doc.text('Início real: ' + (onTime ? 'no prazo' : 'com atraso'), marginX, y);
+      y += 14;
+    }
+    y += 6;
+
+    if(p.descricao){
+      ensureSpace(30);
+      doc.setFont('helvetica', 'bold'); doc.text('Descrição', marginX, y); y += 14;
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(p.descricao, 500);
+      descLines.forEach(function(line){ ensureSpace(12); doc.text(line, marginX, y); y += 12; });
+      y += 8;
+    }
+
+    const equipe = Array.isArray(p.equipe) ? p.equipe : [];
+    if(equipe.length){
+      ensureSpace(20);
+      doc.setFont('helvetica', 'bold'); doc.text('Equipe', marginX, y); y += 14;
+      doc.setFont('helvetica', 'normal');
+      equipe.forEach(function(m){
+        ensureSpace(12);
+        doc.text('• ' + m.nome + (m.responsabilidade ? ' — ' + m.responsabilidade : ''), marginX + 4, y);
+        y += 12;
+      });
+      y += 8;
+    }
+
+    if(atividades.length){
+      ensureSpace(20);
+      doc.setFont('helvetica', 'bold'); doc.text('Atividades', marginX, y); y += 14;
+      doc.setFont('helvetica', 'normal');
+      atividades.forEach(function(a){
+        ensureSpace(12);
+        const mark = a.feita ? '[x] ' : '[ ] ';
+        doc.text(mark + a.texto + (a.responsavel ? ' (Responsável: ' + a.responsavel + ')' : ''), marginX + 4, y);
+        y += 12;
+      });
+    }
+
+    const blob = doc.output('blob');
+    try{
+      const downloadsNs = await claude.use('downloads');
+      if(!downloadsNs){
+        showBanner('Este visualizador não permite salvar arquivos por aqui.');
+        return;
+      }
+      await downloadsNs.save({ filename: 'relatorio-' + slugify(p.titulo) + '.pdf', data: blob });
+    }catch(e){
+      if(e && e.code !== 'declined'){
+        console.error(e);
+        showBanner('Não foi possível salvar o PDF agora.');
+      }
+    }
+  }
+
+  async function exportReportPdf(){
+    if(!window.jspdf || !window.jspdf.jsPDF){
+      showBanner('Não foi possível carregar o gerador de PDF agora. Tente recarregar a página.');
+      return;
+    }
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const marginX = 40;
+    const pageBottom = 780;
+    let y = 50;
+
+    function ensureSpace(needed){
+      if(y + needed > pageBottom){ doc.addPage(); y = 50; }
+    }
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text('Relatório gerencial — projetos', marginX, y);
+    y += 18;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('Gerado em ' + fmtDate(new Date().toISOString().slice(0,10)), marginX, y);
+    y += 26;
+
+    function addSection(title, list){
+      ensureSpace(24);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.text(title, marginX, y);
+      y += 18;
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      if(!list.length){
+        doc.text('Nenhum projeto nesta etapa.', marginX, y);
+        y += 22;
+        return;
+      }
+      list.forEach(function(p){
+        ensureSpace(60);
+        const atividades = Array.isArray(p.atividades) ? p.atividades : [];
+        const done = atividades.filter(function(a){ return a.feita; }).length;
+        const pct = atividades.length ? Math.round((done / atividades.length) * 100) : 0;
+
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(p.titulo || 'Sem título', marginX, y);
+        y += 14;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        if(p.curso){ doc.text('Curso: ' + p.curso, marginX, y); y += 13; }
+        doc.text('Progresso: ' + pct + '% (' + done + ' de ' + atividades.length + ' atividades)', marginX, y);
+        y += 13;
+
+        if(p.dataFimPrevista){
+          const today = new Date().toISOString().slice(0,10);
+          const diffDays = Math.round((new Date(p.dataFimPrevista) - new Date(today)) / 86400000);
+          let prazoTxt;
+          if(diffDays < 0) prazoTxt = 'Atrasado há ' + Math.abs(diffDays) + (Math.abs(diffDays) === 1 ? ' dia' : ' dias');
+          else if(diffDays === 0) prazoTxt = 'vence hoje';
+          else prazoTxt = 'faltam ' + diffDays + (diffDays === 1 ? ' dia' : ' dias');
+          doc.text('Prazo: ' + fmtDate(p.dataFimPrevista) + ' (' + prazoTxt + ')', marginX, y);
+        } else {
+          doc.text('Prazo: não definido', marginX, y);
+        }
+        y += 13;
+
+        if(p.iniciadoEm && p.dataInicio){
+          const onTime = p.iniciadoEm <= p.dataInicio;
+          doc.text('Início: ' + (onTime ? 'no prazo' : 'com atraso'), marginX, y);
+          y += 13;
+        }
+
+        const pendentes = atividades.filter(function(a){ return !a.feita; });
+        if(pendentes.length){
+          ensureSpace(14);
+          doc.text('Atividades pendentes:', marginX, y);
+          y += 13;
+          pendentes.forEach(function(a){
+            ensureSpace(12);
+            doc.text('• ' + a.texto + (a.responsavel ? ' (Responsável: ' + a.responsavel + ')' : ''), marginX + 12, y);
+            y += 12;
+          });
+        } else if(atividades.length){
+          doc.text('Todas as atividades foram concluídas.', marginX, y);
+          y += 13;
+        }
+        y += 12;
+      });
+      y += 6;
+    }
+
+    addSection('Em andamento', projects.filter(function(p){ return p.status === 'andamento'; }));
+    addSection('A fazer', projects.filter(function(p){ return p.status === 'afazer'; }));
+
+    const blob = doc.output('blob');
+    try{
+      const downloadsNs = await claude.use('downloads');
+      if(!downloadsNs){
+        showBanner('Este visualizador não permite salvar arquivos por aqui.');
+        return;
+      }
+      await downloadsNs.save({ filename: 'relatorio-projetos.pdf', data: blob });
+    }catch(e){
+      if(e && e.code !== 'declined'){
+        console.error(e);
+        showBanner('Não foi possível salvar o PDF agora.');
+      }
+    }
+  }
+
+  function buildReportCard(p, statusLabel, extraClass){
+    const today = new Date().toISOString().slice(0,10);
+    const card = document.createElement('div');
+    card.className = 'report-card' + (extraClass ? ' ' + extraClass : '');
+
+    const atividades = Array.isArray(p.atividades) ? p.atividades : [];
+    const doneCount = atividades.filter(function(a){ return a.feita; }).length;
+    const pct = atividades.length ? Math.round((doneCount / atividades.length) * 100) : 0;
+
+    const ringWrap = document.createElement('div');
+    ringWrap.className = 'report-ring-wrap';
+    const ring = document.createElement('div');
+    ring.className = 'progress-ring';
+    ring.style.background = 'conic-gradient(var(--status-concluido) ' + pct + '%, var(--line) ' + pct + '% 100%)';
+    const ringInner = document.createElement('div');
+    ringInner.className = 'progress-ring-inner';
+    ringInner.textContent = pct + '%';
+    ring.appendChild(ringInner);
+    ringWrap.appendChild(ring);
+    const ringLabel = document.createElement('div');
+    ringLabel.className = 'report-ring-label';
+    ringLabel.textContent = doneCount + ' de ' + atividades.length + ' atividades';
+    ringWrap.appendChild(ringLabel);
+    card.appendChild(ringWrap);
+
+    const main = document.createElement('div');
+    main.className = 'report-card-main';
+
+    const title = document.createElement('h3');
+    title.textContent = p.titulo || 'Sem título';
+    main.appendChild(title);
+
+    if(p.curso){
+      const curso = document.createElement('div');
+      curso.className = 'curso';
+      curso.textContent = p.curso;
+      main.appendChild(curso);
+    }
+
+    const row = document.createElement('div');
+    row.className = 'report-row';
+
+    const statusChip = document.createElement('span');
+    statusChip.className = 'chip chip-dates';
+    statusChip.textContent = 'Status: ' + statusLabel;
+    row.appendChild(statusChip);
+
+    if(p.dataFimPrevista){
+      const dfChip = document.createElement('span');
+      dfChip.className = 'chip chip-dates';
+      dfChip.textContent = 'Prazo: ' + fmtDate(p.dataFimPrevista);
+      row.appendChild(dfChip);
+
+      const diffDays = Math.round((new Date(p.dataFimPrevista) - new Date(today)) / 86400000);
+      const prazoBadge = document.createElement('span');
+      if(diffDays < 0){
+        prazoBadge.className = 'chip chip-late';
+        prazoBadge.textContent = 'Atrasado há ' + Math.abs(diffDays) + (Math.abs(diffDays) === 1 ? ' dia' : ' dias');
+      } else if(diffDays === 0){
+        prazoBadge.className = 'chip chip-late';
+        prazoBadge.textContent = 'Prazo vence hoje';
+      } else {
+        prazoBadge.className = 'chip chip-ontime';
+        prazoBadge.textContent = 'Faltam ' + diffDays + (diffDays === 1 ? ' dia' : ' dias');
+      }
+      row.appendChild(prazoBadge);
+    } else {
+      const noDate = document.createElement('span');
+      noDate.className = 'chip chip-late';
+      noDate.textContent = 'Sem prazo definido';
+      row.appendChild(noDate);
+    }
+
+    if(p.iniciadoEm && p.dataInicio){
+      const startBadge = document.createElement('span');
+      const onTime = p.iniciadoEm <= p.dataInicio;
+      startBadge.className = 'chip ' + (onTime ? 'chip-ontime' : 'chip-late');
+      startBadge.textContent = onTime ? 'Iniciado no prazo' : 'Iniciado com atraso';
+      row.appendChild(startBadge);
+    }
+
+    main.appendChild(row);
+
+    const pendentes = atividades.filter(function(a){ return !a.feita; });
+    const pendingBlock = document.createElement('div');
+    pendingBlock.className = 'report-pending';
+    if(!atividades.length){
+      pendingBlock.textContent = 'Nenhuma atividade cadastrada para este projeto.';
+    } else if(!pendentes.length){
+      pendingBlock.textContent = 'Todas as atividades cadastradas já foram realizadas.';
+    } else {
+      const label = document.createElement('div');
+      label.className = 'pending-label';
+      label.textContent = pendentes.length + ' de ' + atividades.length + ' atividades pendentes:';
+      pendingBlock.appendChild(label);
+      const ul = document.createElement('ul');
+      pendentes.forEach(function(a){
+        const li = document.createElement('li');
+        li.textContent = a.texto + (a.responsavel ? ' — ' + a.responsavel : '');
+        ul.appendChild(li);
+      });
+      pendingBlock.appendChild(ul);
+    }
+    main.appendChild(pendingBlock);
+
+    const pdfBtn = document.createElement('button');
+    pdfBtn.className = 'btn btn-ghost';
+    pdfBtn.style.marginTop = '12px';
+    pdfBtn.textContent = 'Relatório PDF';
+    pdfBtn.title = 'Gerar relatório em PDF deste projeto';
+    pdfBtn.onclick = function(){ exportProjectPdf(p); };
+    main.appendChild(pdfBtn);
+
+    card.appendChild(main);
+    return card;
+  }
+
+  function renderReportList(elId, list, statusLabel, extraClass, emptyMsg){
+    const listEl = $(elId);
+    listEl.innerHTML = '';
+    if(!list.length){
+      const empty = document.createElement('div');
+      empty.className = 'report-empty';
+      empty.textContent = emptyMsg;
+      listEl.appendChild(empty);
+      return;
+    }
+    list.forEach(function(p){
+      listEl.appendChild(buildReportCard(p, statusLabel, extraClass));
+    });
+  }
+
+  function renderReport(){
+    const emAndamento = projects.filter(function(p){ return p.status === 'andamento'; });
+    const aFazer = projects.filter(function(p){ return p.status === 'afazer'; });
+    renderReportList('#reportList', emAndamento, 'Em andamento', '', 'Nenhum projeto em andamento no momento.');
+    renderReportList('#reportListAfazer', aFazer, 'A fazer', 'rc-afazer', 'Nenhum projeto em "A fazer" no momento.');
+  }
+
+  function renderDashboard(){
+    const stats = computeStats();
+    const sub = $('#subtitulo');
+    if(sub){
+      if(!stats.total) sub.textContent = 'Nenhum projeto cadastrado ainda.';
+      else {
+        const partes = [stats.total + (stats.total === 1 ? ' projeto' : ' projetos'), stats.counts.andamento + ' em andamento'];
+        if(stats.emAtrasoAberto) partes.push(stats.emAtrasoAberto + (stats.emAtrasoAberto === 1 ? ' atrasado' : ' atrasados'));
+        partes.push(stats.counts.concluido + (stats.counts.concluido === 1 ? ' concluído' : ' concluídos'));
+        sub.textContent = partes.join(' · ');
+      }
+    }
+    const el = $('#dashboard');
+    el.innerHTML = '';
+    const cards = [
+      { label: 'Total de projetos', value: stats.total, cls: '' },
+      { label: 'A fazer', value: stats.counts.afazer, cls: 'stat-afazer' },
+      { label: 'Em andamento', value: stats.counts.andamento, cls: 'stat-andamento' },
+      { label: 'Concluídos', value: stats.counts.concluido, cls: 'stat-concluido' },
+      { label: 'Atrasados (ainda em aberto)', value: stats.emAtrasoAberto, cls: 'stat-late' },
+      { label: 'Concluídos no prazo', value: stats.concluidosNoPrazo, cls: 'stat-ontime' },
+      { label: 'Concluídos com atraso', value: stats.concluidosAtraso, cls: 'stat-late' }
+    ];
+    cards.forEach(function(c){
+      const card = document.createElement('div');
+      card.className = 'stat-card ' + c.cls;
+      const num = document.createElement('div');
+      num.className = 'num';
+      num.textContent = c.value;
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = c.label;
+      card.appendChild(num);
+      card.appendChild(label);
+      el.appendChild(card);
+    });
+
+    const today = new Date().toISOString().slice(0,10);
+    const upcoming = projects
+      .filter(function(p){ return p.status !== 'concluido' && p.dataFimPrevista; })
+      .sort(function(a,b){ return a.dataFimPrevista.localeCompare(b.dataFimPrevista); })
+      .slice(0, 6);
+    const listEl = $('#deadlineList');
+    listEl.innerHTML = '';
+    if(!upcoming.length){
+      const empty = document.createElement('div');
+      empty.className = 'empty-col';
+      empty.textContent = 'Nenhum prazo pendente cadastrado.';
+      listEl.appendChild(empty);
+    } else {
+      upcoming.forEach(function(p){
+        const item = document.createElement('div');
+        item.className = 'deadline-item';
+        const overdue = p.dataFimPrevista < today;
+        const title = document.createElement('span');
+        title.className = 'dl-title';
+        title.textContent = p.titulo || 'Sem título';
+        const date = document.createElement('span');
+        date.className = 'chip ' + (overdue ? 'chip-late' : 'chip-dates');
+        date.textContent = (overdue ? 'Atrasado desde ' : 'Até ') + fmtDate(p.dataFimPrevista);
+        item.appendChild(title);
+        item.appendChild(date);
+        listEl.appendChild(item);
+      });
+    }
+  }
+
+  async function render(){
+    renderDashboard();
+    if(currentView === 'report') renderReport();
+    const byStatus = { afazer: [], andamento: [], concluido: [] };
+    projects.forEach(function(p){
+      const s = STATUSES.includes(p.status) ? p.status : 'afazer';
+      byStatus[s].push(p);
+    });
+
+    const boardEl = $('#board');
+    const hasAny = projects.length > 0;
+
+    // handle empty board state
+    let emptyEl = document.getElementById('emptyBoard');
+    if(!hasAny){
+      if(!emptyEl){
+        emptyEl = document.createElement('div');
+        emptyEl.className = 'empty-board';
+        emptyEl.id = 'emptyBoard';
+        emptyEl.innerHTML = '<h2>Nenhum projeto ainda</h2>' +
+          '<p>' + (isOwner ? 'Adicione o primeiro projeto para começar a acompanhar o andamento.' : 'Assim que um projeto for cadastrado, ele aparecerá aqui.') + '</p>';
+        if(isOwner){
+          const b = document.createElement('button');
+          b.className = 'btn btn-primary';
+          b.textContent = '+ Novo projeto';
+          b.onclick = openNewModal;
+          emptyEl.appendChild(b);
+        }
+        boardEl.prepend(emptyEl);
+      }
+      boardEl.querySelectorAll('.column').forEach(c => c.style.display = 'none');
+    } else {
+      if(emptyEl) emptyEl.remove();
+      boardEl.querySelectorAll('.column').forEach(c => c.style.display = '');
+    }
+
+    // collect ids for name resolution
+    const idsToResolve = new Set();
+    projects.forEach(p => { if(p.updatedById) idsToResolve.add(p.updatedById); });
+    let profiles = {};
+    if(userNs && idsToResolve.size){
+      try{ profiles = await userNs.profiles(Array.from(idsToResolve)); }catch(e){}
+    }
+
+    STATUSES.forEach(function(status){
+      const list = byStatus[status];
+      $('#count-' + status).textContent = list.length;
+      const container = $('#cards-' + status);
+      container.innerHTML = '';
+      if(!list.length){
+        const e = document.createElement('div');
+        e.className = 'empty-col';
+        e.textContent = 'Nenhum projeto nesta etapa.';
+        container.appendChild(e);
+        return;
+      }
+      list.forEach(function(p){
+        container.appendChild(renderCard(p, status, profiles));
+      });
+    });
+  }
+
+  function renderCard(p, status, profiles){
+    const card = document.createElement('div');
+    card.className = 'card st-' + status;
+    const editable = canEditCard(p);
+    const claimable = canClaimCard(p);
+
+    const title = document.createElement('h3');
+    title.textContent = p.titulo || 'Sem título';
+    card.appendChild(title);
+
+    if(p.descricao){
+      const desc = document.createElement('div');
+      desc.className = 'desc';
+      desc.textContent = p.descricao;
+      card.appendChild(desc);
+    }
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    if(status === 'andamento' && p.dataFimPrevista){
+      const dfSpan = document.createElement('span');
+      dfSpan.className = 'chip chip-dates';
+      dfSpan.textContent = 'Término previsto: ' + fmtDate(p.dataFimPrevista);
+      meta.appendChild(dfSpan);
+    }
+    if(status === 'andamento' && p.iniciadoEm && p.dataInicio){
+      const startBadge = document.createElement('span');
+      const onTime = p.iniciadoEm <= p.dataInicio;
+      startBadge.className = 'chip ' + (onTime ? 'chip-ontime' : 'chip-late');
+      startBadge.textContent = onTime ? 'Iniciado no prazo' : 'Iniciado com atraso';
+      meta.appendChild(startBadge);
+    }
+    if(status === 'concluido' && p.concluidoEm && p.dataFimPrevista){
+      const endBadge = document.createElement('span');
+      const diffDays = Math.round((new Date(p.concluidoEm) - new Date(p.dataFimPrevista)) / 86400000);
+      let label;
+      if(diffDays === 0){
+        label = 'Concluído no prazo';
+      } else if(diffDays < 0){
+        const n = Math.abs(diffDays);
+        label = 'Concluído ' + n + (n === 1 ? ' dia' : ' dias') + ' antes do prazo';
+      } else {
+        label = 'Concluído com ' + diffDays + (diffDays === 1 ? ' dia' : ' dias') + ' de atraso';
+      }
+      endBadge.className = 'chip ' + (diffDays <= 0 ? 'chip-ontime' : 'chip-late');
+      endBadge.textContent = label;
+      meta.appendChild(endBadge);
+    }
+    card.appendChild(meta);
+
+    if(Array.isArray(p.equipe) && p.equipe.length){
+      const teamMeta = document.createElement('div');
+      teamMeta.className = 'meta';
+      const tSpan = document.createElement('span');
+      tSpan.className = 'chip chip-team';
+      tSpan.textContent = 'Equipe: ' + p.equipe.map(function(m){
+        return m.nome + (m.responsabilidade ? ' (' + m.responsabilidade + ')' : '');
+      }).join(', ');
+      teamMeta.appendChild(tSpan);
+      card.appendChild(teamMeta);
+    }
+
+    if(p.updatedById && profiles[p.updatedById]){
+      const upd = document.createElement('div');
+      upd.style.marginTop = '6px';
+      upd.style.fontSize = '0.72rem';
+      upd.style.color = 'var(--ink-faint)';
+      const nm = profiles[p.updatedById].name || 'alguém';
+      upd.textContent = 'Última atualização por ' + nm;
+      card.appendChild(upd);
+    }
+
+    if(Array.isArray(p.atividades) && p.atividades.length){
+      const checklist = document.createElement('div');
+      checklist.className = 'checklist';
+      p.atividades.forEach(function(a, idx){
+        const item = document.createElement('label');
+        item.className = 'checklist-item' + (a.feita ? ' done' : '');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !!a.feita;
+        cb.disabled = !editable;
+        if(editable){
+          cb.onchange = function(){ toggleAtividade(p, idx); };
+        }
+        const span = document.createElement('span');
+        span.textContent = a.texto + (a.responsavel ? ' — ' + a.responsavel : '');
+        item.appendChild(cb);
+        item.appendChild(span);
+        checklist.appendChild(item);
+      });
+      const doneCount = p.atividades.filter(a => a.feita).length;
+      const pct = Math.round((doneCount / p.atividades.length) * 100);
+      const track = document.createElement('div');
+      track.className = 'progress-track';
+      const fill = document.createElement('div');
+      fill.className = 'progress-fill';
+      fill.style.width = pct + '%';
+      track.appendChild(fill);
+      checklist.appendChild(track);
+      const prog = document.createElement('div');
+      prog.className = 'checklist-progress';
+      prog.textContent = doneCount + ' de ' + p.atividades.length + ' atividades realizadas';
+      checklist.appendChild(prog);
+      card.appendChild(checklist);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+
+    if(editable){
+      const spacer = document.createElement('div');
+      spacer.className = 'spacer';
+      actions.appendChild(spacer);
+
+      const hasEmails = Array.isArray(p.equipe) && p.equipe.some(m => (m.email||'').trim());
+      const hasStarted = Array.isArray(p.atividades) && p.atividades.some(a => a.feita);
+      if(hasEmails && hasStarted){
+        const notifyLink = document.createElement('a');
+        notifyLink.className = 'notify-btn';
+        notifyLink.textContent = 'Notificar';
+        notifyLink.href = buildMailto(p);
+        notifyLink.target = '_blank';
+        notifyLink.rel = 'noopener noreferrer';
+        actions.appendChild(notifyLink);
+      }
+
+      if(status === 'andamento' || status === 'concluido'){
+        const resetBtn = document.createElement('button');
+        resetBtn.className = 'btn btn-ghost';
+        resetBtn.textContent = 'Reiniciar';
+        resetBtn.title = 'Zera curso, coordenador, descrição, datas, equipe e atividades, e volta o projeto para "A fazer"';
+        resetBtn.onclick = function(){ reiniciarProjeto(p); };
+        actions.appendChild(resetBtn);
+      }
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'btn btn-ghost';
+      editBtn.textContent = 'Editar';
+      editBtn.onclick = function(){ openEditModal(p); };
+      actions.appendChild(editBtn);
+
+      if(isOwner){
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn btn-ghost';
+        deleteBtn.textContent = 'Excluir';
+        deleteBtn.onclick = function(){ deleteProjeto(p); };
+        actions.appendChild(deleteBtn);
+      }
+    } else if(claimable){
+      const spacer = document.createElement('div');
+      spacer.className = 'spacer';
+      actions.appendChild(spacer);
+
+      const claimBtn = document.createElement('button');
+      claimBtn.className = 'claim-btn';
+      claimBtn.textContent = 'Sou eu — habilitar edição';
+      claimBtn.onclick = function(){ claimCard(p); };
+      actions.appendChild(claimBtn);
+    }
+
+    if(actions.children.length){
+      card.appendChild(actions);
+    }
+
+    // drop target support (column-level handled separately)
+    return card;
+  }
+
+  async function reiniciarProjeto(p){
+    if(!db) return;
+    showConfirm(
+      'Reiniciar projeto',
+      'Reiniciar "' + (p.titulo||'') + '"? Isso apaga curso, coordenador, descrição, datas, equipe e atividades, e o projeto volta para "A fazer". Apenas o título é mantido.',
+      async function(){
+        try{
+          await db.collection('projetos').doc(p.id).update({
+            curso: '',
+            coordenadorNome: '',
+            coordenadorId: null,
+            descricao: '',
+            dataInicio: null,
+            dataFimPrevista: null,
+            equipe: [],
+            atividades: [],
+            status: 'afazer',
+            iniciadoEm: null,
+            concluidoEm: null,
+            updatedAt: new Date().toISOString(),
+            updatedById: null
+          });
+        }catch(e){
+          console.error(e);
+          showBanner('Não foi possível reiniciar o projeto agora.');
+        }
+      }
+    );
+  }
+
+  function deleteProjeto(p){
+    if(!db) return;
+    showConfirm(
+      'Excluir projeto',
+      'Excluir "' + (p.titulo||'') + '"? Essa ação não pode ser desfeita.',
+      async function(){
+        try{
+          await db.collection('projetos').doc(p.id).delete();
+        }catch(e){
+          console.error(e);
+          showBanner('Não foi possível excluir o projeto agora.');
+        }
+      }
+    );
+  }
+
+  async function toggleAtividade(p, idx){
+    if(!db) return;
+    const atividades = (p.atividades || []).map(function(a){ return Object.assign({}, a); });
+    if(!atividades[idx]) return;
+    atividades[idx].feita = !atividades[idx].feita;
+    const newStatus = computeStatus(atividades);
+    const ts = computeTimestamps(p, newStatus);
+    try{
+      await db.collection('projetos').doc(p.id).update({
+        atividades: atividades,
+        status: newStatus,
+        iniciadoEm: ts.iniciadoEm,
+        concluidoEm: ts.concluidoEm,
+        updatedAt: new Date().toISOString(),
+        updatedById: myId || null
+      });
+    }catch(e){
+      console.error(e);
+      showBanner('Não foi possível atualizar a atividade agora.');
+    }
+  }
+
+  async function claimCard(p){
+    if(!db || !myId) return;
+    try{
+      await db.collection('projetos').doc(p.id).update({
+        coordenadorId: myId,
+        updatedAt: new Date().toISOString(),
+        updatedById: myId
+      });
+    }catch(e){
+      console.error(e);
+      showBanner('Não foi possível vincular você como coordenador agora.');
+    }
+  }
+
+  // modal handling
+  function renderAtividadeRows(){
+    const wrap = $('#atividadeRows');
+    wrap.innerHTML = '';
+    currentAtividades.forEach(function(a, idx){
+      const row = document.createElement('div');
+      row.className = 'atividade-row';
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = !!a.feita;
+      cb.onchange = function(){ currentAtividades[idx].feita = cb.checked; };
+
+      const txt = document.createElement('input');
+      txt.type = 'text';
+      txt.placeholder = 'Descrição da atividade';
+      txt.autocomplete = 'off';
+      txt.value = a.texto || '';
+      txt.oninput = function(){ currentAtividades[idx].texto = txt.value; };
+
+      const resp = document.createElement('input');
+      resp.type = 'text';
+      resp.className = 'atividade-resp';
+      resp.placeholder = 'Responsável';
+      resp.autocomplete = 'off';
+      resp.value = a.responsavel || '';
+      resp.oninput = function(){ currentAtividades[idx].responsavel = resp.value; };
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'eq-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.title = 'Remover atividade';
+      removeBtn.onclick = function(){ currentAtividades.splice(idx,1); renderAtividadeRows(); };
+
+      row.appendChild(cb);
+      row.appendChild(txt);
+      row.appendChild(resp);
+      row.appendChild(removeBtn);
+      wrap.appendChild(row);
+    });
+  }
+
+  $('#btnAddAtividade').addEventListener('click', function(){
+    currentAtividades.push({ texto:'', feita:false });
+    renderAtividadeRows();
+  });
+
+  function renderEquipeRows(){
+    const wrap = $('#equipeRows');
+    wrap.innerHTML = '';
+    currentEquipe.forEach(function(m, idx){
+      const row = document.createElement('div');
+      row.className = 'equipe-row';
+
+      const nomeInput = document.createElement('input');
+      nomeInput.placeholder = 'Nome';
+      nomeInput.autocomplete = 'off';
+      nomeInput.value = m.nome || '';
+      nomeInput.oninput = function(){ currentEquipe[idx].nome = nomeInput.value; };
+
+      const respInput = document.createElement('input');
+      respInput.placeholder = 'Responsabilidade';
+      respInput.autocomplete = 'off';
+      respInput.value = m.responsabilidade || '';
+      respInput.oninput = function(){ currentEquipe[idx].responsabilidade = respInput.value; };
+
+      const emailInput = document.createElement('input');
+      emailInput.className = 'eq-email';
+      emailInput.type = 'email';
+      emailInput.placeholder = 'e-mail@exemplo.com';
+      emailInput.autocomplete = 'off';
+      emailInput.value = m.email || '';
+      emailInput.oninput = function(){ currentEquipe[idx].email = emailInput.value; };
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'eq-remove';
+      removeBtn.textContent = '✕';
+      removeBtn.title = 'Remover integrante';
+      removeBtn.onclick = function(){ currentEquipe.splice(idx,1); renderEquipeRows(); };
+
+      row.appendChild(nomeInput);
+      row.appendChild(respInput);
+      row.appendChild(emailInput);
+      row.appendChild(removeBtn);
+      wrap.appendChild(row);
+    });
+  }
+
+  $('#btnAddMembro').addEventListener('click', function(){
+    currentEquipe.push({ nome:'', responsabilidade:'', email:'' });
+    renderEquipeRows();
+  });
+
+  function currentFormData(){
+    return {
+      titulo: $('#f-titulo').value,
+      status: editingId ? (projects.find(x=>x.id===editingId)||{}).status : 'afazer',
+      dataInicio: $('#f-data-inicio').value || null,
+      dataFimPrevista: $('#f-data-fim').value || null,
+      descricao: $('#f-descricao').value,
+      equipe: currentEquipe,
+      atividades: currentAtividades
+    };
+  }
+
+  function refreshNotifyModalLink(){
+    const btn = $('#btnNotifyModal');
+    const hasEmails = currentEquipe.some(m => (m.email||'').trim());
+    const hasStarted = currentAtividades.some(a => a.feita);
+    if(editingId && hasEmails && hasStarted){
+      btn.style.display = '';
+      btn.href = buildMailto(currentFormData());
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  ['f-titulo','f-data-inicio','f-data-fim','f-descricao'].forEach(function(id){
+    document.getElementById(id).addEventListener('input', refreshNotifyModalLink);
+  });
+
+  function openNewModal(){
+    editingId = null;
+    currentEquipe = [];
+    currentAtividades = [];
+    $('#modalTitle').textContent = 'Novo projeto';
+    $('#modalSub').textContent = 'Preencha os dados do projeto.';
+    $('#f-titulo').value = '';
+    $('#f-curso').value = '';
+    $('#f-coordenador').value = '';
+    $('#f-data-inicio').value = '';
+    $('#f-data-fim').value = '';
+    $('#f-descricao').value = '';
+    $('#btnDelete').style.display = 'none';
+    $('#resetLinkWrap').style.display = 'none';
+    renderAtividadeRows();
+    renderEquipeRows();
+    refreshNotifyModalLink();
+    modalBackdrop.classList.add('show');
+    $('#f-titulo').focus();
+  }
+
+  function openEditModal(p){
+    editingId = p.id;
+    currentEquipe = Array.isArray(p.equipe) ? p.equipe.map(function(m){
+      return { nome: m.nome||'', responsabilidade: m.responsabilidade||'', email: m.email||'' };
+    }) : [];
+    currentAtividades = Array.isArray(p.atividades) ? p.atividades.map(function(a){
+      return { texto: a.texto||'', feita: !!a.feita, responsavel: a.responsavel||'' };
+    }) : [];
+    $('#modalTitle').textContent = 'Editar projeto';
+    $('#modalSub').textContent = 'Atualize os dados do projeto.';
+    $('#f-titulo').value = p.titulo || '';
+    $('#f-curso').value = p.curso || '';
+    $('#f-coordenador').value = p.coordenadorNome || '';
+    $('#f-data-inicio').value = p.dataInicio || '';
+    $('#f-data-fim').value = p.dataFimPrevista || '';
+    $('#f-descricao').value = p.descricao || '';
+    $('#btnDelete').style.display = isOwner ? '' : 'none';
+    $('#resetLinkWrap').style.display = (isOwner && p.coordenadorId) ? '' : 'none';
+    renderAtividadeRows();
+    renderEquipeRows();
+    refreshNotifyModalLink();
+    modalBackdrop.classList.add('show');
+    $('#f-titulo').focus();
+  }
+
+  function closeModal(){
+    modalBackdrop.classList.remove('show');
+    editingId = null;
+    currentEquipe = [];
+    currentAtividades = [];
+  }
+
+  $('#btnNovo').addEventListener('click', openNewModal);
+  $('#btnCancel').addEventListener('click', closeModal);
+  modalBackdrop.addEventListener('click', function(e){
+    if(e.target === modalBackdrop) closeModal();
+  });
+
+  $('#btnResetVinculo').addEventListener('click', async function(){
+    if(!editingId || !db) return;
+    try{
+      await db.collection('projetos').doc(editingId).update({ coordenadorId: null });
+      $('#resetLinkWrap').style.display = 'none';
+    }catch(e){ console.error(e); }
+  });
+
+  $('#btnDelete').addEventListener('click', function(){
+    if(!editingId || !db) return;
+    const id = editingId;
+    showConfirm('Excluir projeto', 'Excluir este projeto? Essa ação não pode ser desfeita.', async function(){
+      try{
+        await db.collection('projetos').doc(id).delete();
+        closeModal();
+      }catch(e){
+        console.error(e);
+        showBanner('Não foi possível excluir o projeto.');
+      }
+    });
+  });
+
+  $('#projectForm').addEventListener('submit', async function(e){
+    e.preventDefault();
+    if(!db) return;
+    if(!$('#f-data-inicio').value || !$('#f-data-fim').value){
+      showBanner('Informe a data de início e o término previsto — o projeto não pode ser cadastrado sem essas datas.');
+      return;
+    }
+    const atividadesLimpa = currentAtividades
+      .map(function(a){ return { texto: (a.texto||'').trim(), feita: !!a.feita, responsavel: (a.responsavel||'').trim() }; })
+      .filter(function(a){ return a.texto; });
+
+    const data = {
+      titulo: $('#f-titulo').value.trim(),
+      curso: $('#f-curso').value.trim(),
+      coordenadorNome: $('#f-coordenador').value.trim(),
+      dataInicio: $('#f-data-inicio').value || null,
+      dataFimPrevista: $('#f-data-fim').value || null,
+      descricao: $('#f-descricao').value.trim(),
+      atividades: atividadesLimpa,
+      equipe: currentEquipe
+        .map(function(m){ return { nome: (m.nome||'').trim(), responsabilidade: (m.responsabilidade||'').trim(), email: (m.email||'').trim() }; })
+        .filter(function(m){ return m.nome || m.email; }),
+      updatedAt: new Date().toISOString(),
+      updatedById: myId || null
+    };
+    data.status = computeStatus(atividadesLimpa);
+    const existingForTs = editingId ? (projects.find(x => x.id === editingId) || {}) : {};
+    const tsForm = computeTimestamps(existingForTs, data.status);
+    data.iniciadoEm = tsForm.iniciadoEm;
+    data.concluidoEm = tsForm.concluidoEm;
+    if(!editingId){
+      data.coordenadorId = null;
+      data.createdAt = new Date().toISOString();
+    }
+    try{
+      if(editingId){
+        await db.collection('projetos').doc(editingId).update(data);
+      } else {
+        await db.collection('projetos').add(data);
+      }
+      closeModal();
+    }catch(e){
+      console.error(e);
+      showBanner('Não foi possível salvar o projeto agora.');
+    }
+  });
+
+  init();
+})();
+</script>
+</body>
+</html>
+
+</body></html>

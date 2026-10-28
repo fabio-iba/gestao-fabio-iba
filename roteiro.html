@@ -1,0 +1,318 @@
+<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='rot';window.GFI_LS=["roteiro-modulo-v1"]</script><script src="config.js"></script><script src="gfi.js"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Roteiro do Módulo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700;800&family=Inter+Tight:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: faixa escura com o mapa do percurso (metrô em 4 fases) + cartões de etapa em sequência, mesma família visual do Gestão Fabio Iba */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#0F1B2A; --muted:#5B6878; --line:#E1E6EC; --soft:#F6F8FA;
+  --band:#0E2233; --band-ink:#F3F7FA; --band-muted:#9FB3C4; --band-line:rgba(255,255,255,.07);
+  --warn:#B4541A; --warn-s:#FCEEE3; --ok:#1F8A5B;
+  --c1:#0E8A8A; --c1s:#DDF3F1; --c2:#5B4BD6; --c2s:#E8E5FB; --c3:#C27A12; --c3s:#FBEFD9; --c4:#C23D6B; --c4s:#FBE3EC;
+  --shadow:0 1px 2px rgba(15,27,42,.05),0 12px 32px -14px rgba(15,27,42,.2);
+  --display:"Manrope",ui-sans-serif,system-ui,sans-serif; --body:"Inter Tight",ui-sans-serif,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;
+  --bg:#0B131B; --surface:#131F2A; --ink:#E8EEF3; --muted:#93A3B2; --line:#23313E; --soft:#0F1922;
+  --band:#08101A; --band-ink:#EEF4F8; --band-muted:#8EA2B4; --band-line:rgba(255,255,255,.05);
+  --warn:#F0A070; --warn-s:#33200F; --ok:#5FD39C;
+  --c1:#4CC7C2; --c1s:#12302F; --c2:#9B8FF5; --c2s:#231F42; --c3:#EAB35A; --c3s:#35280F; --c4:#EE85A8; --c4s:#3A1826;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px -14px rgba(0,0,0,.6)}}
+:root[data-theme="dark"]{color-scheme:dark;
+  --bg:#0B131B; --surface:#131F2A; --ink:#E8EEF3; --muted:#93A3B2; --line:#23313E; --soft:#0F1922;
+  --band:#08101A; --band-ink:#EEF4F8; --band-muted:#8EA2B4; --band-line:rgba(255,255,255,.05);
+  --warn:#F0A070; --warn-s:#33200F; --ok:#5FD39C;
+  --c1:#4CC7C2; --c1s:#12302F; --c2:#9B8FF5; --c2s:#231F42; --c3:#EAB35A; --c3s:#35280F; --c4:#EE85A8; --c4s:#3A1826;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 12px 32px -14px rgba(0,0,0,.6)}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body);-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.02em}
+svg{display:block}
+.p1{--c:var(--c1);--cs:var(--c1s)} .p2{--c:var(--c2);--cs:var(--c2s)} .p3{--c:var(--c3);--cs:var(--c3s)} .p4{--c:var(--c4);--cs:var(--c4s)}
+
+/* faixa */
+.band{background:var(--band);color:var(--band-ink);padding-inline:20px;padding-block:40px 120px;
+  background-image:linear-gradient(var(--band-line) 1px,transparent 1px),linear-gradient(90deg,var(--band-line) 1px,transparent 1px);background-size:36px 36px}
+.band-in{max-width:1040px;margin:0 auto}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:24px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--band-muted)}
+.eyebrow a{color:inherit}
+h1{font-size:clamp(34px,6vw,56px);font-weight:800;line-height:1;letter-spacing:-.04em;margin-top:10px}
+.lead{color:var(--band-muted);max-width:56ch;margin:14px 0 0;font-size:16px}
+.lead b{color:var(--band-ink);font-weight:600}
+.ring{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:12px 18px 12px 12px}
+.ring svg{width:64px;height:64px;transform:rotate(-90deg)}
+.ring .trk{stroke:rgba(255,255,255,.12)} .ring .val{stroke:#5FD3B6;transition:stroke-dashoffset .5s ease}
+.ring-txt b{display:block;font:800 22px var(--display);line-height:1}
+.ring-txt span{font-size:13px;color:var(--band-muted)}
+
+/* metrô */
+.metro{margin-top:36px;display:grid;grid-template-columns:2fr 2fr 2fr 1fr;gap:10px}
+.fase{min-width:0}
+.fase-nome{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--c);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.fase-nome::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.12)}
+.estacoes{display:flex;gap:8px}
+.est{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-decoration:none;color:var(--band-ink);
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px}
+.est:hover{background:rgba(255,255,255,.09);border-color:var(--c)}
+.est .bola{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--c);color:var(--band);font:800 15px var(--display)}
+.est.ok .bola{background:#5FD3B6}
+.est small{font-size:13px;font-weight:600;line-height:1.25}
+@media (max-width:760px){.metro{grid-template-columns:1fr 1fr}}
+@media (max-width:440px){.metro{grid-template-columns:1fr}}
+
+/* principal */
+.main{max-width:1040px;margin:-80px auto 0;padding-inline:20px;padding-block:0 64px;display:flex;flex-direction:column;gap:22px}
+.etapa{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;scroll-margin-top:16px}
+.e-head{display:flex;gap:16px;align-items:center;padding:22px 24px 18px;flex-wrap:wrap}
+.e-ico{flex:none;width:56px;height:56px;border-radius:16px;background:var(--cs);color:var(--c);display:grid;place-items:center;position:relative}
+.e-ico svg{width:28px;height:28px}
+.e-ico .n{position:absolute;right:-6px;top:-6px;width:24px;height:24px;border-radius:50%;background:var(--c);color:var(--surface);font:800 12px var(--display);display:grid;place-items:center;border:2px solid var(--surface)}
+.e-tit{flex:1;min-width:200px}
+.e-meta{font-size:12px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--c)}
+.e-tit h2{font-size:22px;font-weight:800;margin-top:2px}
+.e-tit p{margin:4px 0 0;color:var(--muted)}
+.tag{font-size:12px;font-weight:600;color:var(--muted);background:var(--soft);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.e-body{display:grid;grid-template-columns:1.25fr 1fr;border-top:1px solid var(--line)}
+.col{padding:18px 24px;min-width:0}
+.col+.col{border-left:1px solid var(--line);background:var(--soft)}
+@media (max-width:720px){.e-body{grid-template-columns:1fr}.col+.col{border-left:0;border-top:1px solid var(--line)}}
+.col h3{font:700 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.col h3 svg{width:15px;height:15px}
+.passos{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;counter-reset:p}
+.passos li{counter-increment:p;display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start}
+.passos li::before{content:counter(p);width:24px;height:24px;border-radius:8px;background:var(--cs);color:var(--c);font:800 12px var(--display);display:grid;place-items:center;margin-top:1px}
+.atencao{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:9px}
+.atencao li{position:relative;padding-left:20px}
+.atencao li::before{content:"";position:absolute;left:2px;top:9px;width:7px;height:7px;border-radius:50%;background:var(--c)}
+.ui{display:inline-flex;align-items:center;font:600 13px var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);border-bottom-width:2px;border-radius:7px;padding:1px 8px;white-space:nowrap;line-height:1.6}
+.alerta{display:flex;gap:10px;align-items:flex-start;margin:0 24px 4px;background:var(--warn-s);border-radius:12px;padding:12px 14px;font-size:14.5px}
+.alerta svg{width:20px;height:20px;color:var(--warn);flex:none;margin-top:1px}
+.alerta b{color:var(--warn)}
+.e-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 24px;border-top:1px solid var(--line)}
+.e-foot .pronto{font-size:14px;color:var(--muted);flex:1;min-width:200px}
+.e-foot .pronto b{color:var(--ink)}
+.feito{display:inline-flex;align-items:center;gap:8px;font:600 14px var(--body);border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 16px 8px 10px;cursor:pointer}
+.feito .chk{width:20px;height:20px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}
+.feito .chk svg{width:12px;height:12px;opacity:0}
+.feito:hover{border-color:var(--c)}
+.etapa.ok .feito{background:var(--ok);border-color:var(--ok);color:#fff}
+.etapa.ok .feito .chk{border-color:#fff;background:#fff;color:var(--ok)}
+.etapa.ok .feito .chk svg{opacity:1}
+.etapa.ok .e-ico .n{background:var(--ok)}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--c2);outline-offset:2px}
+
+/* seções */
+.secao{margin-top:26px}
+.secao-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.secao-h h2{font-size:26px;font-weight:800}
+.secao-h p{margin:4px 0 0;color:var(--muted)}
+.busca{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0 12px;min-width:min(280px,100%)}
+.busca svg{width:18px;height:18px;color:var(--muted)}
+.busca input{border:0;background:none;font:inherit;color:var(--ink);padding:10px 0;width:100%;outline:none}
+.atalhos{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.at{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.at b{font-family:var(--display);font-size:15.5px;line-height:1.3}
+.cam{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:13px;color:var(--muted)}
+.vazio{color:var(--muted);padding:12px 0}
+.regras{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.rg{display:flex;gap:12px;align-items:flex-start;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.rg .ic{flex:none;width:38px;height:38px;border-radius:11px;background:var(--cs);color:var(--c);display:grid;place-items:center}
+.rg .ic svg{width:20px;height:20px}
+.rg b{display:block;font-family:var(--display);font-size:15px}
+.rg span{color:var(--muted);font-size:14px}
+.rodape{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center;margin-top:10px;padding-top:18px;border-top:1px solid var(--line)}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.links a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink);font-weight:600;font-size:14px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:7px 14px}
+.links a:hover{border-color:var(--c2)}
+.reset{font:600 14px var(--body);background:none;border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:7px 14px;cursor:pointer}
+.reset:hover{color:var(--ink);border-color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){.etapa,.est,.feito{transition:all .18s ease}}
+@media (max-width:520px){.e-head,.col,.e-foot{padding-left:18px;padding-right:18px}.alerta{margin-inline:18px}}
+body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}h1{font-weight:700!important;letter-spacing:.2px!important}
+</style>
+
+<header class="band">
+  <div class="band-in">
+    <div class="top">
+      <div>
+        <div class="eyebrow">Painel <a href="gestao-docente.html" target="_blank" rel="noopener">Gestão Docente</a> · guia de uso</div>
+        <h1>Roteiro do Módulo</h1>
+        <p class="lead">Do cadastro ao professor avisado, em <b>7 etapas</b>. Exemplo: <b>Módulo 51/2027</b>. Clique numa estação para ir direto à etapa e marque cada uma quando terminar.</p>
+      </div>
+      <div class="ring" aria-live="polite">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><circle class="trk" cx="32" cy="32" r="27" fill="none" stroke-width="7"/><circle class="val" id="ringVal" cx="32" cy="32" r="27" fill="none" stroke-width="7" stroke-linecap="round" stroke-dasharray="169.6" stroke-dashoffset="169.6"/></svg>
+        <div class="ring-txt"><b id="ringN">0 de 7</b><span>etapas concluídas</span></div>
+      </div>
+    </div>
+    <nav class="metro" id="metro" aria-label="Mapa das etapas"></nav>
+  </div>
+</header>
+
+<main class="main" id="main"></main>
+
+<script>
+(function(){
+  var I = function(p){return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';};
+  var ICO = {
+    cad: I('<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>'),
+    outra: I('<circle cx="8" cy="9" r="3"/><circle cx="17" cy="9" r="3"/><path d="M2.5 19c.6-2.8 2.8-4.5 5.5-4.5s4.9 1.7 5.5 4.5"/><path d="M14.5 14.6c.8-.4 1.6-.6 2.5-.6 2.7 0 4.9 1.7 5.5 4.5"/>'),
+    dist: I('<path d="M4 6h10M4 12h7M4 18h10"/><path d="M17 9l3 3-3 3"/><path d="M14 12h6"/>'),
+    quadro: I('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/>'),
+    entregas: I('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/>'),
+    mail: I('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/>'),
+    olho: I('<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>'),
+    click: I('<path d="M9 9l11 4-5 2-2 5z"/><path d="M5 3v3M3 5h3M5.5 9.5 4 11M9.5 5.5 11 4"/>'),
+    alerta: I('<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/>'),
+    info: I('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>'),
+    check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>',
+    lupa: I('<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>'),
+    um: I('<circle cx="12" cy="7" r="3.5"/><path d="M5 20c.8-3.6 3.6-6 7-6s6.2 2.4 7 6"/>'),
+    relogio: I('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    limite: I('<path d="M4 20h16"/><path d="M7 20V10M12 20V6M17 20v-6"/><path d="M3 4h18" stroke-dasharray="2 2"/>'),
+    carga: I('<rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2"/><path d="M6 10h10v4H6z" fill="currentColor"/>'),
+    estrela: I('<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z"/>'),
+    pin: I('<path d="M12 21s-6-5.6-6-11a6 6 0 0 1 12 0c0 5.4-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/>'),
+    link: I('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>')
+  };
+  var u = function(t){return '<span class="ui">'+t+'</span>';};
+  var FASES = [
+    {nome:'Preparar', cls:'p1', etapas:[1,2]},
+    {nome:'Montar', cls:'p2', etapas:[3,4]},
+    {nome:'Finalizar', cls:'p3', etapas:[5,6]},
+    {nome:'Acompanhar', cls:'p4', etapas:[7]}
+  ];
+  var ETAPAS = [
+    {n:1, ico:'cad', curto:'Cadastros', tit:'Conferir os cadastros', tag:'1 vez por módulo',
+     sub:'A distribuição só acerta se a base estiver certa. Aqui você só confere.',
+     passos:['Ícone '+u('Cadastros')+' no cabeçalho', u('Matrizes')+': as disciplinas do Módulo 51 existem em todos os cursos, com ano, ordem e horário?', u('Professores')+': aulas do contrato e '+u('Máx. disciplinas comigo')+' preenchidos?', u('Mediadores')+': e-mails em dia?'],
+     atencao:['Disciplina nova, de curso novo ou troca de matriz, entra aqui primeiro.','Professor novo também: sem cadastro ele não aparece na distribuição.'],
+     pronto:'todas as disciplinas do 51 estão na matriz e todo professor tem contrato e limite.'},
+    {n:2, ico:'outra', curto:'Outra coordenação', tit:'Lançar as aulas de outros coordenadores', tag:'antes de distribuir',
+     sub:'Professores compartilhados já dão aula em outros cursos. Sem esse registro, o painel acha que eles estão livres.',
+     passos:[u('Cadastros')+' › '+u('Alocação')+' › '+u('Nova alocação'), 'Curso: '+u('Disciplina outra coordenação'), 'Digite a disciplina. Se ela já existir, os campos se preenchem sozinhos.', 'Escolha o professor, ou '+u('Digitar o nome')+' se ele não for cadastrado.'],
+     atencao:['A carga e os horários desses professores passam a contar na distribuição.','Evita colocar alguém num horário que ele já ocupa em outro curso.'],
+     pronto:'toda aula externa conhecida dos professores compartilhados está lançada.'},
+    {n:3, ico:'dist', curto:'Distribuição', tit:'Distribuir automaticamente', tag:'o coração do processo',
+     sub:'O painel propõe quem dá cada disciplina, respeitando habilitação, dias, horário, carga e limites. Você revisa e salva.',
+     passos:['Ícone '+u('Distribuição')+' no cabeçalho','Filtre o Módulo 51 e o ano 2027','Para cada professor: modalidades, dias disponíveis e o alfinete nas disciplinas fixas',u('Gerar distribuição'),'Revise a proposta e desmarque o que não quiser',u('Salvar alocações marcadas')],
+     atencao:['Os dias começam em branco toda vez: marque de novo.','Disciplina fixa só muda aqui, nunca no Quadro geral.'],
+     alerta:'<b>Erro mais comum:</b> gerar e sair sem clicar em '+u('Salvar alocações marcadas')+'. A proposta se perde e os outros painéis continuam sem professor.',
+     pronto:'você clicou em Salvar e viu o aviso de confirmação.'},
+    {n:4, ico:'quadro', curto:'Quadro geral', tit:'Fechar os buracos no Quadro geral', tag:'logo depois de salvar',
+     sub:'A distribuição raramente cobre tudo. O Quadro mostra o que sobrou e deixa você completar à mão.',
+     passos:[u('Cadastros')+' › '+u('Alocação')+' › '+u('Quadro geral'),'Filtre o Módulo 51 e marque '+u('Só sem professor'),'Em cada linha vazia, escolha o professor na lista','Para trocar alguém, escolha outro nome na mesma lista. O histórico fica guardado.'],
+     atencao:['<b>Conflito de horário:</b> o aviso mostra disciplina, ano, horário e módulo. Escolha outro professor.','<b>Limite com você atingido:</b> só entra como outra coordenação.','<b>Carga cheia:</b> o professor não aceita mais nada.'],
+     atencaoTit:'Se aparecer um aviso',
+     pronto:'o filtro “Só sem professor” do Módulo 51 fica vazio.'},
+    {n:5, ico:'entregas', curto:'Entregas', tit:'Completar mediadores, prazos e entregas', tag:'com o quadro fechado',
+     sub:'Cada alocação precisa de mediadores e das entregas: AE2, AE3, MAPA, Slides, Estudo de caso e Vídeo do Mapa.',
+     passos:[u('Painel')+' › clique no título do Módulo 51','No módulo, '+u('↻')+' puxa os prazos da planilha “Entregas dos professores”','Em cada disciplina, '+u('Editar entregas')+' para mediadores e ajustes','Com as datas certas, '+u('Bloquear')+' o módulo'],
+     atencao:['A planilha é a fonte dos prazos. Mude lá e o painel se atualiza (dias úteis às 06h50 ou no ↻).','Datas sempre em dd/mm/aaaa.'],
+     pronto:'toda disciplina do 51 tem mediador e todas as entregas têm prazo.'},
+    {n:6, ico:'mail', curto:'Avisar', tit:'Avisar os professores', tag:'só depois das etapas 1 a 5',
+     sub:'Nada sai sozinho para professor. Você revisa e envia pelo Outlook.',
+     passos:['Na alocação do professor, botão '+u('E-mail'),'O Outlook abre pronto, de fabio.iba@unicesumar.edu.br, com cópia para você e para a Nayara','Anexe o PDF à mão ('+u('Gerar PDF')+') e envie','Volte ao painel e confirme '+u('Registrar envio')],
+     atencao:[u('Imprimir quadro geral')+': visão de todos os cursos do módulo.',u('Relatórios')+': entregas por professor.'],
+     atencaoTit:'Para guardar ou mostrar',
+     pronto:'todos os professores do 51 têm o envio registrado.'},
+    {n:7, ico:'olho', curto:'Acompanhar', tit:'Acompanhar durante o módulo', tag:'rotina semanal',
+     sub:'Daqui em diante o trabalho é olhar, não montar.',
+     passos:['No '+u('Painel')+', o alerta vermelho mostra disciplina com entrega atrasada','Cobrança: e-mail pelo Outlook, como na etapa 6','Troca de professor no meio do módulo: Quadro geral, ou Distribuição se a disciplina for fixa'],
+     passosTit:'O que você faz',
+     atencao:['Dias úteis, 07h10: e-mail de prazos (atrasadas, vencem hoje, próximos 3 dias).','Segundas, 07h35: relatório semanal com score, carga, atrasos, disciplinas sem professor e calendário.'],
+     atencaoTit:'O que chega sozinho no seu e-mail',
+     pronto:'o módulo termina com todas as entregas recebidas.'}
+  ];
+  var ATALHOS = [
+    ['Cadastrar disciplina ou curso',[u('Cadastros'),u('Cursos')+' ou '+u('Matrizes')]],
+    ['Mudar o limite de um professor compartilhado',[u('Cadastros'),u('Professores'),'Máx. disciplinas comigo']],
+    ['Alocar muitas disciplinas de uma vez',['Ícone '+u('Distribuição')]],
+    ['Alocar ou trocar uma disciplina',[u('Cadastros'),u('Alocação'),u('Quadro geral')]],
+    ['Trocar o professor de uma disciplina fixa',['Ícone '+u('Distribuição'),'tire o alfinete, gere e salve']],
+    ['Lançar aula de outro coordenador',[u('Nova alocação'),u('Disciplina outra coordenação')]],
+    ['Ver o que está sem professor',[u('Quadro geral'),u('Só sem professor')]],
+    ['Atualizar prazos da planilha',[u('Painel'),'título do módulo',u('↻')]],
+    ['Marcar entrega recebida',[u('Painel'),'disciplina',u('Editar entregas')]],
+    ['Ver as datas do semestre',['Ícone '+u('Calendário')+' no cabeçalho']]
+  ];
+  var REGRAS = [
+    ['um','p2','Um professor por disciplina','Na mesma modalidade, não entra um segundo nome.'],
+    ['relogio','p1','Sem choque de horário','Mesmo módulo, ordem e horário bloqueiam e o aviso mostra onde está o conflito.'],
+    ['limite','p3','Limite com você','Compartilhados passam do limite só como outra coordenação.'],
+    ['carga','p4','Carga cheia trava','Contrato atingido, somando todas as coordenações, impede nova alocação.'],
+    ['estrela','p2','Karla','Apenas disciplinas institucionais e estendidas.'],
+    ['pin','p1','Fixas protegidas','Disciplina com alfinete só muda na Distribuição.']
+  ];
+  function fase(n){for(var i=0;i<FASES.length;i++) if(FASES[i].etapas.indexOf(n)>=0) return FASES[i]; }
+
+  var KEY='roteiro-modulo-v1', st={};
+  try{st=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){st={}}
+  function salvar(){try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}}
+
+  var main=document.getElementById('main');
+  var html='';
+  ETAPAS.forEach(function(e){
+    var f=fase(e.n);
+    html+='<article class="etapa '+f.cls+'" id="etapa-'+e.n+'" data-n="'+e.n+'">'+
+      '<div class="e-head"><div class="e-ico">'+ICO[e.ico]+'<span class="n">'+e.n+'</span></div>'+
+      '<div class="e-tit"><div class="e-meta">Etapa '+e.n+' · '+f.nome+'</div><h2>'+e.tit+'</h2><p>'+e.sub+'</p></div>'+
+      '<span class="tag">'+e.tag+'</span></div>'+
+      '<div class="e-body"><div class="col"><h3>'+ICO.click+(e.passosTit||'Onde clicar')+'</h3><ol class="passos">'+e.passos.map(function(p){return '<li><span>'+p+'</span></li>';}).join('')+'</ol></div>'+
+      '<div class="col"><h3>'+ICO.info+(e.atencaoTit||'Atenção')+'</h3><ul class="atencao">'+e.atencao.map(function(p){return '<li>'+p+'</li>';}).join('')+'</ul></div></div>'+
+      (e.alerta?'<div class="alerta" style="margin-top:16px">'+ICO.alerta+'<span>'+e.alerta+'</span></div>':'')+
+      '<div class="e-foot"><span class="pronto"><b>Pronta quando</b> '+e.pronto+'</span>'+
+      '<button type="button" class="feito" id="feito-'+e.n+'" aria-pressed="false"><span class="chk">'+ICO.check+'</span><span class="lbl">Marcar como feita</span></button></div>'+
+      '</article>';
+  });
+  html+='<section class="secao"><div class="secao-h"><div><h2>Quero fazer… onde vou?</h2><p>Os caminhos mais usados, direto ao ponto.</p></div>'+
+    '<label class="busca" for="busca">'+ICO.lupa+'<input id="busca" type="search" placeholder="Buscar, ex.: prazo, trocar, limite"></label></div>'+
+    '<div class="atalhos" id="atalhos"></div><div class="vazio" id="vazio" hidden>Nada encontrado. Tente outra palavra.</div></section>';
+  html+='<section class="secao"><div class="secao-h"><div><h2>O painel cuida destas regras</h2><p>Se algo for bloqueado, é por uma destas.</p></div></div><div class="regras">'+
+    REGRAS.map(function(r){return '<div class="rg '+r[1]+'"><div class="ic">'+ICO[r[0]]+'</div><div><b>'+r[2]+'</b><span>'+r[3]+'</span></div></div>';}).join('')+'</div></section>';
+  html+='<div class="rodape"><div class="links">'+
+    '<a href="gestao-docente.html" target="_blank" rel="noopener">'+ICO.link.replace('<svg','<svg width="16" height="16"')+'Gestão Docente</a>'+
+    '<a href="calendario.html" target="_blank" rel="noopener">'+ICO.link.replace('<svg','<svg width="16" height="16"')+'Calendário Docente</a>'+
+    '<a href="index.html" target="_blank" rel="noopener">'+ICO.link.replace('<svg','<svg width="16" height="16"')+'Gestão Fabio Iba</a></div>'+
+    '<button type="button" class="reset" id="reset">Desmarcar tudo para o próximo módulo</button></div>';
+  main.innerHTML=html;
+
+  function norm(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/<[^>]+>/g,' ');}
+  function renderAtalhos(q){
+    q=norm(q||'').trim();
+    var itens=ATALHOS.filter(function(a){return !q || norm(a[0]+' '+a[1].join(' ')).indexOf(q)>=0;});
+    document.getElementById('atalhos').innerHTML=itens.map(function(a){
+      return '<div class="at"><b>'+a[0]+'</b><div class="cam">'+a[1].join(' <span aria-hidden="true">›</span> ')+'</div></div>';}).join('');
+    document.getElementById('vazio').hidden=itens.length>0;
+  }
+  document.getElementById('busca').addEventListener('input',function(e){renderAtalhos(e.target.value);});
+  renderAtalhos('');
+
+  var metro=document.getElementById('metro');
+  function render(){
+    var feitos=0;
+    ETAPAS.forEach(function(e){
+      var ok=!!st[e.n]; if(ok)feitos++;
+      var art=document.getElementById('etapa-'+e.n), b=document.getElementById('feito-'+e.n);
+      art.classList.toggle('ok',ok);
+      b.setAttribute('aria-pressed',ok?'true':'false');
+      b.querySelector('.lbl').textContent=ok?'Feita':'Marcar como feita';
+    });
+    metro.innerHTML=FASES.map(function(f){
+      return '<div class="fase '+f.cls+'"><div class="fase-nome">'+f.nome+'</div><div class="estacoes">'+
+        f.etapas.map(function(n){var e=ETAPAS[n-1],ok=!!st[n];
+          return '<a class="est'+(ok?' ok':'')+'" href="#etapa-'+n+'"><span class="bola">'+(ok?ICO.check.replace('<svg','<svg width="16" height="16"'):n)+'</span><small>'+e.curto+'</small></a>';}).join('')+
+        '</div></div>';}).join('');
+    document.getElementById('ringN').textContent=feitos+' de '+ETAPAS.length;
+    document.getElementById('ringVal').setAttribute('stroke-dashoffset',String(169.6*(1-feitos/ETAPAS.length)));
+  }
+  main.addEventListener('click',function(ev){
+    var b=ev.target.closest('.feito');
+    if(b){var n=b.closest('.etapa').getAttribute('data-n'); st[n]=!st[n]; salvar(); render(); return;}
+    if(ev.target.id==='reset'){st={}; salvar(); render();}
+  });
+  render();
+})();
+</script>
+
+</body></html>

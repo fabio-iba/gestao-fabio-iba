@@ -1,0 +1,559 @@
+<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='cal';window.GFI_LS=[]</script><script src="config.js"></script><script src="gfi.js"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Calendário Docente</title><link id="page-fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap"><style id="page-css">/* Layout: banner em degradê no topo, abas (Mês · Linha do tempo · Lista) à esquerda e "Próximas datas" fixas à direita */
+:root{
+  --bg:#F2F5F7; --bg2:#EDF3F6; --surface:#ffffff; --surface2:#F5F8FA; --line:#DCE6EA;
+  --fg:#1d1b33; --muted:#6a6787; --accent:#0F6E7A; --accent2:#1D6FA3; --accentSoft:#DDF1F1;
+  --onBanner:#ffffff; --btn:#ffffff; --btnFg:#1d1b33;
+  --m51:#8fd8ea; --m52:#f6a59a; --m53:#8fd9bc; --m54:#cdbdf0;
+  --m51s:#dff4fa; --m52s:#fde6e2; --m53s:#def5ec; --m54s:#efe9fc;
+  --c-institucional:#2f6fe0; --c-agendamento:#c27c0e; --c-avaliacao:#0e9f74; --c-substitutiva:#c2369b;
+  --c-notas:#1D6FA3; --c-feriado:#d1a400; --c-outro:#6a6787; --c-modulo:#0F6E7A;
+  --ferSoft:#fff6c7; --today:#0F6E7A; --danger:#c8323c;
+  --f-ui:"Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:14px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#13121f; --bg2:#171a2b; --surface:#1d1c2e; --surface2:#24233a; --line:#33314d;
+  --fg:#ecebf7; --muted:#a3a0c2; --accent:#4CC7C2; --accent2:#5d9bff; --accentSoft:#12302F;
+  --btn:#ffffff; --btnFg:#1d1b33;
+  --m51:#3f8da0; --m52:#a8584e; --m53:#3d8c6e; --m54:#7a68a8;
+  --m51s:#1d3540; --m52s:#3f2522; --m53s:#1c3a30; --m54s:#2e2745;
+  --c-institucional:#78a6ff; --c-agendamento:#e7a94a; --c-avaliacao:#3fd0a1; --c-substitutiva:#f07acb;
+  --c-notas:#9d9dff; --c-feriado:#f1cf3c; --c-outro:#a3a0c2; --c-modulo:#4CC7C2;
+  --ferSoft:#3b3514; --today:#4CC7C2; --danger:#ff6b74; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#13121f; --bg2:#171a2b; --surface:#1d1c2e; --surface2:#24233a; --line:#33314d;
+  --fg:#ecebf7; --muted:#a3a0c2; --accent:#4CC7C2; --accent2:#5d9bff; --accentSoft:#12302F;
+  --btn:#ffffff; --btnFg:#1d1b33;
+  --m51:#3f8da0; --m52:#a8584e; --m53:#3d8c6e; --m54:#7a68a8;
+  --m51s:#1d3540; --m52s:#3f2522; --m53s:#1c3a30; --m54s:#2e2745;
+  --c-institucional:#78a6ff; --c-agendamento:#e7a94a; --c-avaliacao:#3fd0a1; --c-substitutiva:#f07acb;
+  --c-notas:#9d9dff; --c-feriado:#f1cf3c; --c-outro:#a3a0c2; --c-modulo:#4CC7C2;
+  --ferSoft:#3b3514; --today:#4CC7C2; --danger:#ff6b74; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:linear-gradient(160deg,var(--bg),var(--bg2));background-color:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:14px;min-height:100vh}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:16px;padding-block:24px 48px;display:flex;flex-direction:column;gap:18px}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}h1{font-weight:700!important;letter-spacing:.2px!important}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+
+/* Banner */
+.banner{position:relative;overflow:hidden;border-radius:18px;padding:22px 28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;color:var(--onBanner);
+  background:radial-gradient(120% 160% at 0% 0%,#3FA7A9 0%,rgba(63,167,169,0) 45%),linear-gradient(100deg,#7c5cf7 0%,#0F6E7A 40%,#1D6FA3 100%);
+  box-shadow:0 18px 40px -18px rgba(15,110,122,.55)}
+.b-left{display:flex;flex-direction:column;gap:6px;min-width:0}
+.b-title{display:flex;align-items:center;gap:12px}
+.b-icon{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);flex:none}
+.b-icon svg{width:18px;height:18px}
+h1{margin:0;font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+.b-sub{display:none}
+.b-actions{display:flex;gap:10px}
+.rbtn{width:46px;height:46px;border-radius:50%;border:0;background:var(--btn);color:var(--btnFg);display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 16px -6px rgba(8,30,40,.45);transition:transform .15s;text-decoration:none}
+.rbtn:hover{transform:translateY(-2px)}
+.rbtn svg{width:18px;height:18px}
+.rbtn.plus{color:#0F6E7A}
+.rbtn[hidden]{display:none!important}
+
+/* Toolbar */
+.lmod{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:700;color:var(--fg);transition:transform .12s}
+.lmod:hover{border-color:var(--accent);transform:translateY(-1px)}
+.lmod[aria-pressed="true"]{border-color:var(--accent);background:var(--accentSoft);color:var(--accent)}
+/* Category highlight */
+.lcat{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:none;border-radius:999px;padding:4px 9px;cursor:pointer;font-size:12px;color:var(--muted);transition:transform .12s}
+.lcat:hover{border-color:var(--c);color:var(--fg);transform:translateY(-1px)}
+.lcat[aria-pressed="true"]{border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,var(--surface));color:var(--fg);font-weight:700}
+.hl-on .dsm:not(.hit):not(.blank),.hl-on .day:not(.hit){opacity:.3}
+.dsm.hit,.day.hit{background:color-mix(in srgb,var(--hc) 30%,var(--surface))!important;box-shadow:inset 0 0 0 2px var(--hc);color:var(--fg);font-weight:800;opacity:1}
+.tl-bar.dim{opacity:.12}
+.hlp{margin-top:16px;border:1px solid color-mix(in srgb,var(--c) 40%,var(--line));background:color-mix(in srgb,var(--c) 7%,var(--surface));border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.hlp-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px}
+.hlp-h .dot{margin-right:6px}
+.hlp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px}
+@media (prefers-reduced-motion:reduce){.lcat{transition:none}}
+/* Year view */
+.ygrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1180px){.ygrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:640px){.ygrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}}
+/* Module view */
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;align-items:start}
+@media (max-width:640px){.mgrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.mini{padding:6px}.dsm{font-size:10.5px;border-radius:6px}.minih{font-size:12.5px}}
+.nav{flex-wrap:wrap}.nav .ghost{white-space:nowrap}
+.mini{min-width:0;border:1px solid var(--line);border-radius:12px;padding:8px;background:var(--surface2)}
+.minih{font-weight:800;font-size:14px;margin-bottom:6px}
+.month.sm{gap:3px}
+.month.sm .wd{font-size:10.5px;padding:2px 0}
+.dsm{aspect-ratio:1/1;max-width:100%;border:1px solid transparent;border-radius:8px;background:var(--surface);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;padding:0;font-size:12px;color:var(--muted)}
+.dsm.blank{background:none;cursor:default}
+.dsm.in{color:var(--fg);font-weight:700}
+.dsm.sunday b{color:var(--danger)}
+.dsm.fer{background:var(--ferSoft)!important}
+.dsm.today b{background:var(--today);color:#fff;border-radius:999px;padding:0 6px}
+.dsm.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.dsm:hover{border-color:var(--accent)}
+.dots2{display:flex;gap:2px;height:5px;max-width:100%;overflow:hidden}
+.dots2 i{width:5px;height:5px;border-radius:50%;background:var(--c)}
+.modsw.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px}
+.tab{border:0;background:none;padding:8px 16px;border-radius:999px;cursor:pointer;font-weight:600;color:var(--muted)}
+.tab[aria-selected="true"]{background:var(--accent);color:#fff}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.dot{width:9px;height:9px;border-radius:50%;flex:none;display:inline-block}
+.sw{width:14px;height:10px;border-radius:3px;display:inline-block}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;min-width:0}
+.card h2{margin:0;font-size:15px;font-weight:700}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+
+/* Month */
+.mhead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.mtitle{font-size:20px;font-weight:800}
+.nav{display:flex;gap:6px}
+.ghost{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:7px 12px;cursor:pointer;font-weight:600}
+.ghost:hover{border-color:var(--accent)}
+.month{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wd{font-size:12px;font-weight:800;text-align:center;color:var(--accent);padding:4px 0}
+.wd.sun{color:var(--danger)}
+.day{min-height:96px;border-radius:10px;border:1px solid var(--line);background:var(--surface);padding:5px;display:flex;flex-direction:column;gap:3px;cursor:pointer;text-align:left;min-width:0;position:relative}
+.day.out{opacity:.38}
+.day.sel{outline:2px solid var(--accent);outline-offset:-1px}
+.day .dn{display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700}
+.day .dn .mod{font-size:10px;font-weight:700;padding:1px 6px;border-radius:999px;color:var(--fg);opacity:.85}
+.day.today .dn b{background:var(--today);color:#fff;border-radius:999px;padding:1px 7px}
+.day.sunday .dn b{color:var(--danger)}
+.day.today.sunday .dn b{color:#fff}
+.day.fer{background:var(--ferSoft)!important}
+.chip{font-size:10.5px;line-height:1.25;padding:2px 5px;border-radius:5px;background:var(--surface);border-left:3px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.more{font-size:10.5px;color:var(--muted);font-weight:600;padding-left:4px}
+@media (max-width:640px){.day{min-height:54px;padding:3px}.chip{display:none}.dots{display:flex!important}.more{display:none}.day .dn .mod{display:none}}
+.dots{display:none;gap:3px;flex-wrap:wrap}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--c)}
+
+.dayp{margin-top:16px;border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:8px}
+.dayp h3{margin:0;font-size:14px}
+
+/* Event row */
+.ev{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)}
+.ev .bar{width:4px;align-self:stretch;border-radius:4px;background:var(--c);flex:none}
+.ev .body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ev .tt{font-weight:700;font-size:13.5px}
+.ev .meta{font-size:12px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px}
+.ev .note{font-size:12px;color:var(--muted);font-style:italic}
+.pill{font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accentSoft);color:var(--accent);white-space:nowrap}
+.pill.mod{color:var(--fg)}
+.ibtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:12px;font-weight:600}
+.ibtn:hover{border-color:var(--accent);color:var(--accent)}
+.ibtn.del:hover{border-color:var(--danger);color:var(--danger)}
+
+/* Upcoming */
+.up{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.count{font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap;align-self:flex-start}
+.count.now{background:color-mix(in srgb,var(--c-avaliacao) 18%,transparent);color:var(--c-avaliacao)}
+.count.soon{background:color-mix(in srgb,var(--c-agendamento) 18%,transparent);color:var(--c-agendamento)}
+.count.later{background:var(--accentSoft);color:var(--accent)}
+.side{display:flex;flex-direction:column;gap:18px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
+@media (max-width:980px){.side{position:static;order:-1}}
+.modnow{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.prog{height:8px;border-radius:99px;background:var(--surface2);overflow:hidden;border:1px solid var(--line)}
+.prog i{display:block;height:100%;border-radius:99px}
+
+/* Timeline */
+.tl-scroll{overflow-x:auto;margin-top:6px}
+.tl{min-width:860px;position:relative}
+.tl-months{display:grid;margin-left:200px;border-bottom:1px solid var(--line);font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.tl-months div{padding:4px 6px;border-left:1px solid var(--line)}
+.tl-sec{margin-top:10px}
+.tl-sech{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;padding:6px 0}
+.tl-row{display:flex;align-items:center;height:24px}
+.tl-lab{width:200px;flex:none;font-size:12px;color:var(--muted);padding-right:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-track{position:relative;flex:1;height:100%;border-left:1px solid var(--line)}
+.tl-bar{position:absolute;top:5px;height:14px;border-radius:5px;background:var(--c);min-width:5px;cursor:pointer;opacity:.9}
+.tl-bar.big{top:3px;height:18px;opacity:1}
+.tl-bar:hover{opacity:1;outline:2px solid var(--fg)}
+.tl-today{position:absolute;top:0;bottom:0;width:2px;background:var(--today);z-index:2;pointer-events:none}
+.tl-today span{position:absolute;top:-2px;left:4px;font-size:10px;font-weight:800;color:var(--today);white-space:nowrap}
+.tl-grid{position:absolute;top:0;bottom:0;width:1px;background:var(--line);pointer-events:none}
+
+/* List */
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.filters input,.filters select{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:8px 10px;min-width:0}
+.filters input{flex:1 1 200px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:8px;border-bottom:1px solid var(--line)}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top;font-size:13px}
+tr.past td{opacity:.55}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+
+/* Modal */
+.backdrop{position:fixed;inset:0;background:rgba(15,10,40,.45);display:grid;place-items:center;padding:16px;z-index:50}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(520px,100%);display:flex;flex-direction:column;gap:14px;max-height:90vh;overflow:auto}
+.modal h3{margin:0;font-size:18px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:12px;font-weight:700;color:var(--muted)}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface2);border-radius:10px;padding:9px 10px;width:100%}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:480px){.row2{grid-template-columns:1fr}}
+.mact{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mact div{display:flex;gap:8px}
+.primary{border:0;background:linear-gradient(100deg,#0F6E7A,#1D6FA3);color:#fff;border-radius:10px;padding:9px 18px;font-weight:700;cursor:pointer}
+.danger{border:1px solid var(--danger);background:none;color:var(--danger);border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer}
+.err{color:var(--danger);font-size:12px;font-weight:600}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;z-index:60;font-size:13px}
+.ro{font-size:12px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* banner: azul-marinho e verde-água (padrão Gestão Fabio Iba) */
+.banner{position:relative;overflow:hidden;background:radial-gradient(520px 240px at 92% -20%,rgba(76,199,194,.38),transparent 62%),radial-gradient(460px 220px at 8% 140%,rgba(46,134,193,.40),transparent 60%),linear-gradient(115deg,#0B1D2E 0%,#123150 52%,#0F4C5C 100%)!important;box-shadow:0 18px 38px -20px rgba(11,29,46,.65)!important}
+.banner::before{content:""!important;position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px!important;-webkit-mask-image:linear-gradient(90deg,#000 0%,transparent 70%);mask-image:linear-gradient(90deg,#000 0%,transparent 70%);pointer-events:none}
+.banner::after{content:"";position:absolute;right:-70px;top:-90px;width:260px;height:260px;border-radius:50%;border:38px solid rgba(76,199,194,.10);pointer-events:none}
+.banner>*{position:relative;z-index:1}
+</style><div id="root"></div><script type="application/json" id="cal-data">{"v":1,"events":[{"id":"e1","t":"Período do módulo","c":"modulo","m":"51","s":"2026-02-23","e":"2026-05-02"},{"id":"e2","t":"Aula inaugural (ingressantes)","c":"institucional","m":"51","s":"2026-02-18","e":"2026-02-18"},{"id":"e3","t":"Semana de Conhecimentos Gerais","c":"institucional","m":"51","s":"2026-03-09","e":"2026-04-12"},{"id":"e4","t":"Agendamento da avaliação presencial","c":"agendamento","m":"51","s":"2026-04-20","e":"2026-05-01"},{"id":"e5","t":"Avaliação presencial no polo","c":"avaliacao","m":"51","s":"2026-04-27","e":"2026-05-02"},{"id":"e6","t":"Agendamento – 2ª oportunidade","c":"agendamento","m":"51","s":"2026-05-03","e":"2026-05-08"},{"id":"e7","t":"Avaliação presencial – 2ª oportunidade","c":"avaliacao","m":"51","s":"2026-05-07","e":"2026-05-09","n":"No quadro do PDF consta 02/04/26 a 04/04/26; usada a data destacada no calendário (07 a 09/05)."},{"id":"e8","t":"Cópia da prova presencial","c":"notas","m":"51","s":"2026-06-03","e":"2026-06-09"},{"id":"e9","t":"Prova online no Studeo","c":"avaliacao","m":"51","s":"2026-04-27","e":"2026-05-03"},{"id":"e10","t":"Publicação de notas","c":"notas","m":"51","s":"2026-05-29","e":"2026-05-29"},{"id":"e11","t":"Solicitação de substitutiva","c":"substitutiva","m":"51","s":"2026-06-03","e":"2026-06-09"},{"id":"e12","t":"Agendamento da substitutiva","c":"substitutiva","m":"51","s":"2026-06-03","e":"2026-06-09"},{"id":"e13","t":"Substitutiva presencial no polo","c":"substitutiva","m":"51","s":"2026-06-08","e":"2026-06-10"},{"id":"e14","t":"Substitutiva online no Studeo","c":"substitutiva","m":"51","s":"2026-06-08","e":"2026-06-14"},{"id":"e15","t":"Publicação de notas da substitutiva","c":"notas","m":"51","s":"2026-06-29","e":"2026-06-29"},{"id":"e16","t":"Cópia da prova substitutiva","c":"notas","m":"51","s":"2026-07-01","e":"2026-07-07"},{"id":"e17","t":"Período do módulo","c":"modulo","m":"52","s":"2026-05-04","e":"2026-07-11"},{"id":"e18","t":"Aula inaugural (ingressantes)","c":"institucional","m":"52","s":"2026-04-28","e":"2026-04-28"},{"id":"e19","t":"Semana de Conhecimentos Gerais","c":"institucional","m":"52","s":"2026-05-18","e":"2026-06-21"},{"id":"e20","t":"Agendamento da avaliação presencial","c":"agendamento","m":"52","s":"2026-06-29","e":"2026-07-10"},{"id":"e21","t":"Avaliação presencial no polo","c":"avaliacao","m":"52","s":"2026-07-06","e":"2026-07-11"},{"id":"e22","t":"Agendamento – 2ª oportunidade","c":"agendamento","m":"52","s":"2026-07-12","e":"2026-07-17"},{"id":"e23","t":"Avaliação presencial – 2ª oportunidade","c":"avaliacao","m":"52","s":"2026-07-16","e":"2026-07-18"},{"id":"e24","t":"Cópia da prova presencial","c":"notas","m":"52","s":"2026-08-19","e":"2026-08-25"},{"id":"e25","t":"Prova online no Studeo","c":"avaliacao","m":"52","s":"2026-07-06","e":"2026-07-12"},{"id":"e26","t":"Publicação de notas","c":"notas","m":"52","s":"2026-08-14","e":"2026-08-14"},{"id":"e27","t":"Solicitação de substitutiva","c":"substitutiva","m":"52","s":"2026-08-19","e":"2026-08-25"},{"id":"e28","t":"Agendamento da substitutiva","c":"substitutiva","m":"52","s":"2026-08-19","e":"2026-08-25"},{"id":"e29","t":"Substitutiva presencial no polo","c":"substitutiva","m":"52","s":"2026-08-24","e":"2026-08-26"},{"id":"e30","t":"Substitutiva online no Studeo","c":"substitutiva","m":"52","s":"2026-08-24","e":"2026-08-30"},{"id":"e31","t":"Publicação de notas da substitutiva","c":"notas","m":"52","s":"2026-09-14","e":"2026-09-14"},{"id":"e32","t":"Cópia da prova substitutiva","c":"notas","m":"52","s":"2026-09-16","e":"2026-09-22"},{"id":"e33","t":"Período do módulo","c":"modulo","m":"53","s":"2026-07-20","e":"2026-09-26"},{"id":"e34","t":"Aula inaugural (ingressantes)","c":"institucional","m":"53","s":"2026-07-14","e":"2026-07-14"},{"id":"e35","t":"Semana de Conhecimentos Gerais","c":"institucional","m":"53","s":"2026-08-03","e":"2026-09-06"},{"id":"e36","t":"Agendamento da avaliação presencial","c":"agendamento","m":"53","s":"2026-09-14","e":"2026-09-25"},{"id":"e37","t":"Avaliação presencial no polo","c":"avaliacao","m":"53","s":"2026-09-21","e":"2026-09-26"},{"id":"e38","t":"Agendamento – 2ª oportunidade","c":"agendamento","m":"53","s":"2026-09-27","e":"2026-10-02"},{"id":"e39","t":"Avaliação presencial – 2ª oportunidade","c":"avaliacao","m":"53","s":"2026-10-01","e":"2026-10-03"},{"id":"e40","t":"Cópia da prova presencial","c":"notas","m":"53","s":"2026-10-28","e":"2026-11-03"},{"id":"e41","t":"Prova online no Studeo","c":"avaliacao","m":"53","s":"2026-09-21","e":"2026-09-27"},{"id":"e42","t":"Publicação de notas","c":"notas","m":"53","s":"2026-10-26","e":"2026-10-26"},{"id":"e43","t":"Solicitação de substitutiva","c":"substitutiva","m":"53","s":"2026-10-28","e":"2026-11-03"},{"id":"e44","t":"Agendamento da substitutiva","c":"substitutiva","m":"53","s":"2026-10-28","e":"2026-11-03"},{"id":"e45","t":"Substitutiva presencial no polo","c":"substitutiva","m":"53","s":"2026-11-03","e":"2026-11-04"},{"id":"e46","t":"Substitutiva online no Studeo","c":"substitutiva","m":"53","s":"2026-11-03","e":"2026-11-08"},{"id":"e47","t":"Publicação de notas da substitutiva","c":"notas","m":"53","s":"2026-11-23","e":"2026-11-23"},{"id":"e48","t":"Cópia da prova substitutiva","c":"notas","m":"53","s":"2026-11-25","e":"2026-12-01"},{"id":"e49","t":"Período do módulo","c":"modulo","m":"54","s":"2026-09-28","e":"2026-12-05"},{"id":"e50","t":"Aula inaugural (ingressantes)","c":"institucional","m":"54","s":"2026-09-22","e":"2026-09-22"},{"id":"e51","t":"Semana de Conhecimentos Gerais","c":"institucional","m":"54","s":"2026-10-13","e":"2026-11-15"},{"id":"e52","t":"Agendamento da avaliação presencial","c":"agendamento","m":"54","s":"2026-11-23","e":"2026-12-04"},{"id":"e53","t":"Avaliação presencial no polo","c":"avaliacao","m":"54","s":"2026-11-30","e":"2026-12-05"},{"id":"e54","t":"Agendamento – 2ª oportunidade","c":"agendamento","m":"54","s":"2026-12-06","e":"2026-12-11"},{"id":"e55","t":"Avaliação presencial – 2ª oportunidade","c":"avaliacao","m":"54","s":"2026-12-10","e":"2026-12-12"},{"id":"e56","t":"Cópia da prova presencial","c":"notas","m":"54","s":"2027-01-13","e":"2027-01-19"},{"id":"e57","t":"Prova online no Studeo","c":"avaliacao","m":"54","s":"2026-11-30","e":"2026-12-06"},{"id":"e58","t":"Publicação de notas","c":"notas","m":"54","s":"2026-12-22","e":"2026-12-22"},{"id":"e59","t":"Solicitação de substitutiva","c":"substitutiva","m":"54","s":"2027-01-13","e":"2027-01-19","n":"No PDF consta 13/11/27 a 19/01/27; corrigido para 13/01/27."},{"id":"e60","t":"Agendamento da substitutiva","c":"substitutiva","m":"54","s":"2027-01-13","e":"2027-01-19"},{"id":"e61","t":"Substitutiva presencial no polo","c":"substitutiva","m":"54","s":"2027-01-18","e":"2027-01-20"},{"id":"e62","t":"Substitutiva online no Studeo","c":"substitutiva","m":"54","s":"2027-01-18","e":"2027-01-24"},{"id":"e63","t":"Publicação de notas da substitutiva","c":"notas","m":"54","s":"2027-02-08","e":"2027-02-08"},{"id":"e64","t":"Cópia da prova substitutiva","c":"notas","m":"54","s":"2027-02-10","e":"2027-02-16"},{"id":"e65","t":"Intervalo entre os módulos 52 e 53","c":"institucional","m":"","s":"2026-07-13","e":"2026-07-18"},{"id":"e66","t":"Provas substitutivas – módulo 54/2025","c":"substitutiva","m":"","s":"2026-01-19","e":"2026-01-24"},{"id":"e67","t":"Confraternização Universal","c":"feriado","m":"","s":"2026-01-01","e":"2026-01-01"},{"id":"e68","t":"Carnaval","c":"feriado","m":"","s":"2026-02-17","e":"2026-02-17"},{"id":"e69","t":"Sexta-feira Santa","c":"feriado","m":"","s":"2026-04-03","e":"2026-04-03"},{"id":"e70","t":"Tiradentes","c":"feriado","m":"","s":"2026-04-21","e":"2026-04-21"},{"id":"e71","t":"Dia do Trabalho","c":"feriado","m":"","s":"2026-05-01","e":"2026-05-01"},{"id":"e72","t":"Aniversário de Maringá","c":"feriado","m":"","s":"2026-05-10","e":"2026-05-10"},{"id":"e73","t":"Corpus Christi","c":"feriado","m":"","s":"2026-06-04","e":"2026-06-04"},{"id":"e74","t":"Padroeira de Maringá","c":"feriado","m":"","s":"2026-08-15","e":"2026-08-15"},{"id":"e75","t":"Independência do Brasil","c":"feriado","m":"","s":"2026-09-07","e":"2026-09-07"},{"id":"e76","t":"Nossa Senhora Aparecida","c":"feriado","m":"","s":"2026-10-12","e":"2026-10-12"},{"id":"e77","t":"Finados","c":"feriado","m":"","s":"2026-11-02","e":"2026-11-02"},{"id":"e78","t":"Proclamação da República","c":"feriado","m":"","s":"2026-11-15","e":"2026-11-15"},{"id":"e79","t":"Consciência Negra","c":"feriado","m":"","s":"2026-11-20","e":"2026-11-20"},{"id":"e80","t":"Natal","c":"feriado","m":"","s":"2026-12-25","e":"2026-12-25"},{"id":"k27_1","t":"Período do módulo","c":"modulo","m":"51","s":"2027-02-22","e":"2027-05-01"},{"id":"k27_2","t":"Período do módulo","c":"modulo","m":"52","s":"2027-05-03","e":"2027-07-10"},{"id":"k27_3","t":"Período do módulo","c":"modulo","m":"53","s":"2027-07-19","e":"2027-09-25"},{"id":"k27_4","t":"Período do módulo","c":"modulo","m":"54","s":"2027-09-27","e":"2027-12-04"},{"id":"k27_5","t":"Aula inaugural (ingressantes)","c":"institucional","m":"51","s":"2027-02-16","e":"2027-02-16"},{"id":"k27_6","t":"Aula inaugural (ingressantes)","c":"institucional","m":"52","s":"2027-04-27","e":"2027-04-27"},{"id":"k27_7","t":"Aula inaugural (ingressantes)","c":"institucional","m":"53","s":"2027-07-13","e":"2027-07-13"},{"id":"k27_8","t":"Aula inaugural (ingressantes)","c":"institucional","m":"54","s":"2027-09-21","e":"2027-09-21"},{"id":"k27_13","t":"Agendamento da prova digital (presencial no polo)","c":"agendamento","m":"51","s":"2027-04-12","e":"2027-04-29"},{"id":"k27_14","t":"Agendamento da prova digital (presencial no polo)","c":"agendamento","m":"52","s":"2027-06-21","e":"2027-07-09"},{"id":"k27_15","t":"Agendamento da prova digital (presencial no polo)","c":"agendamento","m":"53","s":"2027-09-06","e":"2027-09-24"},{"id":"k27_16","t":"Agendamento da prova digital (presencial no polo)","c":"agendamento","m":"54","s":"2027-11-16","e":"2027-12-03"},{"id":"k27_17","t":"Prova digital presencial no polo","c":"avaliacao","m":"51","s":"2027-04-19","e":"2027-04-30"},{"id":"k27_18","t":"Prova digital presencial no polo","c":"avaliacao","m":"52","s":"2027-06-28","e":"2027-07-10"},{"id":"k27_19","t":"Prova digital presencial no polo","c":"avaliacao","m":"53","s":"2027-09-13","e":"2027-09-25"},{"id":"k27_20","t":"Prova digital presencial no polo","c":"avaliacao","m":"54","s":"2027-11-22","e":"2027-12-04"},{"id":"k27_21","t":"Prova online no Studeo","c":"avaliacao","m":"51","s":"2027-04-19","e":"2027-04-30"},{"id":"k27_22","t":"Prova online no Studeo","c":"avaliacao","m":"52","s":"2027-06-28","e":"2027-07-10"},{"id":"k27_23","t":"Prova online no Studeo","c":"avaliacao","m":"53","s":"2027-09-13","e":"2027-09-25"},{"id":"k27_24","t":"Prova online no Studeo","c":"avaliacao","m":"54","s":"2027-11-22","e":"2027-12-04"},{"id":"k27_25","t":"Publicação de notas","c":"notas","m":"51","s":"2027-05-14","e":"2027-05-14"},{"id":"k27_26","t":"Publicação de notas","c":"notas","m":"52","s":"2027-07-23","e":"2027-07-23"},{"id":"k27_27","t":"Publicação de notas","c":"notas","m":"53","s":"2027-10-08","e":"2027-10-08"},{"id":"k27_28","t":"Publicação de notas","c":"notas","m":"54","s":"2027-12-17","e":"2027-12-17"},{"id":"k27_29","t":"Cópia da prova digital","c":"notas","m":"51","s":"2027-05-17","e":"2027-05-23"},{"id":"k27_30","t":"Cópia da prova digital","c":"notas","m":"52","s":"2027-07-26","e":"2027-08-01"},{"id":"k27_31","t":"Cópia da prova digital","c":"notas","m":"53","s":"2027-10-11","e":"2027-10-17"},{"id":"k27_32","t":"Cópia da prova digital","c":"notas","m":"54","s":"2027-12-20","e":"2027-12-26"},{"id":"k27_33","t":"Solicitação de prova online substitutiva","c":"substitutiva","m":"51","s":"2027-05-24","e":"2027-06-04"},{"id":"k27_34","t":"Solicitação de prova online substitutiva","c":"substitutiva","m":"52","s":"2027-08-09","e":"2027-08-20"},{"id":"k27_35","t":"Solicitação de prova online substitutiva","c":"substitutiva","m":"53","s":"2027-10-18","e":"2027-10-29"},{"id":"k27_36","t":"Solicitação de prova online substitutiva","c":"substitutiva","m":"54","s":"2028-01-10","e":"2028-01-21"},{"id":"k27_37","t":"Solicitação de MAPA substitutivo","c":"substitutiva","m":"51","s":"2027-05-24","e":"2027-06-04"},{"id":"k27_38","t":"Solicitação de MAPA substitutivo","c":"substitutiva","m":"52","s":"2027-08-09","e":"2027-08-20"},{"id":"k27_39","t":"Solicitação de MAPA substitutivo","c":"substitutiva","m":"53","s":"2027-10-18","e":"2027-10-29"},{"id":"k27_40","t":"Solicitação de MAPA substitutivo","c":"substitutiva","m":"54","s":"2028-01-10","e":"2028-01-21"},{"id":"k27_41","t":"Agendamento da prova digital substitutiva","c":"substitutiva","m":"51","s":"2027-05-24","e":"2027-06-04"},{"id":"k27_42","t":"Agendamento da prova digital substitutiva","c":"substitutiva","m":"52","s":"2027-08-09","e":"2027-08-20"},{"id":"k27_43","t":"Agendamento da prova digital substitutiva","c":"substitutiva","m":"53","s":"2027-10-18","e":"2027-10-29"},{"id":"k27_44","t":"Agendamento da prova digital substitutiva","c":"substitutiva","m":"54","s":"2028-01-10","e":"2028-01-21"},{"id":"k27_45","t":"Prova digital substitutiva no polo","c":"substitutiva","m":"51","s":"2027-05-31","e":"2027-06-05"},{"id":"k27_46","t":"Prova digital substitutiva no polo","c":"substitutiva","m":"52","s":"2027-08-16","e":"2027-08-21"},{"id":"k27_47","t":"Prova digital substitutiva no polo","c":"substitutiva","m":"53","s":"2027-10-25","e":"2027-10-30"},{"id":"k27_48","t":"Prova digital substitutiva no polo","c":"substitutiva","m":"54","s":"2028-01-17","e":"2028-01-22"},{"id":"k27_49","t":"Prova online substitutiva no Studeo","c":"substitutiva","m":"51","s":"2027-05-31","e":"2027-06-06"},{"id":"k27_50","t":"Prova online substitutiva no Studeo","c":"substitutiva","m":"52","s":"2027-08-16","e":"2027-08-22"},{"id":"k27_51","t":"Prova online substitutiva no Studeo","c":"substitutiva","m":"53","s":"2027-10-25","e":"2027-10-31"},{"id":"k27_52","t":"Prova online substitutiva no Studeo","c":"substitutiva","m":"54","s":"2028-01-17","e":"2028-01-23"},{"id":"k27_53","t":"Realização do MAPA substitutivo","c":"substitutiva","m":"51","s":"2027-05-31","e":"2027-06-06"},{"id":"k27_54","t":"Realização do MAPA substitutivo","c":"substitutiva","m":"52","s":"2027-08-16","e":"2027-08-22"},{"id":"k27_55","t":"Realização do MAPA substitutivo","c":"substitutiva","m":"53","s":"2027-10-25","e":"2027-10-31"},{"id":"k27_56","t":"Realização do MAPA substitutivo","c":"substitutiva","m":"54","s":"2028-01-17","e":"2028-01-23"},{"id":"k27_57","t":"Publicação de notas da substitutiva","c":"notas","m":"51","s":"2027-06-18","e":"2027-06-18"},{"id":"k27_58","t":"Publicação de notas da substitutiva","c":"notas","m":"52","s":"2027-09-03","e":"2027-09-03"},{"id":"k27_59","t":"Publicação de notas da substitutiva","c":"notas","m":"53","s":"2027-11-12","e":"2027-11-12"},{"id":"k27_60","t":"Publicação de notas da substitutiva","c":"notas","m":"54","s":"2028-02-04","e":"2028-02-04"},{"id":"k27_61","t":"Cópia da prova digital substitutiva","c":"notas","m":"51","s":"2027-06-21","e":"2027-06-27"},{"id":"k27_62","t":"Cópia da prova digital substitutiva","c":"notas","m":"52","s":"2027-09-06","e":"2027-09-12"},{"id":"k27_63","t":"Cópia da prova digital substitutiva","c":"notas","m":"53","s":"2027-11-15","e":"2027-11-21"},{"id":"k27_64","t":"Cópia da prova digital substitutiva","c":"notas","m":"54","s":"2028-02-07","e":"2028-02-13"},{"id":"k27_65","t":"Confraternização Universal","c":"feriado","m":"","s":"2027-01-01","e":"2027-01-01"},{"id":"k27_66","t":"Carnaval","c":"feriado","m":"","s":"2027-02-09","e":"2027-02-09"},{"id":"k27_67","t":"Sexta-feira Santa","c":"feriado","m":"","s":"2027-03-26","e":"2027-03-26"},{"id":"k27_68","t":"Tiradentes","c":"feriado","m":"","s":"2027-04-21","e":"2027-04-21"},{"id":"k27_69","t":"Dia do Trabalho","c":"feriado","m":"","s":"2027-05-01","e":"2027-05-01"},{"id":"k27_70","t":"Aniversário de Maringá","c":"feriado","m":"","s":"2027-05-10","e":"2027-05-10"},{"id":"k27_71","t":"Corpus Christi","c":"feriado","m":"","s":"2027-05-27","e":"2027-05-27"},{"id":"k27_72","t":"Padroeira de Maringá","c":"feriado","m":"","s":"2027-08-15","e":"2027-08-15"},{"id":"k27_73","t":"Independência do Brasil","c":"feriado","m":"","s":"2027-09-07","e":"2027-09-07"},{"id":"k27_74","t":"Nossa Senhora Aparecida","c":"feriado","m":"","s":"2027-10-12","e":"2027-10-12"},{"id":"k27_75","t":"Finados","c":"feriado","m":"","s":"2027-11-02","e":"2027-11-02"},{"id":"k27_76","t":"Proclamação da República","c":"feriado","m":"","s":"2027-11-15","e":"2027-11-15"},{"id":"k27_77","t":"Consciência Negra","c":"feriado","m":"","s":"2027-11-20","e":"2027-11-20"},{"id":"k27_78","t":"Natal","c":"feriado","m":"","s":"2027-12-25","e":"2027-12-25"},{"id":"k27_79","t":"Intervalo entre os módulos 52 e 53","c":"institucional","m":"","s":"2027-07-12","e":"2027-07-17"}]}</script><script id="app-js">(function(){
+"use strict";
+var CATS={modulo:"Período do módulo",institucional:"Institucional",agendamento:"Agendamento",avaliacao:"Avaliação",substitutiva:"Substitutiva",notas:"Notas e cópias de prova",feriado:"Feriado",outro:"Outro"};
+var MODS=["51","52","53","54"];
+var MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto","setembro","outubro","novembro","dezembro"];
+var MES3=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+var state=(window.GFI_DADOS_PAGINA&&GFI_DADOS_PAGINA("cal-data"))||JSON.parse(document.getElementById("cal-data").textContent);
+var ui={tab:"ano",year:null,hl:null,ym:null,sel:null,q:"",fc:"",fm:"",fp:"todos"};
+var art=null, canEdit=false, saving=false;
+
+
+function pad(n){return (n<10?"0":"")+n}
+function todayISO(){var d=new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate())}
+var TODAY=todayISO();
+function dnum(s){var p=s.split("-");return Date.UTC(+p[0],+p[1]-1,+p[2])/864e5}
+function fromNum(n){var d=new Date(n*864e5);return d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate())}
+function fmt(s){var p=s.split("-");return p[2]+"/"+p[1]+"/"+p[0]}
+function fmtRange(e){return e.s===e.e?fmt(e.s):fmt(e.s)+" a "+fmt(e.e)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})}
+function cvar(c){return "var(--c-"+(CATS[c]?c:"outro")+")"}
+function mvar(m,soft){return MODS.indexOf(m)>=0?"var(--m"+m+(soft?"s":"")+")":"var(--accentSoft)"}
+function sorted(){return state.events.slice().sort(function(a,b){return a.s<b.s?-1:a.s>b.s?1:(a.e<b.e?-1:a.e>b.e?1:0)})}
+function modOf(day){var r=null;state.events.forEach(function(e){if(e.c==="modulo"&&e.s<=day&&e.e>=day)r=e});return r}
+function onDay(day){return sorted().filter(function(e){return e.c!=="modulo"&&e.s<=day&&e.e>=day})}
+function $(id){return document.getElementById(id)}
+function rel(e){
+  var t=dnum(TODAY),s=dnum(e.s),en=dnum(e.e);
+  if(s<=t&&en>=t){var r=en-t;return {cls:"now",txt:r===0?"Termina hoje":"Em andamento · termina em "+r+(r===1?" dia":" dias")}}
+  var d=s-t;if(d===0)return{cls:"now",txt:"Hoje"};if(d===1)return{cls:"soon",txt:"Amanhã"};
+  return {cls:d<=7?"soon":"later",txt:"Em "+d+" dias"};
+}
+function anoEv(e){var y=+e.s.slice(0,4);if(e.c==="modulo"||!e.m)return y;var lim=fromNum(dnum(e.s)+40),best=null;state.events.forEach(function(p){if(p.c==="modulo"&&p.m===e.m&&p.s<=lim&&(!best||p.s>best.s))best=p});return best?+best.s.slice(0,4):y}
+function anosMod(m){var a=[];state.events.forEach(function(e){if(e.c==="modulo"&&e.m===m){var y=+e.s.slice(0,4);if(a.indexOf(y)<0)a.push(y)}});return a.sort()}
+function modLabel(m){return m?"Módulo "+m:"Geral"}
+
+/* ---------- Banner ---------- */
+function renderBanner(){
+  var nxt=sorted().filter(function(e){return e.c!=="modulo"&&e.e>=TODAY})[0];
+  var cur=modOf(TODAY);
+  var parts=[];
+  if(cur)parts.push("Módulo "+cur.m+" em andamento até "+fmt(cur.e));
+  if(nxt)parts.push("Próxima data: "+nxt.t+(nxt.m?" (M"+nxt.m+")":"")+" · "+fmt(nxt.s));
+  $("bsub").textContent=parts.length?parts.join("  •  "):(state.events.length?"Nenhuma data futura cadastrada.":"Nenhum evento cadastrado ainda.");
+  $("btnAdd").hidden=!canEdit;
+}
+
+/* ---------- Month ---------- */
+function renderMonth(){
+  if(!ui.ym){var t=TODAY.split("-");ui.ym=[+t[0],+t[1]-1]}
+  var y=ui.ym[0],m=ui.ym[1];
+  var first=new Date(Date.UTC(y,m,1)),start=dnum(y+"-"+pad(m+1)+"-01")-first.getUTCDay();
+  var h='<div class="mhead"><div class="mtitle">'+MESES[m]+' de '+y+'</div><div class="nav">'+
+    '<button class="ghost" id="mPrev" aria-label="Mês anterior">‹</button><button class="ghost" id="mToday">Hoje</button><button class="ghost" id="mNext" aria-label="Próximo mês">›</button></div></div>';
+  h+='<div class="month">';
+  ["D","S","T","Q","Q","S","S"].forEach(function(w,i){h+='<div class="wd'+(i===0?' sun':'')+'">'+w+'</div>'});
+  for(var i=0;i<42;i++){
+    var day=fromNum(start+i),dd=+day.slice(8),inM=+day.slice(5,7)-1===m;
+    if(i>=35&&!inM&&i%7===0)break;
+    var mod=modOf(day),evs=onDay(day),fer=evs.some(function(e){return e.c==="feriado"});
+    var hit=ui.hl&&evs.some(function(e){return e.c===ui.hl});
+    var cls="day"+(hit?" hit":"")+(inM?"":" out")+(day===TODAY?" today":"")+(i%7===0?" sunday":"")+(fer?" fer":"")+(ui.sel===day?" sel":"");
+    var bg=mod?' style="background:'+mvar(mod.m,true)+'"':"";
+    h+='<button class="'+cls+'"'+bg+' data-day="'+day+'" aria-label="'+fmt(day)+', '+evs.length+' eventos"><span class="dn"><b>'+dd+'</b>'+(mod?'<span class="mod" style="background:'+mvar(mod.m)+'">M'+mod.m+'</span>':'')+'</span>';
+    if(ui.hl)evs=evs.filter(function(e){return e.c===ui.hl}).concat(evs.filter(function(e){return e.c!==ui.hl}));
+    evs.slice(0,3).forEach(function(e){h+='<span class="chip" style="--c:'+cvar(e.c)+'" title="'+esc(e.t)+'">'+(e.m?'<b>'+e.m+'</b> ':'')+esc(e.t)+'</span>'});
+    if(evs.length>3)h+='<span class="more">+'+(evs.length-3)+' mais</span>';
+    h+='<span class="dots">'+evs.slice(0,5).map(function(e){return '<i style="--c:'+cvar(e.c)+'"></i>'}).join("")+'</span></button>';
+  }
+  h+='</div>'+hlPanel(y+"-"+pad(m+1)+"-01",y+"-"+pad(m+1)+"-31");
+  if(ui.sel){
+    var list=state.events.filter(function(e){return e.s<=ui.sel&&e.e>=ui.sel}).sort(function(a,b){return a.c==="modulo"?-1:b.c==="modulo"?1:0});
+    h+='<div class="dayp"><h3>'+fmt(ui.sel)+' · '+list.length+(list.length===1?' evento':' eventos')+'</h3>'+(list.length?list.map(evRow).join(""):'<div class="ro">Nenhum evento neste dia.</div>')+'</div>';
+  }
+  $("view").innerHTML='<div class="card">'+h+'</div>';
+  bindHl();
+  $("mPrev").onclick=function(){shift(-1)};$("mNext").onclick=function(){shift(1)};
+  $("mToday").onclick=function(){var t=TODAY.split("-");ui.ym=[+t[0],+t[1]-1];ui.sel=TODAY;renderMonth()};
+  Array.prototype.forEach.call(document.querySelectorAll(".day"),function(b){b.onclick=function(){ui.sel=b.dataset.day;var p=ui.sel.split("-");ui.ym=[+p[0],+p[1]-1];renderMonth()}});
+  bindRowBtns($("view"));
+}
+function renderModule(){
+  var anos=anosMod(ui.mod);if(!ui.mano||anos.indexOf(ui.mano)<0){var cy=ui.year||+TODAY.slice(0,4);ui.mano=anos.indexOf(cy)>=0?cy:(anos[0]||cy)}
+  var me=state.events.filter(function(e){return e.m===ui.mod&&anoEv(e)===ui.mano});
+  var per=me.filter(function(e){return e.c==="modulo"})[0];
+  if(!per){$("view").innerHTML='<div class="card empty">O módulo '+esc(ui.mod)+' não tem período cadastrado.</div>';return}
+  var y=+per.s.slice(0,4),m=+per.s.slice(5,7)-1,ey=+per.e.slice(0,4),em=+per.e.slice(5,7)-1,months=[];
+  while(y<ey||(y===ey&&m<=em)){months.push([y,m]);m++;if(m>11){m=0;y++}}
+  var tot=dnum(per.e)-dnum(per.s)+1;
+  var h='<div class="card"><div class="mhead"><div><div class="eyebrow">Módulo '+esc(ui.mod)+' · '+ui.mano+'</div><div class="mtitle">'+fmtRange(per)+'</div><div class="ro">'+Math.ceil(tot/7)+' semanas · '+months.length+' meses</div></div>'+
+    '<div class="nav">'+MODS.map(function(x){return '<button class="ghost modsw'+(x===ui.mod?' on':'')+'" data-go="'+x+'">M'+x+'</button>'}).join("")+(anos.length>1?anos.map(function(y){return '<button class="ghost modsw'+(y===ui.mano?' on':'')+'" data-mano="'+y+'">'+y+'</button>'}).join(""):'')+'<button class="ghost" id="modClose">Ver o ano todo</button></div></div>';
+  h+='<div class="mgrid">';
+  months.forEach(function(ym){h+=miniMonth(ym[0],ym[1],{mod:ui.mod,ano:ui.mano})});
+  h+='</div>'+hlPanel("0000-01-01","9999-12-31",ui.mod,ui.mano);
+  if(ui.sel){
+    var list=state.events.filter(function(e){return e.s<=ui.sel&&e.e>=ui.sel});
+    h+='<div class="dayp"><h3>'+fmt(ui.sel)+' · '+list.length+(list.length===1?' evento':' eventos')+'</h3>'+(list.length?list.map(evRow).join(""):'<div class="ro">Nenhum evento neste dia.</div>')+'</div>';
+  }
+  var steps=me.filter(function(e){return e.c!=="modulo"}).sort(function(a,b){return a.s<b.s?-1:a.s>b.s?1:0});
+  h+='<div class="dayp"><h3>Etapas do módulo '+esc(ui.mod)+' ('+ui.mano+')</h3>'+steps.map(evRow).join("")+'</div></div>';
+  $("view").innerHTML=h;
+  bindHl();
+  $("modClose").onclick=function(){ui.tab="ano";ui.mod=null;ui.sel=null;render()};
+  Array.prototype.forEach.call(document.querySelectorAll("[data-go]"),function(b){b.onclick=function(){ui.mod=b.dataset.go;ui.sel=null;render()}});
+  Array.prototype.forEach.call(document.querySelectorAll("[data-mano]"),function(b){b.onclick=function(){ui.mano=+b.dataset.mano;ui.sel=null;render()}});
+  Array.prototype.forEach.call(document.querySelectorAll(".dsm[data-day]"),function(b){b.onclick=function(){ui.sel=ui.sel===b.dataset.day?null:b.dataset.day;renderModule();var d=document.querySelector(".dayp");if(d&&ui.sel)d.scrollIntoView({behavior:"smooth",block:"nearest"})}});
+  bindRowBtns($("view"));
+}
+function miniMonth(yy,mm,opt){
+  var start=dnum(yy+"-"+pad(mm+1)+"-01")-new Date(Date.UTC(yy,mm,1)).getUTCDay();
+  var h='<div class="mini"><div class="minih">'+MESES[mm].charAt(0).toUpperCase()+MESES[mm].slice(1)+(opt.noYear?'':' '+yy)+'</div><div class="month sm">';
+  ["D","S","T","Q","Q","S","S"].forEach(function(w,i){h+='<div class="wd'+(i===0?' sun':'')+'">'+w+'</div>'});
+  for(var i=0;i<42;i++){
+    var day=fromNum(start+i),inM=+day.slice(5,7)-1===mm;
+    if(i>=35&&i%7===0&&!inM)break;
+    if(!inM){h+='<span class="dsm blank"></span>';continue}
+    var mod=modOf(day),evs=onDay(day);
+    if(opt.mod){mod=(mod&&mod.m===opt.mod)?mod:null;evs=evs.filter(function(e){return (e.m===opt.mod&&(!opt.ano||anoEv(e)===opt.ano))||!e.m})}
+    var fer=evs.some(function(e){return e.c==="feriado"});
+    var hit=ui.hl&&evs.some(function(e){return e.c===ui.hl});
+    var cls="dsm"+(hit?" hit":"")+(mod?" in":"")+(day===TODAY?" today":"")+(i%7===0?" sunday":"")+(fer?" fer":"")+(ui.sel===day?" sel":"");
+    h+='<button class="'+cls+'"'+(mod?' style="background:'+mvar(mod.m,true)+'"':'')+' data-day="'+day+'" title="'+esc(evs.map(function(e){return e.t}).join(" · "))+'" aria-label="'+fmt(day)+', '+evs.length+' eventos"><b>'+(+day.slice(8))+'</b><span class="dots2">'+evs.slice(0,3).map(function(e){return '<i style="--c:'+cvar(e.c)+'"></i>'}).join("")+'</span></button>';
+  }
+  return h+'</div></div>';
+}
+function hlPanel(from,to,mod,ano){
+  if(!ui.hl)return "";
+  var list=sorted().filter(function(e){return e.c===ui.hl&&e.e>=from&&e.s<=to&&(!mod||(e.m===mod&&(!ano||anoEv(e)===ano))||!e.m)});
+  return '<div class="hlp" style="--c:'+cvar(ui.hl)+'"><div class="hlp-h"><span><span class="dot" style="background:'+cvar(ui.hl)+'"></span><b>'+esc(CATS[ui.hl])+'</b> · '+list.length+(list.length===1?' evento':' eventos')+'</span><button class="ibtn" id="hlClear">Limpar destaque</button></div>'+
+    (list.length?'<div class="hlp-list">'+list.map(evRow).join("")+'</div>':'<div class="ro">Nenhum evento deste tipo neste período.</div>')+'</div>';
+}
+function bindHl(){var b=$("hlClear");if(b)b.onclick=function(){ui.hl=null;ui.fc="";render()}}
+function renderYear(){
+  if(!ui.year)ui.year=Math.max(2027,+TODAY.slice(0,4));
+  var y=ui.year;
+  var h='<div class="card"><div class="mhead"><div><div class="eyebrow">Calendário acadêmico</div><div class="mtitle">'+y+'</div></div><div class="nav">'+
+    '<button class="ghost" id="yPrev" aria-label="Ano anterior">‹ '+(y-1)+'</button><button class="ghost" id="yNext" aria-label="Próximo ano">'+(y+1)+' ›</button></div></div>';
+  h+='<div class="ygrid">';
+  for(var m=0;m<12;m++)h+=miniMonth(y,m,{noYear:true});
+  h+='</div>'+hlPanel(y+"-01-01",y+"-12-31");
+  if(ui.sel&&+ui.sel.slice(0,4)===y){
+    var list=state.events.filter(function(e){return e.s<=ui.sel&&e.e>=ui.sel}).sort(function(a,b){return a.c==="modulo"?-1:b.c==="modulo"?1:0});
+    h+='<div class="dayp" id="yDay"><h3>'+fmt(ui.sel)+' · '+list.length+(list.length===1?' evento':' eventos')+'</h3>'+(list.length?list.map(evRow).join(""):'<div class="ro">Nenhum evento neste dia.</div>')+'</div>';
+  }
+  h+='</div>';
+  $("view").innerHTML=h;
+  bindHl();
+  $("yPrev").onclick=function(){ui.year--;ui.sel=null;renderYear()};
+  $("yNext").onclick=function(){ui.year++;ui.sel=null;renderYear()};
+  Array.prototype.forEach.call(document.querySelectorAll(".dsm[data-day]"),function(b){b.onclick=function(){ui.sel=ui.sel===b.dataset.day?null:b.dataset.day;renderYear();var d=$("yDay");if(d)d.scrollIntoView({behavior:"smooth",block:"nearest"})}});
+  bindRowBtns($("view"));
+}
+function shift(d){var y=ui.ym[0],m=ui.ym[1]+d;if(m<0){m=11;y--}if(m>11){m=0;y++}ui.ym=[y,m];ui.sel=null;renderMonth()}
+
+function evRow(e){
+  return '<div class="ev" style="--c:'+(e.c==="modulo"?mvar(e.m):cvar(e.c))+'"><span class="bar"></span><div class="body"><span class="tt">'+esc(e.t)+'</span>'+
+  '<span class="meta"><span class="num">'+fmtRange(e)+'</span><span>'+esc(CATS[e.c]||"Outro")+'</span>'+(e.m?'<span class="pill mod" style="background:'+mvar(e.m)+'">M'+esc(e.m)+'</span>':'')+'</span>'+
+  (e.n?'<span class="note">'+esc(e.n)+'</span>':'')+'</div>'+(canEdit?'<button class="ibtn" data-edit="'+e.id+'">Editar</button>':'')+'</div>';
+}
+function bindRowBtns(root){Array.prototype.forEach.call(root.querySelectorAll("[data-edit]"),function(b){b.onclick=function(ev){ev.stopPropagation();openForm(b.dataset.edit)}})}
+
+/* ---------- Timeline ---------- */
+function renderTimeline(){
+  var ev=state.events;if(!ev.length){$("view").innerHTML='<div class="card empty">Nenhum evento para mostrar.</div>';return}
+  var minS=ev.reduce(function(a,e){return e.s<a?e.s:a},ev[0].s),maxE=ev.reduce(function(a,e){return e.e>a?e.e:a},ev[0].e);
+  var s0=dnum(minS.slice(0,8)+"01"),my=+maxE.slice(0,4),mm=+maxE.slice(5,7);if(mm===12){my++;mm=1}else mm++;
+  var e0=dnum(my+"-"+pad(mm)+"-01"),span=e0-s0;
+  function L(d){return ((dnum(d)-s0)/span*100).toFixed(3)+"%"}
+  function W(e){return (((dnum(e.e)-dnum(e.s)+1)/span)*100).toFixed(3)+"%"}
+  var months=[],cur=s0;while(cur<e0){var ds=fromNum(cur),y=+ds.slice(0,4),m=+ds.slice(5,7);var nx=m===12?dnum((y+1)+"-01-01"):dnum(y+"-"+pad(m+1)+"-01");months.push({lab:MES3[m-1]+(m===1||months.length===0?" "+String(y).slice(2):""),w:nx-cur,left:cur});cur=nx}
+  var h='<div class="card"><div class="mhead"><div><div class="eyebrow">Linha do tempo</div><h2>Módulos e etapas</h2></div><span class="ro">Toque numa barra para ver os detalhes'+(canEdit?' e editar':'')+'.</span></div><div class="tl-scroll"><div class="tl">';
+  h+='<div class="tl-months" style="grid-template-columns:'+months.map(function(x){return x.w+"fr"}).join(" ")+'">'+months.map(function(x){return '<div>'+x.lab+'</div>'}).join("")+'</div>';
+  var gridLines=months.map(function(x){return '<span class="tl-grid" style="left:'+((x.left-s0)/span*100).toFixed(3)+'%"></span>'}).join("");
+  var todayLine=(dnum(TODAY)>=s0&&dnum(TODAY)<e0)?'<span class="tl-today" style="left:'+L(TODAY)+'"></span>':'';
+  function row(label,items,big){return '<div class="tl-row"><div class="tl-lab" title="'+esc(label)+'">'+esc(label)+'</div><div class="tl-track">'+gridLines+todayLine+items.map(function(e){return '<span class="tl-bar'+(big?' big':'')+(ui.hl&&e.c!=="modulo"&&e.c!==ui.hl?' dim':'')+'" style="--c:'+(e.c==="modulo"?mvar(e.m):cvar(e.c))+';left:'+L(e.s)+';width:'+W(e)+'" data-ev="'+e.id+'" title="'+esc(e.t+" · "+fmtRange(e))+'"></span>'}).join("")+'</div></div>'}
+  // overview
+  h+='<div class="tl-sec"><div class="tl-sech">Visão geral</div>'+row("Módulos",ev.filter(function(e){return e.c==="modulo"}),true)+row("Feriados e intervalos",ev.filter(function(e){return !e.m&&e.c!=="modulo"}))+'</div>';
+  var mods=[];ev.forEach(function(e){if(e.m){var k=anoEv(e)+"|"+e.m;if(mods.indexOf(k)<0)mods.push(k)}});mods.sort();
+  mods.forEach(function(k){
+    var m=k.split("|")[1],ya=+k.split("|")[0];
+    var me=ev.filter(function(e){return e.m===m&&anoEv(e)===ya});
+    h+='<div class="tl-sec"><div class="tl-sech"><span class="sw" style="background:'+mvar(m)+'"></span>Módulo '+esc(m)+' · '+ya+'</div>';
+    ["modulo","institucional","agendamento","avaliacao","substitutiva","notas","outro"].forEach(function(c){var it=me.filter(function(e){return (CATS[e.c]?e.c:"outro")===c});if(it.length)h+=row(CATS[c],it,c==="modulo")});
+    h+='</div>';
+  });
+  h+='</div></div><div id="tlDetail"></div></div>';
+  $("view").innerHTML=h;
+  Array.prototype.forEach.call(document.querySelectorAll(".tl-bar"),function(b){b.onclick=function(){var e=byId(b.dataset.ev);var d=$("tlDetail");d.className="dayp";d.innerHTML=evRow(e);bindRowBtns(d)}});
+  var sc=document.querySelector(".tl-scroll"),tl=document.querySelector(".tl-today");if(sc&&tl){sc.scrollLeft=Math.max(0,tl.offsetLeft+200-sc.clientWidth/2)}
+}
+
+/* ---------- List ---------- */
+function renderList(){
+  var h='<div class="card"><div class="filters">'+
+   '<input id="fq" type="search" placeholder="Buscar evento" aria-label="Buscar evento" value="'+esc(ui.q)+'">'+
+   '<select id="fc" aria-label="Tipo"><option value="">Todos os tipos</option>'+Object.keys(CATS).map(function(k){return '<option value="'+k+'"'+(ui.fc===k?" selected":"")+'>'+CATS[k]+'</option>'}).join("")+'</select>'+
+   '<select id="fm" aria-label="Módulo"><option value="">Todos os módulos</option>'+modsList().map(function(m){return '<option value="'+esc(m)+'"'+(ui.fm===m?" selected":"")+'>Módulo '+esc(m)+'</option>'}).join("")+'<option value="_"'+(ui.fm==="_"?" selected":"")+'>Geral (sem módulo)</option></select>'+
+   '<select id="fp" aria-label="Período"><option value="todos"'+(ui.fp==="todos"?" selected":"")+'>Todas as datas</option><option value="futuro"'+(ui.fp==="futuro"?" selected":"")+'>A partir de hoje</option><option value="passado"'+(ui.fp==="passado"?" selected":"")+'>Já encerradas</option></select>'+
+   '</div><div id="tbl"></div></div>';
+  $("view").innerHTML=h;
+  $("fq").oninput=function(){ui.q=this.value;fillTable()};
+  ["fc","fm","fp"].forEach(function(id){$(id).onchange=function(){ui[id]=this.value;fillTable()}});
+  fillTable();
+}
+function modsList(){var a=[];state.events.forEach(function(e){if(e.m&&a.indexOf(e.m)<0)a.push(e.m)});return a.sort()}
+function fillTable(){
+  var q=ui.q.trim().toLowerCase();
+  var rows=sorted().filter(function(e){
+    if(ui.fc&&e.c!==ui.fc)return false;
+    if(ui.fm==="_"&&e.m)return false; if(ui.fm&&ui.fm!=="_"&&e.m!==ui.fm)return false;
+    if(ui.fp==="futuro"&&e.e<TODAY)return false; if(ui.fp==="passado"&&e.e>=TODAY)return false;
+    if(q&&(e.t+" "+(e.n||"")).toLowerCase().indexOf(q)<0)return false; return true;});
+  var h=rows.length?'<div class="tbl-wrap"><table><thead><tr><th>Data</th><th>Evento</th><th>Tipo</th><th>Módulo</th><th>Situação</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>'+
+   rows.map(function(e){var past=e.e<TODAY,r=past?null:rel(e);return '<tr class="'+(past?"past":"")+'"><td class="num">'+fmtRange(e)+'</td><td><b>'+esc(e.t)+'</b>'+(e.n?'<div class="ro">'+esc(e.n)+'</div>':'')+'</td><td><span class="dot" style="background:'+(e.c==="modulo"?mvar(e.m):cvar(e.c))+'"></span> '+esc(CATS[e.c]||"Outro")+'</td><td>'+(e.m?'<span class="pill mod" style="background:'+mvar(e.m)+'">M'+esc(e.m)+'</span>':'<span class="ro">Geral</span>')+'</td><td>'+(past?'<span class="ro">Encerrado</span>':'<span class="count '+r.cls+'">'+r.txt+'</span>')+'</td>'+(canEdit?'<td><button class="ibtn" data-edit="'+e.id+'">Editar</button></td>':'')+'</tr>'}).join("")+
+   '</tbody></table></div><div class="ro" style="margin-top:10px">'+rows.length+' de '+state.events.length+' eventos</div>':'<div class="empty">Nenhum evento corresponde aos filtros.</div>';
+  $("tbl").innerHTML=h;bindRowBtns($("tbl"));
+}
+
+/* ---------- Side ---------- */
+function renderSide(){
+  var mods=state.events.filter(function(e){return e.c==="modulo"&&e.s<=TODAY&&e.e>=TODAY});
+  var nextMod=state.events.filter(function(e){return e.c==="modulo"&&e.s>TODAY}).sort(function(a,b){return a.s<b.s?-1:1})[0];
+  var h='<div class="card"><div class="eyebrow">Hoje · <span class="num">'+fmt(TODAY)+'</span></div><h2>Módulo em andamento</h2><div class="modnow">';
+  if(!mods.length)h+='<div class="ro">Nenhum módulo em andamento hoje.</div>';
+  mods.forEach(function(e){var tot=dnum(e.e)-dnum(e.s)+1,done=dnum(TODAY)-dnum(e.s)+1,pc=Math.round(done/tot*100),wk=Math.ceil(done/7),wt=Math.ceil(tot/7);
+    h+='<div><div style="display:flex;justify-content:space-between;gap:8px;font-weight:700"><span>Módulo '+esc(e.m)+'</span><span class="num ro">semana '+wk+' de '+wt+'</span></div><div class="prog" style="margin:6px 0"><i style="width:'+pc+'%;background:'+mvar(e.m)+'"></i></div><div class="ro num">'+fmtRange(e)+' · '+pc+'% concluído</div></div>'});
+  if(nextMod){var d=dnum(nextMod.s)-dnum(TODAY);h+='<div class="ro">Próximo: <b>Módulo '+esc(nextMod.m)+'</b> começa em '+fmt(nextMod.s)+' ('+d+(d===1?' dia':' dias')+').</div>'}
+  h+='</div></div>';
+  var up=sorted().filter(function(e){return e.c!=="modulo"&&e.e>=TODAY}).slice(0,6);
+  h+='<div class="card"><div class="eyebrow">Agenda</div><h2>Próximas datas</h2><div class="up">'+(up.length?up.map(function(e){var r=rel(e);
+    return '<div class="ev" style="--c:'+cvar(e.c)+'"><span class="bar"></span><div class="body"><span class="tt">'+esc(e.t)+'</span><span class="meta"><span class="num">'+fmtRange(e)+'</span>'+(e.m?'<span class="pill mod" style="background:'+mvar(e.m)+'">M'+esc(e.m)+'</span>':'')+'</span><span class="count '+r.cls+'">'+r.txt+'</span></div></div>'}).join(""):'<div class="ro">Nenhuma data futura. '+(canEdit?'Use o botão + para adicionar.':'')+'</div>')+'</div></div>';
+  $("side").innerHTML=h;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  renderBanner();renderSide();
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){t.setAttribute("aria-selected",t.dataset.tab===ui.tab?"true":"false")});
+  Array.prototype.forEach.call(document.querySelectorAll(".lmod"),function(b){b.setAttribute("aria-pressed",ui.tab==="modulo"&&ui.mod===b.dataset.mod?"true":"false")});
+  Array.prototype.forEach.call(document.querySelectorAll(".lcat"),function(b){b.setAttribute("aria-pressed",ui.hl===b.dataset.cat?"true":"false")});
+  var vw=$("view");vw.classList.toggle("hl-on",!!ui.hl);if(ui.hl)vw.style.setProperty("--hc",cvar(ui.hl));
+  if(ui.tab==="ano")renderYear();else if(ui.tab==="modulo")renderModule();else if(ui.tab==="linha")renderTimeline();else if(ui.tab==="lista")renderList();else renderMonth();
+}
+function byId(id){for(var i=0;i<state.events.length;i++)if(state.events[i].id===id)return state.events[i];return null}
+
+/* ---------- Form ---------- */
+function openForm(id){
+  if(!canEdit)return;
+  var e=id?byId(id):{t:"",c:"outro",m:"",s:ui.sel||TODAY,e:ui.sel||TODAY,n:""};
+  var bd=document.createElement("div");bd.className="backdrop";
+  bd.innerHTML='<form class="modal" id="evForm" novalidate><h3>'+(id?"Editar evento":"Novo evento")+'</h3>'+
+   '<div class="field"><label for="f-t">Evento</label><input id="f-t" required maxlength="140" value="'+esc(e.t)+'"></div>'+
+   '<div class="row2"><div class="field"><label for="f-c">Tipo</label><select id="f-c">'+Object.keys(CATS).map(function(k){return '<option value="'+k+'"'+(e.c===k?" selected":"")+'>'+CATS[k]+'</option>'}).join("")+'</select></div>'+
+   '<div class="field"><label for="f-m">Módulo</label><input id="f-m" list="f-ml" maxlength="10" placeholder="Ex.: 51 (vazio = geral)" value="'+esc(e.m)+'"><datalist id="f-ml">'+modsList().map(function(m){return '<option value="'+esc(m)+'">'}).join("")+'</datalist></div></div>'+
+   '<div class="row2"><div class="field"><label for="f-s">Início</label><input id="f-s" type="date" required value="'+e.s+'"></div><div class="field"><label for="f-e">Término</label><input id="f-e" type="date" required value="'+e.e+'"></div></div>'+
+   '<div class="field"><label for="f-n">Observação</label><textarea id="f-n" rows="2" maxlength="400">'+esc(e.n||"")+'</textarea></div>'+
+   '<div class="err" id="f-err" role="alert"></div>'+
+   '<div class="mact"><div>'+(id?'<button type="button" class="danger" id="f-del">Excluir</button>':'')+'</div><div><button type="button" class="ghost" id="f-cancel">Cancelar</button><button type="submit" class="primary" id="f-save">Salvar</button></div></div></form>';
+  document.body.appendChild(bd);
+  var close=function(){bd.remove()};
+  bd.addEventListener("click",function(ev){if(ev.target===bd)close()});
+  $("f-cancel").onclick=close;
+  $("f-t").focus();
+  var delBtn=$("f-del");
+  if(delBtn){var armed=false;delBtn.onclick=function(){if(!armed){armed=true;delBtn.textContent="Confirmar exclusão";return}
+    var next=state.events.filter(function(x){return x.id!==id});save(next,"Evento excluído",close)}}
+  $("evForm").onsubmit=function(ev){ev.preventDefault();
+    var t=$("f-t").value.trim(),s=$("f-s").value,en=$("f-e").value||s,err=$("f-err");
+    if(!t){err.textContent="Informe o nome do evento.";return}
+    if(!s){err.textContent="Informe a data de início.";return}
+    if(en<s){err.textContent="O término não pode ser antes do início.";return}
+    var obj={id:id||("e"+Date.now().toString(36)),t:t,c:$("f-c").value,m:$("f-m").value.trim(),s:s,e:en};
+    var n=$("f-n").value.trim();if(n)obj.n=n;
+    var next=id?state.events.map(function(x){return x.id===id?obj:x}):state.events.concat([obj]);
+    save(next,id?"Evento atualizado":"Evento adicionado",close);
+  };
+}
+
+/* ---------- Persist (republica a página) ---------- */
+function buildDoc(data){
+  var resetEl=document.head.querySelector("style"),reset=resetEl?resetEl.textContent:"";
+  var json=JSON.stringify(data).replace(/</g,"\\u003c");
+  return '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>'+reset+'</style></head><body>'+
+    '<title>Calendário Docente</title>'+
+    $("page-fonts").outerHTML+
+    '<style id="page-css">'+$("page-css").textContent+'</style>'+
+    '<div id="root"></div>'+
+    '<script type="application/json" id="cal-data">'+json+'<\/script>'+
+    '<script id="app-js">'+$("app-js").textContent+'<\/script>'+
+    '</body></html>';
+}
+function toast(msg){var t=document.createElement("div");t.className="toast";t.setAttribute("role","status");t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},2600)}
+function save(events,msg,done){
+  if(saving||!art)return;saving=true;
+  var btn=$("f-save");if(btn){btn.disabled=true;btn.textContent="Salvando…"}
+  var data={v:state.v||1,events:events};
+  art.publish(buildDoc(data)).then(function(){state=data;done&&done();render();toast(msg)})
+  .catch(function(err){var code=err&&err.code;var el=$("f-err");
+    var m=code==="conflict"?"Outra pessoa salvou antes. A página vai recarregar com a versão mais recente.":(code==="not_writer"||code==="not_granted")?"Você não tem permissão para editar este calendário.":"Não foi possível salvar. Tente novamente.";
+    if(el)el.textContent=m;else toast(m)})
+  .then(function(){saving=false;var b=$("f-save");if(b){b.disabled=false;b.textContent="Salvar"}});
+}
+
+/* ---------- Boot ---------- */
+var ICON={home:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z"/></svg>',
+ chart:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="4" y="11" width="3" height="8" rx="1"/><rect x="10.5" y="6" width="3" height="13" rx="1"/><rect x="17" y="9" width="3" height="10" rx="1"/><rect x="3" y="20" width="18" height="1.6" rx=".8"/></svg>',
+ plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>',
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>'};
+$("root").innerHTML='<div class="wrap">'+
+ '<header class="banner"><div class="b-left"><div class="b-title"><span class="b-icon">'+ICON.cal+'</span><h1>Calendário Docente</h1></div><p class="b-sub" id="bsub">Carregando…</p></div>'+
+ '<nav class="b-actions" aria-label="Ações"><button class="rbtn" id="btnHome" title="Tela inicial do calendário" aria-label="Voltar à tela inicial do calendário">'+ICON.home+'</button>'+
+ '<button class="rbtn" id="btnTl" title="Linha do tempo dos módulos" aria-label="Ver linha do tempo">'+ICON.chart+'</button>'+
+ '<button class="rbtn plus" id="btnAdd" title="Novo evento" aria-label="Adicionar evento" hidden>'+ICON.plus+'</button></nav></header>'+
+ '<div class="toolbar"><div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="ano">Ano</button><button class="tab" role="tab" data-tab="mes">Mês</button><button class="tab" role="tab" data-tab="linha">Linha do tempo</button><button class="tab" role="tab" data-tab="lista">Lista</button></div>'+
+ '<div class="legend">'+MODS.map(function(m){return '<button class="lmod" data-mod="'+m+'" aria-pressed="false" title="Ver os meses do módulo '+m+'"><span class="sw" style="background:var(--m'+m+')"></span>M'+m+'</button>'}).join("")+
+ ["institucional","agendamento","avaliacao","substitutiva","notas","feriado"].map(function(c){return '<button class="lcat" data-cat="'+c+'" aria-pressed="false" style="--c:'+cvar(c)+'" title="Destacar '+CATS[c].toLowerCase()+' no calendário"><span class="dot" style="background:'+cvar(c)+'"></span>'+CATS[c].replace(" e cópias de prova"," e cópias")+'</button>'}).join("")+'</div></div>'+
+ '<div class="grid"><main id="view"></main><aside class="side" id="side"></aside></div>'+
+ '<div class="ro" id="roNote"></div></div>';
+Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){t.onclick=function(){ui.tab=t.dataset.tab;try{localStorage.setItem("calDocTab",ui.tab)}catch(e){}render()}});
+$("btnTl").onclick=function(){ui.tab="linha";render();$("view").scrollIntoView({behavior:"smooth",block:"start"})};
+$("btnAdd").onclick=function(){openForm(null)};
+Array.prototype.forEach.call(document.querySelectorAll(".lcat"),function(b){b.onclick=function(){
+  ui.hl=ui.hl===b.dataset.cat?null:b.dataset.cat;ui.fc=ui.hl||"";render()}});
+Array.prototype.forEach.call(document.querySelectorAll(".lmod"),function(b){b.onclick=function(){
+  var m=b.dataset.mod;if(ui.tab==="modulo"&&ui.mod===m){ui.tab="ano";ui.mod=null}else{ui.tab="modulo";ui.mod=m;ui.mano=null}
+  ui.sel=null;render();$("view").scrollIntoView({behavior:"smooth",block:"start"})}});
+$("btnHome").onclick=function(){
+  var b=document.querySelector(".backdrop");if(b)b.remove();
+  ui.tab="ano";ui.year=null;ui.hl=null;ui.mod=null;ui.mano=null;ui.ym=null;ui.sel=null;ui.q="";ui.fc="";ui.fm="";ui.fp="todos";
+  try{localStorage.setItem("calDocTab","ano")}catch(e){}
+  render();window.scrollTo({top:0,behavior:"smooth"});
+};
+render();
+if(window.claude&&window.claude.use){
+  Promise.all([window.claude.use("artifact"),window.claude.use("user")]).then(function(r){
+    art=r[0];var u=r[1];
+    return (u&&u.canEdit?u.canEdit().catch(function(){return true}):Promise.resolve(true)).then(function(ok){
+      canEdit=!!art&&ok!==false;render();
+      $("roNote").textContent=canEdit?"As alterações ficam salvas nesta página e aparecem para todos que abrirem o link.":"Modo somente leitura.";
+    });
+  }).catch(function(){});
+}
+})();
+</script>
+</body></html>

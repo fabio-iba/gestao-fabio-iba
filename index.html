@@ -1,0 +1,350 @@
+<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='inicio';window.GFI_LS=[]</script><script src="config.js"></script><script src="gfi.js"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Gestão Fabio Iba</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter+Tight:wght@400;500;600&display=swap">
+<style id="hub-style">
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --ink:#0F1B2A; --muted:#5B6878; --line:#E1E6EC;
+  --band:#0E2233; --band-ink:#F3F7FA; --band-muted:#9FB3C4; --band-line:rgba(255,255,255,.08);
+  --accent:#1D6FA3; --accent-ink:#FFFFFF; --danger:#B3402F;
+  --c1:#0E8A8A; --c1s:#DDF3F1;
+  --c2:#5B4BD6; --c2s:#E8E5FB;
+  --c3:#C27A12; --c3s:#FBEFD9;
+  --c4:#C23D6B; --c4s:#FBE3EC;
+  --shadow:0 1px 2px rgba(15,27,42,.05),0 10px 30px -12px rgba(15,27,42,.18);
+  --shadow-hover:0 2px 4px rgba(15,27,42,.06),0 22px 44px -16px rgba(15,27,42,.28);
+  --display:"Manrope",ui-sans-serif,system-ui,sans-serif;
+  --body:"Inter Tight",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0B131B; --surface:#131F2A; --ink:#E8EEF3; --muted:#93A3B2; --line:#23313E;
+    --band:#08101A; --band-ink:#EEF4F8; --band-muted:#8EA2B4; --band-line:rgba(255,255,255,.06);
+    --accent:#6DB3E0; --accent-ink:#08131C; --danger:#EC8A78;
+    --c1:#4CC7C2; --c1s:#12302F; --c2:#9B8FF5; --c2s:#231F42; --c3:#EAB35A; --c3s:#35280F; --c4:#EE85A8; --c4s:#3A1826;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.6);
+    --shadow-hover:0 2px 4px rgba(0,0,0,.4),0 22px 44px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0B131B; --surface:#131F2A; --ink:#E8EEF3; --muted:#93A3B2; --line:#23313E;
+  --band:#08101A; --band-ink:#EEF4F8; --band-muted:#8EA2B4; --band-line:rgba(255,255,255,.06);
+  --accent:#6DB3E0; --accent-ink:#08131C; --danger:#EC8A78;
+  --c1:#4CC7C2; --c1s:#12302F; --c2:#9B8FF5; --c2s:#231F42; --c3:#EAB35A; --c3s:#35280F; --c4:#EE85A8; --c4s:#3A1826;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 30px -12px rgba(0,0,0,.6);
+  --shadow-hover:0 2px 4px rgba(0,0,0,.4),0 22px 44px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+
+.band{background:var(--band);color:var(--band-ink);padding-inline:20px;padding-block:44px 104px;
+  background-image:linear-gradient(var(--band-line) 1px,transparent 1px),linear-gradient(90deg,var(--band-line) 1px,transparent 1px);
+  background-size:36px 36px;background-position:-1px -1px}
+.band-in{max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px}
+.date{font-size:13px;font-weight:500;color:var(--band-muted);margin:0 0 10px;letter-spacing:.01em}
+.date::first-letter{text-transform:uppercase}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,5.4vw,52px);line-height:1;letter-spacing:-.035em;margin:0;text-wrap:balance}
+.sub{margin:12px 0 0;color:var(--band-muted);font-size:15px;max-width:58ch}
+.courses{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:16px}
+.courses span{font-size:13px;font-weight:500;color:var(--band-ink)}
+.courses span + span::before{content:"·";margin-right:10px;color:var(--band-muted);font-weight:700}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+
+.main{max-width:1080px;margin:-72px auto 0;padding-inline:20px;padding-block:0 56px;display:flex;flex-direction:column;gap:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+
+.card{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);
+  padding:24px;display:flex;flex-direction:column;gap:14px;min-width:0;color:inherit;text-decoration:none;
+  --c:var(--c1);--cs:var(--c1s)}
+.card[data-tone="2"]{--c:var(--c2);--cs:var(--c2s)}
+.card[data-tone="3"]{--c:var(--c3);--cs:var(--c3s)}
+.card[data-tone="4"]{--c:var(--c4);--cs:var(--c4s)}
+.card[data-tone="5"]{--c:#2F6FE0;--cs:#E2ECFD}
+a.card:hover{box-shadow:var(--shadow-hover);border-color:color-mix(in srgb,var(--c) 35%,var(--line))}
+.card-head{display:flex;align-items:center;gap:14px}
+.ico{flex:none;width:52px;height:52px;border-radius:14px;background:var(--cs);color:var(--c);display:grid;place-items:center}
+.ico svg{width:26px;height:26px}
+.cat{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--c)}
+.card h2{font-family:var(--display);font-weight:700;font-size:21px;line-height:1.2;margin:2px 0 0;letter-spacing:-.02em;text-wrap:balance}
+.card p{margin:0;color:var(--muted);font-size:14.5px;line-height:1.55}
+.go{margin-top:auto;padding-top:14px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;font-weight:600;font-size:14px;color:var(--c)}
+.go .arrow{width:32px;height:32px;border-radius:50%;background:var(--cs);display:grid;place-items:center;transition:transform .18s ease}
+a.card:hover .go .arrow{transform:translateX(3px)}
+.card.nolink .go{color:var(--muted)}
+
+.edit-row{display:flex;gap:6px;flex-wrap:wrap;padding-top:12px;border-top:1px dashed var(--line)}
+.edit-row button{padding:6px 11px;font-size:13px}
+.add-card{border:1.5px dashed var(--line);border-radius:18px;background:transparent;color:var(--muted);min-height:220px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-size:15px;font-weight:600}
+.add-card .plus{width:44px;height:44px;border-radius:50%;border:1.5px dashed currentColor;display:grid;place-items:center;font-size:22px;font-weight:400}
+.add-card:hover{color:var(--accent);border-color:var(--accent)}
+
+button{font:inherit;font-weight:600;font-size:14px;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button:hover{border-color:var(--accent)}
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.danger{color:var(--danger)}
+button:disabled{opacity:.5;cursor:default}
+.band button{background:rgba(255,255,255,.08);color:var(--band-ink);border-color:rgba(255,255,255,.18)}
+.band button:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+.drive-btn{display:inline-grid;place-items:center;min-height:40px;width:48px;border-radius:10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18)}
+.drive-btn:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3)}
+.drive-btn svg{width:22px;height:20px}
+.band button.ico-btn{display:inline-grid;place-items:center;width:48px;min-height:40px;padding:0}
+.ico-btn svg{width:22px;height:22px}
+.band button.primary{background:var(--band-ink);color:var(--band);border-color:var(--band-ink)}
+
+.banner{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 16px;box-shadow:var(--shadow)}
+.banner p{margin:0}
+dialog{border:1px solid var(--line);border-radius:18px;background:var(--surface);color:var(--ink);padding:0;width:min(520px,calc(100vw - 32px))}
+dialog::backdrop{background:rgba(8,16,26,.5)}
+form.editor{display:flex;flex-direction:column;gap:14px;padding:24px}
+form.editor h3{font-family:var(--display);font-weight:800;font-size:22px;letter-spacing:-.02em;margin:0}
+label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+input,textarea{font:inherit;font-weight:400;font-size:15px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+textarea{min-height:76px;resize:vertical}
+.err{color:var(--danger);font-size:13px;margin:0}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+footer{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between;padding-top:8px}
+footer span{font-variant-numeric:tabular-nums}
+body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}h1{font-weight:700!important;letter-spacing:.2px!important}.grid .card > p{display:none}
+@media (prefers-reduced-motion:no-preference){a.card{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}a.card:hover{transform:translateY(-3px)}}
+@media (max-width:520px){.band{padding-block:32px 92px}.card{padding:20px}}
+.band{position:relative;overflow:hidden;background:radial-gradient(700px 360px at 85% 10%,rgba(76,199,194,.28),transparent 60%),radial-gradient(560px 320px at 60% 120%,rgba(155,143,245,.30),transparent 60%),radial-gradient(500px 300px at 5% -20%,rgba(29,111,163,.45),transparent 60%),linear-gradient(120deg,#0B1D2E 0%,#10294A 55%,#1A1F4E 100%)}
+.band::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px);background-size:36px 36px;-webkit-mask-image:linear-gradient(90deg,#000 0%,transparent 75%);mask-image:linear-gradient(90deg,#000 0%,transparent 75%);pointer-events:none}
+.band-in{position:relative;z-index:1}.band-in>div:first-child{max-width:560px}
+.band-art{position:absolute;right:max(130px,calc(50% - 470px));top:40px;width:220px;height:auto;z-index:0;opacity:.95;pointer-events:none}
+.band-in .tools{position:absolute;z-index:2;top:-8px;right:0}.band-in{align-items:flex-start}
+@media (max-width:1150px){.band-art{display:none}}
+.band-in .tools{flex-direction:column;gap:10px}.band .drive-btn,.band button.ico-btn{width:44px;height:44px;min-height:44px;border-radius:50%;border:0!important;background:#fff!important;color:#0E2233!important;box-shadow:0 6px 16px -6px rgba(0,0,0,.45)}.band .drive-btn:hover,.band button.ico-btn:hover{transform:translateY(-2px)}.band .drive-btn svg{width:22px;height:20px}
+@media (max-width:640px){.band-art{display:none}}
+@media (prefers-reduced-motion:no-preference){.band-art .fl{animation:flt 6s ease-in-out infinite}.band-art .fl2{animation:flt 7s ease-in-out infinite reverse}@keyframes flt{50%{transform:translateY(-6px)}}}
+.ico{background:linear-gradient(135deg,var(--cs),color-mix(in srgb,var(--cs) 60%,#fff))}
+.courses{flex-wrap:nowrap;gap:0 14px;margin-top:16px;white-space:nowrap}.courses span{font-size:12px;font-weight:500;color:var(--band-muted);white-space:nowrap}.courses span + span::before{content:none}.band-in>div:first-child{max-width:none}
+@media (max-width:760px){.courses{flex-wrap:wrap}}
+</style>
+<div class="page">
+  <section class="band">
+    <svg class="band-art" viewBox="0 0 430 220" aria-hidden="true">
+      <g class="fl"><rect x="150" y="18" width="210" height="130" rx="14" fill="rgba(255,255,255,.10)" stroke="rgba(255,255,255,.22)"/>
+        <rect x="166" y="34" width="70" height="8" rx="4" fill="rgba(255,255,255,.55)"/><rect x="166" y="48" width="44" height="6" rx="3" fill="rgba(255,255,255,.25)"/>
+        <rect x="170" y="112" width="16" height="22" rx="3" fill="#4CC7C2"/><rect x="194" y="96" width="16" height="38" rx="3" fill="#9B8FF5"/><rect x="218" y="80" width="16" height="54" rx="3" fill="#4CC7C2"/><rect x="242" y="90" width="16" height="44" rx="3" fill="#EAB35A"/><rect x="266" y="70" width="16" height="64" rx="3" fill="#9B8FF5"/>
+        <circle cx="322" cy="96" r="24" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="8"/><circle cx="322" cy="96" r="24" fill="none" stroke="#EE85A8" stroke-width="8" stroke-dasharray="105 151" transform="rotate(-90 322 96)" stroke-linecap="round"/></g>
+      <g class="fl2"><rect x="40" y="96" width="130" height="92" rx="14" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.24)"/>
+        <path d="M66 128l39-17 39 17-39 17z" fill="#EAB35A"/><path d="M81 135v14c0 6 11 10 24 10s24-4 24-10v-14" fill="none" stroke="#EAB35A" stroke-width="4"/><path d="M144 128v18" stroke="#EAB35A" stroke-width="4" stroke-linecap="round"/></g>
+      <g class="fl"><rect x="300" y="150" width="104" height="56" rx="12" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.24)"/>
+        <rect x="314" y="164" width="20" height="20" rx="5" fill="#4CC7C2"/><path d="M319 174l4 4 7-8" fill="none" stroke="#0B1D2E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="342" y="166" width="48" height="6" rx="3" fill="rgba(255,255,255,.55)"/><rect x="342" y="178" width="32" height="5" rx="2.5" fill="rgba(255,255,255,.28)"/></g>
+      <circle cx="120" cy="40" r="5" fill="#4CC7C2"/><circle cx="395" cy="30" r="4" fill="#EE85A8"/><circle cx="30" cy="70" r="3" fill="#9B8FF5"/><circle cx="270" cy="200" r="3.5" fill="#EAB35A"/>
+    </svg>
+    <div class="band-in">
+      <div>
+        <p class="date" id="today"></p>
+        <h1>Gestão Fabio Iba</h1>
+        <div class="courses"><span>Administração</span><span>Recursos Humanos</span><span>Psicologia Aplicada</span><span>Processos Gerenciais</span><span>Ciências da Felicidade</span><span>Saúde Mental no Trabalho</span></div>
+      </div>
+      <div class="tools" id="tools"></div>
+    </div>
+  </section>
+  <div class="main">
+    <div id="banner" hidden=""></div>
+    <main class="grid" id="grid"></main>
+    <footer><span id="count"></span><span id="updated"></span></footer>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <form class="editor" id="editor" novalidate="">
+    <h3 id="dlg-title">Novo painel</h3>
+    <label for="f-name">Nome do painel
+      <input id="f-name" required="" maxlength="80" placeholder="Ex.: Dash de Aula">
+    </label>
+    <label for="f-cat">Categoria
+      <input id="f-cat" list="cat-list" maxlength="30" placeholder="Ex.: Aulas, Docentes, Projetos">
+      <datalist id="cat-list"></datalist>
+    </label>
+    <label for="f-desc">Descrição curta
+      <textarea id="f-desc" maxlength="220" placeholder="O que esse painel acompanha"></textarea>
+    </label>
+    <label for="f-url">Link
+      <input id="f-url" type="text" placeholder="gestao-docente.html ou https://...">
+    </label>
+    <p class="err" id="f-err" hidden=""></p>
+    <div class="form-actions">
+      <button type="button" id="f-cancel">Cancelar</button>
+      <button type="submit" class="primary">Aplicar</button>
+    </div>
+  </form>
+</dialog>
+<script type="application/json" id="hub-data">{"updated":"2026-10-22","panels":[{"id":"p1","name":"Gestão das Entregas","category":"Gestão Docente","desc":"Entregas das atividades e slides de cada professor, com mediadores vinculados e datas.","url":"gestao-docente.html"},{"id":"p2","name":"Projetos dos Cursos","category":"Projetos","desc":"Kanban da Revista Unideias, Podcast Gestão de A à Z, GEPIN e Programa de Carreiras.","url":"projetos.html"},{"id":"p4","name":"Validação de Materiais","category":"Materiais EaD","desc":"Avaliação automática dos temas de aprendizagem da pasta do Drive: notas em 6 dimensões, análise qualitativa, parecer final e histórico.","url":"validacao.html"},{"id":"pmuva9zso","name":"Calendário Docente","category":"Gestão Docente","desc":"Início dos módulos, feriados, dias de aulas e demais datas importantes para gestão de início e término das atividades.","url":"calendario.html"},{"id":"preg","name":"Gestão Regulatório","category":"Regulatório","desc":"Atas do NDE e do Colegiado, planos de ação do módulo e da CPA, PPC, PDI e planos de ensino dos cursos.","url":"gestao-regulatoria.html"}]}</script>
+<script id="hub-script">
+(function(){
+  const $ = s => document.querySelector(s);
+  const PRISTINE = document.querySelector('.page').outerHTML + '\n\n' + document.getElementById('dlg').outerHTML;
+  const saved = (window.GFI_DADOS_PAGINA&&GFI_DADOS_PAGINA('hub-data'))||JSON.parse($('#hub-data').textContent);
+  let state = JSON.parse(JSON.stringify(saved));
+  let editing = false, dirty = false, readOnly = false, editId = null, artifactNs = null, saving = false;
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const fmtDate = d => { const [y,m,dd] = (d||'').split('-'); return y ? `${dd}/${m}/${y}` : ''; };
+  const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
+
+  const svg = p => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+  const ICONS = {
+    docentes: svg('<path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11"/><path d="M21 9v5"/>'),
+    projetos: svg('<rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="10" rx="1.5"/><rect x="17" y="4" width="4" height="13" rx="1.5"/>'),
+    aulas: svg('<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M10 8.5v4l3.5-2-3.5-2z"/><path d="M8 20h8"/>'),
+    materiais: svg('<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 14l2 2 4-4"/>'),
+    mediadores: svg('<circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M15 14.2c.6-.1 1.3-.2 2-.2 2.4 0 4 1.5 4 4"/>'),
+    calendario: svg('<rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 14h2M14 14h2M8 17.5h2"/>'),
+    geral: svg('<rect x="3" y="3" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="2"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="2"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="2"/>')
+  };
+  const TONES = { docentes:1, projetos:2, aulas:3, materiais:3, mediadores:4 };
+  function look(cat, nome){
+    if (norm(nome).includes('calend')) return { icon: ICONS.calendario, tone: 5 };
+    const k = norm(cat);
+    const key = Object.keys(TONES).find(x => k.includes(x.slice(0,5)));
+    if (key) return { icon: ICONS[key], tone: TONES[key] };
+    let h = 0; for (const ch of k) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+    return { icon: ICONS.geral, tone: (h % 4) + 1 };
+  }
+  const DRIVE_URL = 'https://drive.google.com/drive/folders/1DMR7Hm-ITt0Nz8GxJwIbS3jNCHK33Eaf?usp=sharing';
+  const DRIVE_ICO = '<svg viewBox="0 0 87.3 78" aria-hidden="true"><path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/><path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/><path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/><path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/><path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/><path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/></svg>';
+  const GEAR_ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>';
+  const arrow = svg('<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>');
+
+  function render(){
+    const cats = [...new Set(state.panels.map(p => p.category).filter(Boolean))];
+    $('#cat-list').innerHTML = cats.map(c => `<option value="${esc(c)}">`).join('');
+
+    const cards = state.panels.map((p, i) => {
+      const { icon, tone } = look(p.category, p.name);
+      const has = !!p.url;
+      const inner = `
+        <div class="card-head">
+          <div class="ico">${icon}</div>
+          <div>
+            ${p.category ? `<div class="cat">${esc(p.category)}</div>` : ''}
+            <h2>${esc(p.name)}</h2>
+          </div>
+        </div>
+        ${p.desc ? `<p>${esc(p.desc)}</p>` : ''}
+        ${editing ? `<div class="edit-row">
+            <button data-act="edit" data-id="${p.id}">Editar</button>
+            <button data-act="up" data-id="${p.id}" ${i === 0 ? 'disabled' : ''} aria-label="Mover para antes">←</button>
+            <button data-act="down" data-id="${p.id}" ${i === state.panels.length - 1 ? 'disabled' : ''} aria-label="Mover para depois">→</button>
+            <button data-act="del" data-id="${p.id}" class="danger">Remover</button>
+          </div>`
+          : `<div class="go"><span>${has ? 'Abrir painel' : 'Sem link'}</span>${has ? `<span class="arrow">${arrow}</span>` : ''}</div>`}`;
+      return (has && !editing)
+        ? `<a class="card" data-tone="${tone}" href="${esc(p.url)}" target="_blank" rel="noopener">${inner}</a>`
+        : `<article class="card${has ? '' : ' nolink'}" data-tone="${tone}">${inner}</article>`;
+    }).join('');
+    $('#grid').innerHTML = cards + (editing ? `<button class="add-card" data-act="add"><span class="plus">+</span>Adicionar painel</button>` : '');
+
+    const n = state.panels.length;
+    $('#count').textContent = `${n} ${n === 1 ? 'painel' : 'painéis'}`;
+    $('#updated').textContent = state.updated ? `Atualizado em ${fmtDate(state.updated)}` : '';
+
+    let tools = '';
+    if (!editing) tools = `<a class="drive-btn" href="${DRIVE_URL}" target="_blank" rel="noopener" aria-label="Abrir pasta do Google Drive" title="Abrir pasta do Google Drive">${DRIVE_ICO}</a>`;
+    if (!editing && !readOnly && artifactNs) tools += `<button id="btn-edit" class="ico-btn" aria-label="Editar painéis" title="Editar painéis">${GEAR_ICO}</button>`;
+    if (editing) tools = `<button id="btn-cancel">Descartar</button><button class="primary" id="btn-save" ${dirty && !saving ? '' : 'disabled'}>${saving ? 'Salvando…' : 'Salvar alterações'}</button>`;
+    $('#tools').innerHTML = tools;
+  }
+
+  function banner(msg){
+    const b = $('#banner');
+    if (!msg){ b.hidden = true; b.innerHTML = ''; return; }
+    b.className = 'banner'; b.innerHTML = `<p>${esc(msg)}</p>`; b.hidden = false;
+  }
+
+  function openEditor(p){
+    editId = p ? p.id : null;
+    $('#dlg-title').textContent = p ? 'Editar painel' : 'Novo painel';
+    $('#f-name').value = p?.name || '';
+    $('#f-cat').value = p?.category || '';
+    $('#f-desc').value = p?.desc || '';
+    $('#f-url').value = p?.url || '';
+    $('#f-err').hidden = true;
+    $('#dlg').showModal();
+    $('#f-name').focus();
+  }
+
+  $('#editor').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = $('#f-name').value.trim(), url = $('#f-url').value.trim();
+    const err = m => { $('#f-err').textContent = m; $('#f-err').hidden = false; };
+    if (!name) return err('Dê um nome ao painel.');
+    if (url && /\s/.test(url)) return err('O link não pode ter espaços.');
+    const data = { name, category: $('#f-cat').value.trim(), desc: $('#f-desc').value.trim(), url };
+    if (editId) Object.assign(state.panels.find(p => p.id === editId), data);
+    else state.panels.push({ id: 'p' + Date.now().toString(36), ...data });
+    dirty = true; $('#dlg').close(); render();
+  });
+  $('#f-cancel').addEventListener('click', () => $('#dlg').close());
+
+  document.addEventListener('click', e => {
+    const t = e.target.closest('button'); if (!t) return;
+    if (t.id === 'btn-edit'){ editing = true; render(); return; }
+    if (t.id === 'btn-cancel'){ state = JSON.parse(JSON.stringify(saved)); editing = false; dirty = false; banner(); render(); return; }
+    if (t.id === 'btn-save'){ save(); return; }
+    const act = t.dataset.act, id = t.dataset.id;
+    if (!act) return;
+    const i = state.panels.findIndex(p => p.id === id);
+    if (act === 'add') openEditor(null);
+    if (act === 'edit') openEditor(state.panels[i]);
+    if (act === 'up' && i > 0){ [state.panels[i-1], state.panels[i]] = [state.panels[i], state.panels[i-1]]; dirty = true; render(); }
+    if (act === 'down' && i < state.panels.length - 1){ [state.panels[i+1], state.panels[i]] = [state.panels[i], state.panels[i+1]]; dirty = true; render(); }
+    if (act === 'del'){
+      if (t.dataset.confirm){ state.panels.splice(i, 1); dirty = true; render(); }
+      else { t.dataset.confirm = '1'; t.textContent = 'Confirmar remoção'; }
+    }
+  });
+
+  function buildDocument(){
+    const today = new Date(); const pad = n => String(n).padStart(2,'0');
+    const next = { ...state, updated: `${today.getFullYear()}-${pad(today.getMonth()+1)}-${pad(today.getDate())}` };
+    const json = JSON.stringify(next).replace(/</g, '\\u003c');
+    const reset = ':root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,sans-serif;background:#fafaf9}img{max-width:100%}[hidden]{display:none!important}';
+    const head = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>' + reset + '</style></head><body>';
+    const fonts = document.querySelector('link[rel="stylesheet"][href*="fonts.googleapis"]');
+    return head
+      + '<title>Gestão Fabio Iba</title>\n'
+      + '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+      + (fonts ? `<link rel="stylesheet" href="${fonts.getAttribute('href')}">\n` : '')
+      + '<style id="hub-style">' + $('#hub-style').textContent + '</style>\n'
+      + PRISTINE + '\n'
+      + '<script type="application/json" id="hub-data">' + json + '<\/script>\n'
+      + '<script id="hub-script">' + $('#hub-script').textContent + '<\/script>\n'
+      + '</body></html>';
+  }
+
+  async function save(){
+    if (!artifactNs || saving) return;
+    saving = true; render();
+    try {
+      await artifactNs.publish(buildDocument());
+      banner('Salvo. A página vai recarregar com a nova versão.');
+    } catch (e){
+      saving = false;
+      const code = e && e.code;
+      if (code === 'conflict') banner('Outra versão foi salva antes. A página vai recarregar com ela; refaça a alteração se precisar.');
+      else if (['not_writer','not_granted','consent_required','not_declared','capability_disabled','capability_removed'].includes(code)){
+        readOnly = true; editing = false; state = JSON.parse(JSON.stringify(saved)); dirty = false;
+        banner('Você está vendo esta página em modo leitura. Só quem tem permissão de edição pode alterar os painéis.');
+      }
+      else if (code === 'rate_limited') banner('Muitas gravações seguidas. Aguarde um minuto e salve de novo.');
+      else banner('Não foi possível salvar agora. Suas alterações continuam na tela; tente salvar novamente.');
+      render();
+    }
+  }
+
+  try { $('#today').textContent = (d => d.toLocaleDateString('pt-BR', { weekday:'long' }) + ', ' + d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' }))(new Date()); } catch {}
+  render();
+  if (window.claude && typeof window.claude.use === 'function'){
+    window.claude.use('artifact').then(ns => { artifactNs = ns; render(); }).catch(() => {});
+  }
+})();
+</script>
+</body></html>

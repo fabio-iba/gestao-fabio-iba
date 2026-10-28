@@ -1,0 +1,3 @@
+*.json
+!apps-script/appsscript.json
+*.zip

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Importar dados</title>
+<script>window.GFI_APP='importar'</script>
+<script src="config.js"></script>
+<script src="gfi.js"></script>
+<style>
+:root{--bg:#F3F6F8;--card:#fff;--ink:#1E1E26;--mut:#5B6878;--line:#DCE6EA;--ac:#0F6E7A;--bad:#B92F26;--ok:#146C45}
+@media (prefers-color-scheme:dark){:root{--bg:#0B131B;--card:#131F2A;--ink:#E8EEF3;--mut:#93A3B2;--line:#23313E;--ac:#4CC7C2;--bad:#FF8F86;--ok:#5FD09B}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+main{max-width:760px;margin:0 auto;padding:32px 16px}
+h1{font-size:26px;margin:0 0 6px}p{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:20px;margin-top:18px}
+label{display:block;font-weight:700;margin:10px 0 6px}
+input[type=file]{width:100%}
+button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:10px 20px;background:var(--ac);color:#fff;cursor:pointer;margin-top:16px}
+button:disabled{opacity:.5;cursor:default}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:340px;overflow:auto;white-space:pre-wrap;font:13px/1.5 ui-monospace,Menlo,monospace}
+.ok{color:var(--ok)}.bad{color:var(--bad)}
+a{color:var(--ac)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Importar dados dos painéis</h1>
+  <p>Use uma vez, logo depois de configurar o Apps Script. Os arquivos ficam no seu computador e não vão para o GitHub.</p>
+  <div class="card">
+    <label for="f-dados">1. Dados dos painéis (dados-paineis.json)</label>
+    <input type="file" id="f-dados" accept=".json,application/json">
+    <label for="f-arq">2. Arquivos do Regulatório (arquivos-regulatorio.json, opcional)</label>
+    <input type="file" id="f-arq" accept=".json,application/json">
+    <button id="go" type="button">Importar para a planilha e o Drive</button>
+    <pre id="log" hidden></pre>
+    <p id="fim" hidden><a href="index.html">Abrir a página inicial</a></p>
+  </div>
+</main>
+<script>
+(function(){
+  var log=document.getElementById('log');
+  function L(t,c){log.hidden=false;var s=document.createElement('div');if(c)s.className=c;s.textContent=t;log.appendChild(s);log.scrollTop=1e9}
+  function ler(inp){var f=inp.files[0];if(!f)return Promise.resolve(null);return f.text().then(function(t){return JSON.parse(t)})}
+  function bytes(b64){var bin=atob(b64),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+  document.getElementById('go').onclick=function(){
+    var btn=this;btn.disabled=true;log.textContent='';
+    Promise.all([ler(document.getElementById('f-dados')),ler(document.getElementById('f-arq'))]).then(function(r){
+      var dados=r[0],arq=r[1];
+      if(!dados||dados.tipo!=='gfi-dados')throw new Error('Escolha o arquivo dados-paineis.json.');
+      L('Testando a conexão com o Apps Script…');
+      return GFI.api('ping').then(function(){L('Conectado.','ok');
+        var mapa={},ids=arq&&arq.assets?Object.keys(arq.assets):[];
+        var seq=Promise.resolve();
+        ids.forEach(function(id,i){seq=seq.then(function(){var a=arq.assets[id],ext=/pdf/.test(a.mime)?'.pdf':'.jpg';
+          return GFI.api('upload',{app:'reg',name:'regulatorio_'+id+ext,mime:a.mime,base64:a.base64}).then(function(x){mapa[id]=x.id;L('Arquivo '+(i+1)+' de '+ids.length+' enviado ao Drive.')})})});
+        return seq.then(function(){
+          if(ids.length){var reg=dados.apps.reg||{};['membros','docs','atas','planos','cpa'].forEach(function(c){if(!reg[c])return;var t=JSON.stringify(reg[c]);
+            Object.keys(mapa).forEach(function(o){t=t.split('"'+o+'"').join('"'+mapa[o]+'"').split('/_blob/'+o).join(GFI.imgUrl(mapa[o]))});reg[c]=JSON.parse(t)})}
+          var ops=[];
+          Object.keys(dados.apps).forEach(function(app){Object.keys(dados.apps[app]).forEach(function(col){var m=dados.apps[app][col];Object.keys(m).forEach(function(id){ops.push({app:app,op:'set',col:col,id:id,data:m[id]})})})});
+          L('Gravando '+ops.length+' registros na planilha…');
+          var s2=Promise.resolve(),n=0;
+          for(var i=0;i<ops.length;i+=40)(function(lote){s2=s2.then(function(){return GFI.api('batch',{ops:lote}).then(function(){n+=lote.length;L(n+' de '+ops.length+' gravados.')})})})(ops.slice(i,i+40));
+          return s2;
+        });
+      });
+    }).then(function(){L('Importação concluída.','ok');document.getElementById('fim').hidden=false},function(e){L('Erro: '+(e&&e.message||e),'bad');btn.disabled=false});
+  };
+})();
+</script>
+</body>
+</html>
