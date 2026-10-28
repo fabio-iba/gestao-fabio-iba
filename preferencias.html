@@ -77,11 +77,19 @@ a{color:var(--ac)}
   var PID=m&&codProf(m[1])===m[2].toLowerCase()?m[1]:null;
   if(m&&!PID){app.innerHTML='<div class="card"><b>Link inválido.</b> <span class="muted">Confira o link enviado pela coordenação.</span></div>';return}
   if(PID){try{localStorage.setItem('gdPortal',PID+'.'+codProf(PID))}catch(e){}}
+  // filtro escolhido pela coordenação ao enviar o link (matrizes, cursos, anos, módulos)
+  var FILTRO=null;try{var fm0=/[#&]f=([^&]+)/.exec(location.hash||'');if(fm0)FILTRO=JSON.parse(decodeURIComponent(fm0[1]))}catch(e){FILTRO=null}
+  function passaFiltro(d,F){if(!F)return true;
+    if(F.m&&F.m.length&&F.m.indexOf(String(d.matriz||''))<0)return false;
+    if(F.c&&F.c.length&&F.c.indexOf(d.cursoId)<0)return false;
+    if(F.a&&F.a.length&&F.a.indexOf(d.ano||'')<0)return false;
+    if(F.o&&F.o.length&&F.o.indexOf(d.modulo||'')<0)return false;
+    return true}
 
   // agrupa as disciplinas: mesmo nome no mesmo módulo = uma escolha (vale para todos os cursos e matrizes)
-  function unidades(D,C){
+  function unidades(D,C,F){
     var g={};
-    Object.keys(D).forEach(function(id){var d=D[id];if(!d||!d.nome)return;
+    Object.keys(D).forEach(function(id){var d=D[id];if(!d||!d.nome||!passaFiltro(d,F))return;
       var k=chaveDisc(d.nome)+'|'+(d.modulo||'');
       var u=g[k]=g[k]||{id:k,chave:chaveDisc(d.nome),nome:d.nome,modulo:d.modulo||'Sem módulo',anos:{},cursos:{},horas:{}};
       if(d.ano)u.anos[d.ano]=1;if(d.hora)u.horas[d.hora]=1;
@@ -97,7 +105,7 @@ a{color:var(--ac)}
   function professor(){
     GFI.api('listMany',{cols:['disciplinas','cursos','pessoas','habilitacoes','escolhas']}).then(function(r){
       var D=lista(r.disciplinas),C=lista(r.cursos),P=lista(r.pessoas),H=lista(r.habilitacoes),E=lista(r.escolhas)[PID]||null;
-      var eu=P[PID]||{nome:PID},FX=fixas(H),us=unidades(D,C),sel={},q='',fm='';
+      var eu=P[PID]||{nome:PID},FX=fixas(H),us=unidades(D,C,FILTRO),sel={},q='',fm='';
       if(E&&E.lista)E.lista.forEach(function(x){sel[x.id]=1});
       us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
       var mods=[];us.forEach(function(u){if(mods.indexOf(u.modulo)<0)mods.push(u.modulo)});
@@ -133,22 +141,49 @@ a{color:var(--ac)}
     },function(err){app.innerHTML='<div class="card"><span class="msg bad">Não foi possível carregar as disciplinas.</span> <span class="muted">'+esc(err&&err.message)+'</span></div>'});
   }
 
-  /* ---------------- coordenação: links e respostas ---------------- */
+  /* ---------------- coordenação: filtros, professores e envio ---------------- */
   function coordenador(){
-    document.getElementById('titulo').textContent='Escolha de disciplinas · links';
+    document.getElementById('titulo').textContent='Escolha de disciplinas · envio';
     document.getElementById('voltar').style.display='';
-    GFI.api('listMany',{cols:['pessoas','escolhas']}).then(function(r){
-      var P=lista(r.pessoas),E=lista(r.escolhas);
+    GFI.api('listMany',{cols:['pessoas','escolhas','disciplinas','cursos']}).then(function(r){
+      var P=lista(r.pessoas),E=lista(r.escolhas),D=lista(r.disciplinas),C=lista(r.cursos);
       var ps=Object.keys(P).filter(function(id){var p=P[id];return p&&p.nome&&!/mediador/i.test(p.papel||'')}).sort(function(a,b){return P[a].nome.localeCompare(P[b].nome,'pt-BR')});
-      var resp=ps.filter(function(id){return E[id]}).length;
-      var h='<p class="lead">Envie a cada professor o link dele. As respostas vão para a planilha <b>Escolha de disciplinas - professores</b>, na pasta do site no seu Drive. <b>'+resp+' de '+ps.length+'</b> já responderam.</p><div class="card" style="overflow-x:auto"><table><thead><tr><th>Professor</th><th>Situação</th><th style="min-width:280px">Link</th><th></th></tr></thead><tbody>'+
-        ps.map(function(id){var p=P[id],e=E[id],lk=URL_PREF+'#p='+id+'.'+codProf(id);
-          var corpo='Olá, '+p.nome.split(' ')[0]+'!\n\nPara a distribuição das próximas disciplinas, acesse o link abaixo e marque as disciplinas que você gostaria de trabalhar. Depois, clique em "Enviar escolhas".\n\n'+lk+'\n\nObrigado!\nFabio Iba';
-          var mail='mailto:'+encodeURIComponent(p.email||'')+'?subject='+encodeURIComponent('Escolha de disciplinas')+'&body='+encodeURIComponent(corpo);
-          return '<tr><td><b>'+esc(p.nome)+'</b><br><span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail')+'</span></td><td>'+(e?'<span class="pill s">Respondeu</span><br><span class="muted" style="font-size:12.5px">'+dataBR(e.enviadoEm)+' · '+((e.lista||[]).length)+' disc.</span>':'<span class="pill n">Aguardando</span>')+'</td><td><input readonly value="'+esc(lk)+'" onclick="this.select()"></td><td style="white-space:nowrap"><button type="button" data-copy="'+esc(lk)+'">Copiar</button> <a href="'+mail+'">Outlook</a></td></tr>'}).join('')+
-        '</tbody></table></div>';
-      app.innerHTML=h;
-      app.addEventListener('click',function(e){var b=e.target.closest('[data-copy]');if(!b)return;var t=b.getAttribute('data-copy');(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){b.textContent='Copiado!';setTimeout(function(){b.textContent='Copiar'},1500)},function(){prompt('Copie o link:',t)})});
+      var op={m:{},c:{},a:{},o:{}};
+      Object.keys(D).forEach(function(id){var d=D[id];op.m[String(d.matriz||'')]=1;if(d.cursoId)op.c[d.cursoId]=1;if(d.ano)op.a[d.ano]=1;if(d.modulo)op.o[d.modulo]=1});
+      var ROT={m:'Matrizes',c:'Cursos',a:'Anos',o:'Módulos'};
+      function rot(t,v){return t==='c'?(C[v]?C[v].nome:v):t==='m'?(v||'Sem matriz'):v}
+      var F={m:{},c:{},a:{},o:{}},SP={},fila=null;
+      function arr(o){return Object.keys(o)}
+      function filtroLink(){var f={};['m','c','a','o'].forEach(function(t){var x=arr(F[t]);if(x.length)f[t]=x});return arr(f).length?f:null}
+      function linkDe(id){var f=filtroLink();return URL_PREF+'#p='+id+'.'+codProf(id)+(f?'&f='+encodeURIComponent(JSON.stringify(f)):'')}
+      function contaDisc(){var f=filtroLink(),k={};Object.keys(D).forEach(function(id){var d=D[id];if(d&&d.nome&&passaFiltro(d,f))k[chaveDisc(d.nome)+'|'+(d.modulo||'')]=1});return arr(k).length}
+      function chips(t){return '<div class="card" style="margin-top:10px"><b>'+ROT[t]+'</b> <span class="muted" style="font-size:12.5px">(nenhum marcado = todos)</span><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+
+        arr(op[t]).sort(function(x,y){return rot(t,x).localeCompare(rot(t,y),'pt-BR',{numeric:true})}).map(function(v){var on=!!F[t][v];return '<button type="button" class="chip" data-t="'+t+'" data-v="'+esc(v)+'" style="padding:6px 14px;font-weight:600;'+(on?'background:var(--ac);border-color:var(--ac);color:#fff':'')+'">'+esc(rot(t,v))+'</button>'}).join('')+'</div></div>'}
+      function corpo(id){var p=P[id];return 'Olá, '+p.nome.split(' ')[0]+'!\n\nPara a distribuição das próximas disciplinas, acesse o link abaixo, marque as disciplinas que você gostaria de trabalhar e clique em "Enviar escolhas".\n\n'+linkDe(id)+'\n\nObrigado!\nFabio Iba'}
+      function mailto(id){var p=P[id];return 'mailto:'+encodeURIComponent(p.email||'')+'?subject='+encodeURIComponent('Escolha de disciplinas')+'&body='+encodeURIComponent(corpo(id))}
+      function desenhar(){
+        var nsel=arr(SP).length,resp=ps.filter(function(id){return E[id]}).length;
+        var h='<p class="lead">1. Escolha o que o professor vai ver. 2. Marque os professores. 3. Clique em <b>Preparar e-mails</b>. As respostas vão para a planilha <b>Escolha de disciplinas - professores</b>, no seu Drive. <b>'+resp+' de '+ps.length+'</b> já responderam.</p>'+
+          ['m','c','a','o'].map(chips).join('')+
+          '<div class="card"><b>'+contaDisc()+' disciplinas</b> <span class="muted">vão aparecer para os professores com esses filtros.</span></div>'+
+          '<div class="card" style="overflow-x:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><b>Professores</b><span><button type="button" id="todos">Marcar todos</button> <button type="button" id="nenhum">Desmarcar</button></span></div><table><thead><tr><th></th><th>Professor</th><th>Situação</th></tr></thead><tbody>'+
+          ps.map(function(id){var p=P[id],e=E[id];return '<tr><td style="width:36px"><input type="checkbox" class="sp" data-id="'+esc(id)+'"'+(SP[id]?' checked':'')+' style="width:18px;height:18px"'+(p.email?'':' title="Sem e-mail cadastrado"')+'></td><td><b>'+esc(p.nome)+'</b><br><span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail cadastrado')+'</span></td><td>'+(e?'<span class="pill s">Respondeu</span><br><span class="muted" style="font-size:12.5px">'+dataBR(e.enviadoEm)+' · '+((e.lista||[]).length)+' disc.</span>':'<span class="pill n">Aguardando</span>')+'</td></tr>'}).join('')+
+          '</tbody></table><div class="foot"><button class="pri" id="preparar"'+(nsel?'':' disabled')+'>Preparar e-mails ('+nsel+')</button></div></div>';
+        if(fila){h+='<div class="card" id="fila"><b>E-mails prontos</b> <span class="muted">Clique em cada professor: o Outlook abre com o e-mail pronto. É só conferir e enviar.</span><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">'+
+          fila.map(function(id){var p=P[id];return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><span><b>'+esc(p.nome)+'</b> <span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail')+'</span></span><span style="white-space:nowrap"><a class="abrir" data-id="'+esc(id)+'" href="'+mailto(id)+'" style="font-weight:700">Abrir no Outlook</a> · <a href="#" data-copy="'+esc(linkDe(id))+'">Copiar link</a></span></div>'}).join('')+'</div></div>'}
+        app.innerHTML=h;
+        if(fila){var fl=document.getElementById('fila');if(fl)fl.scrollIntoView({behavior:'smooth',block:'start'})}
+      }
+      app.addEventListener('click',function(e){
+        var c=e.target.closest('.chip');if(c){var t=c.getAttribute('data-t'),v=c.getAttribute('data-v');if(F[t][v])delete F[t][v];else F[t][v]=1;fila=null;desenhar();return}
+        if(e.target.id==='todos'){ps.forEach(function(id){SP[id]=1});fila=null;desenhar();return}
+        if(e.target.id==='nenhum'){SP={};fila=null;desenhar();return}
+        if(e.target.id==='preparar'){fila=ps.filter(function(id){return SP[id]});desenhar();return}
+        var ab=e.target.closest('.abrir');if(ab){ab.textContent='Aberto ✓';return}
+        var cp=e.target.closest('[data-copy]');if(cp){e.preventDefault();var t2=cp.getAttribute('data-copy');(navigator.clipboard?navigator.clipboard.writeText(t2):Promise.reject()).then(function(){cp.textContent='Copiado!'},function(){prompt('Copie o link:',t2)})}
+      });
+      app.addEventListener('change',function(e){var x=e.target.closest('.sp');if(!x)return;var id=x.getAttribute('data-id');if(x.checked)SP[id]=1;else delete SP[id];fila=null;desenhar()});
+      desenhar();
     },function(err){app.innerHTML='<div class="card"><span class="msg bad">Não foi possível carregar.</span> <span class="muted">'+esc(err&&err.message)+'</span></div>'});
   }
 })();

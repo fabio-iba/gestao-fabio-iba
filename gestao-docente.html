@@ -1586,7 +1586,7 @@ function htmlCadastros(){
       if(nq&&norm(p.nome).indexOf(nq)<0)return false;
       return true;
     }).sort(function(a,b){return (a.externo?2:0)-(b.externo?2:0)||(a.papel==='regente'?1:0)-(b.papel==='regente'?1:0)||byNome(a,b)});
-    return topo(P.length+' '+pl(P.length,'professor','professores'),redondos([adm?redondo('nova-pessoa','Adicionar professor',ICO_MAIS,'formador'):'',redondo('rel-prof','Relatório em PDF',ICO_IMP)]))
+    return topo(P.length+' '+pl(P.length,'professor','professores'),redondos([adm?redondo('nova-pessoa','Adicionar professor',ICO_MAIS,'formador'):'',redondo('rel-prof','Relatório em PDF',ICO_IMP),adm?redondo('escolha-disc','Enviar escolha de disciplinas','<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>'):'']))
       +tabela(820,['Nome','Papel','Contrato','Posicionamento','Score'],P.map(function(p,ip){var sepX=p.externo&&(ip===0||!P[ip-1].externo)?'<tr class="sep-ext"><td colspan="6">Professores de outra coordenação</td></tr>':'';
         var sc=scoreProf(p.id),scTxt=sc?'<span class="carga-t '+scoreCls(sc.nota)+'" title="'+sc.n+' entregas avaliadas · '+sc.atrasadas+' com atraso">'+scoreTxt(sc.nota)+'</span>':'<span class="muted">—</span>';
         var pos=posicionamentoProf(p);
@@ -5152,7 +5152,8 @@ document.addEventListener('click',function(ev){
         .catch(function(err){toast(msgErro(err),true)}).then(function(){render()});
       break;
     case 'f-planilha':if(dlg._planilha)dlg._planilha();break;
-    case 'rel-prof':relatorioProfessores();break;
+    case 'escolha-disc':window.open('preferencias.html','_blank','noopener');break;
+     case 'rel-prof':relatorioProfessores();break;
     case 'rel-med':relatorioMediadores();break;
     case 'relatorio':abrirRelatorio();break;
     case 'ca-modo':if(S.caModo!==el.getAttribute('data-modo'))distLimparForm();S.caModo=el.getAttribute('data-modo');render();break;
