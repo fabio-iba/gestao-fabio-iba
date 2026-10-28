@@ -37,7 +37,12 @@
     if (!API) return Promise.reject(erro('not_configured', 'Configure o endereço do Apps Script em config.js.'));
     var corpo = Object.assign({ op: op, key: chave(), app: APP }, dados || {});
     // text/plain evita a pré-verificação CORS, que o Apps Script não responde
-    return fetch(API, { method: 'POST', body: JSON.stringify(corpo), headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' })
+    var txt = JSON.stringify(corpo);
+    // leituras e gravações pequenas vão por GET (mais compatível com o Apps Script); arquivos grandes por POST
+    var req = txt.length < 6000
+      ? fetch(API + '?q=' + encodeURIComponent(txt), { method: 'GET', redirect: 'follow' })
+      : fetch(API, { method: 'POST', body: txt, headers: { 'Content-Type': 'text/plain;charset=utf-8' }, redirect: 'follow' });
+    return req
       .then(function (r) { if (!r.ok) throw erro('server_unavailable', 'O servidor respondeu ' + r.status + '.'); return r.json(); })
       .then(function (j) {
         if (!j || !j.ok) {
@@ -45,16 +50,15 @@
           throw erro((j && j.code) || 'internal', (j && j.message) || 'Erro no servidor.');
         }
         return j.data;
-      }, function (e) { if (e && e.code) throw e; throw erro('server_unavailable', 'Sem conexão com o servidor (Apps Script). Verifique a internet e o endereço em config.js.'); });
+      }, function (e) { if (e && e.code) throw e; console.error('GFI api', op, e); throw erro('server_unavailable', 'Sem conexão com o servidor (Apps Script). Verifique a internet e o endereço em config.js.'); });
   }
 
   // leitura síncrona (só para os dados embutidos da página inicial e do calendário, antes dos scripts da página)
   function apiSync(op, dados) {
     try {
       var x = new XMLHttpRequest();
-      x.open('POST', API, false);
-      x.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
-      x.send(JSON.stringify(Object.assign({ op: op, key: chave(), app: APP }, dados || {})));
+      x.open('GET', API + '?q=' + encodeURIComponent(JSON.stringify(Object.assign({ op: op, key: chave(), app: APP }, dados || {}))), false);
+      x.send();
       var j = JSON.parse(x.responseText);
       return j && j.ok ? j.data : null;
     } catch (e) { return null; }
