@@ -53,7 +53,7 @@ function tratar(req) {
     if (op === 'escolhas') {
       var pe = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || req.pid || ''));
       if (!pe || codProf(pe[1]) !== pe[2].toLowerCase()) return { ok: false, code: 'invalid_argument', message: 'Link do professor inválido.' };
-      return comTrava(function () { return { ok: true, data: salvarEscolhas(pe[1], req.lista || [], req.obs || '') }; });
+      return comTrava(function () { return { ok: true, data: salvarEscolhas(pe[1], req.lista || [], req.obs || '', req.dias || []) }; });
     }
     if (op === 'listMany') return { ok: true, data: listMany(req.app, req.cols || []) };
     if (op === 'set' || op === 'update' || op === 'delete') return comTrava(function () { return { ok: true, data: gravar(req) }; });
@@ -88,10 +88,13 @@ function tratarPortal(req) {
     if (r.confirmacoes) r.confirmacoes = r.confirmacoes.filter(function (d) { return d.data && d.data.professorId === pid; });
     if (r.escolhas) r.escolhas = r.escolhas.filter(function (d) { return d.id === pid; });
     // das habilitações, o link só recebe as disciplinas fixas (para travar as de outros professores)
-    if (r.habilitacoes) r.habilitacoes = r.habilitacoes.map(function (d) { var f = (d.data && d.data.fixas) || {}; return { id: d.id, data: { fixas: { ead: f.ead || [], estendida: f.estendida || [] } } }; });
+    if (r.habilitacoes) {
+      var nomes = {}; listMany('gd', ['pessoas']).pessoas.forEach(function (p) { nomes[p.id] = (p.data && p.data.nome) || p.id; });
+      r.habilitacoes = r.habilitacoes.map(function (d) { var f = (d.data && d.data.fixas) || {}; return { id: d.id, data: { nome: nomes[d.id] || d.id, fixas: { ead: f.ead || [], estendida: f.estendida || [] } } }; });
+    }
     return { ok: true, data: r };
   }
-  if (op === 'escolhas') return comTrava(function () { return { ok: true, data: salvarEscolhas(pid, req.lista || [], req.obs || '') }; });
+  if (op === 'escolhas') return comTrava(function () { return { ok: true, data: salvarEscolhas(pid, req.lista || [], req.obs || '', req.dias || []) }; });
   if ((op === 'set' || op === 'delete') && req.col === 'confirmacoes') {
     return comTrava(function () {
       var atual = listMany('gd', ['confirmacoes']).confirmacoes.filter(function (d) { return d.id === String(req.id); })[0];
@@ -108,7 +111,8 @@ function tratarPortal(req) {
 function chaveDisc(n) { return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ''); }
 function dataBR(d) { return Utilities.formatDate(d, 'America/Sao_Paulo', 'dd/MM/yyyy HH:mm'); }
 
-function salvarEscolhas(pid, lista, obs) {
+function salvarEscolhas(pid, lista, obs, dias) {
+  dias = (dias || []).map(String).slice(0, 7); var diasTxt = dias.join(', ');
   // não aceita disciplina fixa de outro professor
   var fixasOutros = {};
   listMany('gd', ['habilitacoes']).habilitacoes.forEach(function (h) {
@@ -118,32 +122,33 @@ function salvarEscolhas(pid, lista, obs) {
   });
   lista = lista.filter(function (x) { return x && x.chave && !fixasOutros[x.chave]; });
   var agora = new Date();
-  gravar({ app: 'gd', col: 'escolhas', id: pid, op: 'set', data: { professorId: pid, lista: lista, obs: String(obs).slice(0, 2000), enviadoEm: agora.toISOString() } });
+  gravar({ app: 'gd', col: 'escolhas', id: pid, op: 'set', data: { professorId: pid, lista: lista, dias: dias, obs: String(obs).slice(0, 2000), enviadoEm: agora.toISOString() } });
 
   var pes = listMany('gd', ['pessoas']).pessoas.filter(function (d) { return d.id === pid; })[0];
   var nome = (pes && pes.data && pes.data.nome) || pid, email = (pes && pes.data && pes.data.email) || '';
   var sh = planilhaEscolhas(), dados = sh.getDataRange().getValues();
+  if (sh.getRange(1, 11).getValue() !== 'Dias disponíveis') sh.getRange(1, 11).setValue('Dias disponíveis').setFontWeight('bold');
   for (var i = dados.length - 1; i >= 1; i--) if (String(dados[i][1]) === pid) sh.deleteRow(i + 1);
-  var linhas = lista.map(function (x) { return [dataBR(agora), pid, nome, email, x.modulo || '', x.nome || '', x.cursos || '', x.ano || '', x.fixa ? 'Fixa' : '', obs || '']; });
-  if (!linhas.length) linhas = [[dataBR(agora), pid, nome, email, '', '(nenhuma disciplina marcada)', '', '', '', obs || '']];
+  var linhas = lista.map(function (x) { return [dataBR(agora), pid, nome, email, x.modulo || '', x.nome || '', x.cursos || '', x.ano || '', x.fixa ? 'Fixa' : '', obs || '', diasTxt]; });
+  if (!linhas.length) linhas = [[dataBR(agora), pid, nome, email, '', '(nenhuma disciplina marcada)', '', '', '', obs || '', diasTxt]];
   sh.getRange(sh.getLastRow() + 1, 1, linhas.length, linhas[0].length).setValues(linhas);
-  abaProfessor(sh.getParent(), nome, email, agora, lista, obs);
+  abaProfessor(sh.getParent(), nome, email, agora, lista, obs, diasTxt);
   return { total: lista.length, enviadoEm: agora.toISOString() };
 }
 
 // uma aba por professor, refeita a cada envio
-function abaProfessor(ss, nome, email, agora, lista, obs) {
+function abaProfessor(ss, nome, email, agora, lista, obs, diasTxt) {
   var titulo = String(nome).replace(/[\/\\?*\[\]:]/g, ' ').slice(0, 90) || 'Professor';
   var sh = ss.getSheetByName(titulo);
   if (!sh) sh = ss.insertSheet(titulo); else sh.clear();
-  sh.getRange(1, 1, 4, 2).setValues([['Professor', nome], ['E-mail', email], ['Enviado em', dataBR(agora)], ['Observação', obs || '']]);
-  sh.getRange(1, 1, 4, 1).setFontWeight('bold');
+  sh.getRange(1, 1, 5, 2).setValues([['Professor', nome], ['E-mail', email], ['Enviado em', dataBR(agora)], ['Dias disponíveis', diasTxt || '(não informado)'], ['Observação', obs || '']]);
+  sh.getRange(1, 1, 5, 1).setFontWeight('bold');
   var cab = [['Módulo', 'Disciplina', 'Cursos / matrizes', 'Ano', 'Situação']];
-  sh.getRange(6, 1, 1, 5).setValues(cab).setFontWeight('bold').setBackground('#DDF1F1');
+  sh.getRange(7, 1, 1, 5).setValues(cab).setFontWeight('bold').setBackground('#DDF1F1');
   var linhas = lista.map(function (x) { return [x.modulo || '', x.nome || '', x.cursos || '', x.ano || '', x.fixa ? 'Fixa' : '']; });
   if (!linhas.length) linhas = [['', '(nenhuma disciplina marcada)', '', '', '']];
-  sh.getRange(7, 1, linhas.length, 5).setValues(linhas);
-  sh.setFrozenRows(6);
+  sh.getRange(8, 1, linhas.length, 5).setValues(linhas);
+  sh.setFrozenRows(7);
   sh.setColumnWidth(1, 110); sh.setColumnWidth(2, 360); sh.setColumnWidth(3, 260); sh.setColumnWidth(4, 70); sh.setColumnWidth(5, 90);
 }
 

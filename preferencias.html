@@ -73,6 +73,9 @@ a{color:var(--ac)}
   function sigla(nome,matriz){var n=norm(nome),s=/psicolog/.test(n)?'PSIORG':/administra/.test(n)?'ADM/PGER':/felicidade/.test(n)?'CFEL':/saude mental/.test(n)?'GSMT':/recursos humanos/.test(n)?'RH':/institucion/.test(n)?'Institucional':nome;return s+(matriz?' '+matriz:'')}
   // disciplinas sem matriz indicada pertencem à Matriz 2026N (padrão do painel)
   function matrizDe(d){return (d&&d.matriz)||'2026N'}
+  // fora da escolha: disciplinas ECT e as marcadas como sem aula ao vivo
+  function foraDaEscolha(d){return !!d.semAoVivo||/^\s*ECT\b/i.test(d.nome||'')}
+  function nomeCurto(n){var p=String(n||'').trim().split(/\s+/);return p.length>1?p[0]+' '+p[p.length-1]:p[0]||''}
   function lista(arr){var o={};(arr||[]).forEach(function(d){o[d.id]=d.data});return o}
 
   var m=/[#?&]p=([\w-]+)\.([a-z0-9]+)/i.exec((location.hash||'')+'&'+(location.search||''));
@@ -91,7 +94,7 @@ a{color:var(--ac)}
   // agrupa as disciplinas: mesmo nome no mesmo módulo = uma escolha (vale para todos os cursos e matrizes)
   function unidades(D,C,F){
     var g={};
-    Object.keys(D).forEach(function(id){var d=D[id];if(!d||!d.nome||!passaFiltro(d,F))return;
+    Object.keys(D).forEach(function(id){var d=D[id];if(!d||!d.nome||!passaFiltro(d,F)||foraDaEscolha(d))return;
       var k=chaveDisc(d.nome)+'|'+(d.modulo||'');
       var u=g[k]=g[k]||{id:k,chave:chaveDisc(d.nome),nome:d.nome,modulo:d.modulo||'Sem módulo',anos:{},cursos:{},horas:{}};
       if(d.ano)u.anos[d.ano]=1;if(d.hora)u.horas[d.hora]=1;
@@ -109,22 +112,24 @@ a{color:var(--ac)}
       var D=lista(r.disciplinas),C=lista(r.cursos),P=lista(r.pessoas),H=lista(r.habilitacoes),E=lista(r.escolhas)[PID]||null;
       var eu=P[PID]||{nome:PID},FX=fixas(H),us=unidades(D,C,FILTRO),sel={},q='',fm='';
       if(E&&E.lista)E.lista.forEach(function(x){sel[x.id]=1});
-      us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
+      us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;u.fixoNomes=f.filter(function(x){return x!==PID}).map(function(x){return nomeCurto((H[x]&&H[x].nome)||x)}).join(', ');if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
       var mods=[];us.forEach(function(u){if(mods.indexOf(u.modulo)<0)mods.push(u.modulo)});
       var obs=E&&E.obs||'';
+      var DIAS=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],dias={};(E&&E.dias||[]).forEach(function(x){dias[x]=1});
       function desenhar(){
         var n=Object.keys(sel).length,nq=norm(q);
-        var vis=us.filter(function(u){return (!fm||u.modulo===fm)&&(!nq||norm(u.nome+' '+u.curso).indexOf(nq)>=0)});
-        var h='<p class="lead">Prof(a). <b>'+esc(eu.nome)+'</b> · marque as disciplinas que você quer trabalhar e clique em <b>Enviar escolhas</b>. Cada disciplina vale para todos os cursos e matrizes em que aparece.</p>'+
+        var vis=us.filter(function(u){return (!fm||u.modulo===fm)&&(!nq||norm(u.nome).indexOf(nq)>=0)});
+        var h='<p class="lead">Prof(a). <b>'+esc(eu.nome)+'</b> · marque as disciplinas que você quer trabalhar e clique em <b>Enviar escolhas</b>.</p>'+
           (E&&E.enviadoEm?'<div class="card" style="margin-top:0"><span class="msg ok">Escolhas enviadas em '+dataBR(E.enviadoEm)+'.</span> <span class="muted">Você pode alterar e enviar de novo quando quiser.</span></div>':'')+
-          '<div class="bar"><input id="q" type="search" placeholder="Buscar disciplina ou curso" value="'+esc(q)+'"><select id="fm"><option value="">Todos os módulos</option>'+mods.map(function(x){return '<option'+(x===fm?' selected':'')+'>'+esc(x)+'</option>'}).join('')+'</select><span class="cont">'+n+' marcada'+(n===1?'':'s')+'</span></div>';
+          '<div class="bar"><input id="q" type="search" placeholder="Buscar disciplina" value="'+esc(q)+'"><select id="fm"><option value="">Todos os módulos</option>'+mods.map(function(x){return '<option'+(x===fm?' selected':'')+'>'+esc(x)+'</option>'}).join('')+'</select><span class="cont">'+n+' marcada'+(n===1?'':'s')+'</span></div>';
         mods.forEach(function(md){var it=vis.filter(function(u){return u.modulo===md});if(!it.length)return;
           h+='<section class="mod"><h2>'+esc(md)+' <small>'+it.length+' disciplina'+(it.length===1?'':'s')+'</small></h2><div class="grid">'+it.map(function(u){
             var on=!!sel[u.id],cls='disc'+(on?' on':'')+(u.outro||u.minha?' lock':'');
-            var meta=[u.curso,u.ano?u.ano+' ano':'',u.hora].filter(Boolean).join(' · ');
-            var tag=u.outro?'<span class="tag">Fixa para outro professor</span>':u.minha?'<span class="tag">Fixa para você</span>':'';
+            var meta=[u.ano?u.ano+' ano':'',u.hora].filter(Boolean).join(' · ');
+            var tag=u.outro?'<span class="tag">Fixa: '+esc(u.fixoNomes)+'</span>':u.minha?'<span class="tag">Fixa: '+esc(nomeCurto(eu.nome))+'</span>':'';
             return '<button type="button" class="'+cls+'" data-id="'+esc(u.id)+'"'+(u.outro||u.minha?' aria-disabled="true"':'')+' aria-pressed="'+on+'"><span class="ck">'+(on?'✓':u.outro?'🔒':'')+'</span><span><b>'+esc(u.nome)+'</b><span class="meta">'+esc(meta)+'</span>'+tag+'</span></button>'}).join('')+'</div></section>'});
         if(!vis.length)h+='<div class="card muted">Nenhuma disciplina encontrada.</div>';
+        h+='<div class="card"><b>Dias da semana disponíveis para dar aula</b><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+DIAS.map(function(x){var on=!!dias[x];return '<button type="button" class="dia" data-dia="'+x+'" aria-pressed="'+on+'" style="padding:8px 16px;font-weight:600;'+(on?'background:var(--ac);border-color:var(--ac);color:#fff':'')+'">'+(on?'✓ ':'')+x+'</button>'}).join('')+'</div></div>';
         h+='<div class="card"><label for="obs"><b>Observação</b> <span class="muted">(opcional)</span></label><textarea id="obs" maxlength="2000" placeholder="Ex.: prefiro disciplinas do 2º ano">'+esc(obs)+'</textarea><div class="foot"><button class="pri" id="enviar">Enviar escolhas</button><span class="msg" id="msg"></span></div></div>';
         app.innerHTML=h;
         var qi=document.getElementById('q');qi.oninput=function(){q=qi.value;var p=qi.selectionStart;desenhar();var n2=document.getElementById('q');n2.focus();n2.setSelectionRange(p,p)};
@@ -132,11 +137,13 @@ a{color:var(--ac)}
         document.getElementById('obs').oninput=function(e){obs=e.target.value};
         document.getElementById('enviar').onclick=enviar;
       }
+      app.addEventListener('click',function(e){var dd=e.target.closest('.dia');if(dd){var x=dd.getAttribute('data-dia');if(dias[x])delete dias[x];else dias[x]=1;desenhar();return}});
       app.addEventListener('click',function(e){var b=e.target.closest('.disc');if(!b||b.getAttribute('aria-disabled'))return;var id=b.getAttribute('data-id');if(sel[id])delete sel[id];else sel[id]=1;desenhar()});
       function enviar(){
-        var bt=document.getElementById('enviar'),msg=document.getElementById('msg');bt.disabled=true;msg.className='msg';msg.textContent='Enviando…';
+        var bt=document.getElementById('enviar'),msg=document.getElementById('msg');
+        var dl=DIAS.filter(function(x){return dias[x]});if(!dl.length){msg.className='msg bad';msg.textContent='Marque pelo menos um dia da semana disponível.';return}bt.disabled=true;msg.className='msg';msg.textContent='Enviando…';
         var l=us.filter(function(u){return sel[u.id]&&!u.outro}).map(function(u){return {id:u.id,chave:u.chave,nome:u.nome,modulo:u.modulo,cursos:u.curso,ano:u.ano,fixa:u.minha}});
-        GFI.api('escolhas',{lista:l,obs:obs,pid:PID+'.'+codProf(PID)}).then(function(r){E={lista:l,obs:obs,enviadoEm:r.enviadoEm};desenhar();var m2=document.getElementById('msg');m2.className='msg ok';m2.textContent='Escolhas enviadas ('+r.total+' disciplina'+(r.total===1?'':'s')+'). Obrigado!'},
+        GFI.api('escolhas',{lista:l,obs:obs,dias:dl,pid:PID+'.'+codProf(PID)}).then(function(r){E={lista:l,obs:obs,dias:dl,enviadoEm:r.enviadoEm};desenhar();var m2=document.getElementById('msg');m2.className='msg ok';m2.textContent='Escolhas enviadas ('+r.total+' disciplina'+(r.total===1?'':'s')+'). Obrigado!'},
           function(err){bt.disabled=false;msg.className='msg bad';msg.textContent='Não foi possível enviar ('+(err&&err.message||'erro')+'). Tente de novo.'});
       }
       desenhar();
@@ -158,7 +165,7 @@ a{color:var(--ac)}
       function arr(o){return Object.keys(o)}
       function filtroLink(){var f={};['m','c','a','o'].forEach(function(t){var x=arr(F[t]);if(x.length)f[t]=x});return arr(f).length?f:null}
       function linkDe(id){var f=filtroLink();return URL_PREF+'#p='+id+'.'+codProf(id)+(f?'&f='+encodeURIComponent(JSON.stringify(f)):'')}
-      function contaDisc(){var f=filtroLink(),k={};Object.keys(D).forEach(function(id){var d=D[id];if(d&&d.nome&&passaFiltro(d,f))k[chaveDisc(d.nome)+'|'+(d.modulo||'')]=1});return arr(k).length}
+      function contaDisc(){var f=filtroLink(),k={};Object.keys(D).forEach(function(id){var d=D[id];if(d&&d.nome&&passaFiltro(d,f)&&!foraDaEscolha(d))k[chaveDisc(d.nome)+'|'+(d.modulo||'')]=1});return arr(k).length}
       function chips(t){return '<div class="card" style="margin-top:10px"><b>'+ROT[t]+'</b> <span class="muted" style="font-size:12.5px">(nenhum marcado = todos)</span><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">'+
         arr(op[t]).sort(function(x,y){return rot(t,x).localeCompare(rot(t,y),'pt-BR',{numeric:true})}).map(function(v){var on=!!F[t][v];return '<button type="button" class="chip" data-t="'+t+'" data-v="'+esc(v)+'" style="padding:6px 14px;font-weight:600;'+(on?'background:var(--ac);border-color:var(--ac);color:#fff':'')+'">'+esc(rot(t,v))+'</button>'}).join('')+'</div></div>'}
       function corpo(id){var p=P[id];return 'Olá, '+p.nome.split(' ')[0]+'!\n\nPara a distribuição das próximas disciplinas, acesse o link abaixo, marque as disciplinas que você gostaria de trabalhar e clique em "Enviar escolhas".\n\n'+linkDe(id)+'\n\nObrigado!\nFabio Iba'}
