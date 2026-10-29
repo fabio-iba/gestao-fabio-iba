@@ -115,7 +115,9 @@ a{color:var(--ac)}
       us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;u.fixoNomes=f.filter(function(x){return x!==PID}).map(function(x){return nomeCurto((H[x]&&H[x].nome)||x)}).join(', ');if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
       var mods=[];us.forEach(function(u){if(mods.indexOf(u.modulo)<0)mods.push(u.modulo)});
       var obs=E&&E.obs||'';
-      var DIAS=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira'],dias={};(E&&E.dias||[]).forEach(function(x){dias[x]=1});
+      var DIAS=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira'],dias={};
+      // professor regente já tem todos os dias disponíveis: não escolhe dias
+      var REGENTE=/regente/i.test(eu.papel||'');if(REGENTE)DIAS.forEach(function(x){dias[x]=1});(E&&E.dias||[]).forEach(function(x){dias[x]=1});
       function desenhar(){
         var n=Object.keys(sel).length,nq=norm(q);
         var vis=us.filter(function(u){return (!fm||u.modulo===fm)&&(!nq||norm(u.nome).indexOf(nq)>=0)});
@@ -129,7 +131,7 @@ a{color:var(--ac)}
             var tag=u.outro?'<span class="tag">Fixa: '+esc(u.fixoNomes)+'</span>':u.minha?'<span class="tag">Fixa: '+esc(nomeCurto(eu.nome))+'</span>':'';
             return '<button type="button" class="'+cls+'" data-id="'+esc(u.id)+'"'+(u.outro||u.minha?' aria-disabled="true"':'')+' aria-pressed="'+on+'"><span class="ck">'+(on?'✓':u.outro?'🔒':'')+'</span><span><b>'+esc(u.nome)+'</b><span class="meta">'+esc(meta)+'</span>'+tag+'</span></button>'}).join('')+'</div></section>'});
         if(!vis.length)h+='<div class="card muted">Nenhuma disciplina encontrada.</div>';
-        h+='<div class="card"><b>Dias da semana disponíveis para dar aula</b><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+DIAS.map(function(x){var on=!!dias[x];return '<button type="button" class="dia" data-dia="'+x+'" aria-pressed="'+on+'" style="padding:8px 16px;font-weight:600;'+(on?'background:var(--ac);border-color:var(--ac);color:#fff':'')+'">'+(on?'✓ ':'')+x+'</button>'}).join('')+'</div></div>';
+        if(!REGENTE)h+='<div class="card"><b>Dias da semana disponíveis para dar aula</b><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+DIAS.map(function(x){var on=!!dias[x];return '<button type="button" class="dia" data-dia="'+x+'" aria-pressed="'+on+'" style="padding:8px 16px;font-weight:600;'+(on?'background:var(--ac);border-color:var(--ac);color:#fff':'')+'">'+(on?'✓ ':'')+x+'</button>'}).join('')+'</div></div>';
         h+='<div class="card"><label for="obs"><b>Observação</b> <span class="muted">(opcional)</span></label><textarea id="obs" maxlength="2000" placeholder="Ex.: prefiro disciplinas do 2º ano">'+esc(obs)+'</textarea><div class="foot"><button class="pri" id="enviar">Enviar escolhas</button><span class="msg" id="msg"></span></div></div>';
         app.innerHTML=h;
         var qi=document.getElementById('q');qi.oninput=function(){q=qi.value;var p=qi.selectionStart;desenhar();var n2=document.getElementById('q');n2.focus();n2.setSelectionRange(p,p)};
