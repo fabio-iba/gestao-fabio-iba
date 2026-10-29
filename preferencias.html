@@ -98,7 +98,7 @@ a{color:var(--ac)}
       var k=chaveDisc(d.nome)+'|'+(d.modulo||'');
       var u=g[k]=g[k]||{id:k,chave:chaveDisc(d.nome),nome:d.nome,modulo:d.modulo||'Sem módulo',anos:{},cursos:{},horas:{}};
       if(d.ano)u.anos[d.ano]=1;if(d.hora)u.horas[d.hora]=1;
-      var c=C[d.cursoId];u.cursos[sigla(c?c.nome:'',matrizDe(d))]=1});
+      var c=C[d.cursoId];u.cursos[sigla(c?c.nome:'',matrizDe(d))]=1;if(c&&/institucion/.test(norm(c.nome)))u.inst=true});
     return Object.keys(g).map(function(k){var u=g[k];u.ano=Object.keys(u.anos).sort().join(', ');u.curso=Object.keys(u.cursos).sort().join(' · ');u.hora=Object.keys(u.horas).sort().join(', ');return u})
       .sort(function(a,b){return a.modulo.localeCompare(b.modulo,'pt-BR',{numeric:true})||a.nome.localeCompare(b.nome,'pt-BR')});
   }
@@ -125,7 +125,7 @@ a{color:var(--ac)}
         mods.forEach(function(md){var it=vis.filter(function(u){return u.modulo===md});if(!it.length)return;
           h+='<section class="mod"><h2>'+esc(md)+' <small>'+it.length+' disciplina'+(it.length===1?'':'s')+'</small></h2><div class="grid">'+it.map(function(u){
             var on=!!sel[u.id],cls='disc'+(on?' on':'')+(u.outro||u.minha?' lock':'');
-            var meta=[u.ano?u.ano+' ano':'',u.hora].filter(Boolean).join(' · ');
+            var meta=[u.inst?'Institucional':'',u.ano?u.ano+' ano':'',u.hora].filter(Boolean).join(' · ');
             var tag=u.outro?'<span class="tag">Fixa: '+esc(u.fixoNomes)+'</span>':u.minha?'<span class="tag">Fixa: '+esc(nomeCurto(eu.nome))+'</span>':'';
             return '<button type="button" class="'+cls+'" data-id="'+esc(u.id)+'"'+(u.outro||u.minha?' aria-disabled="true"':'')+' aria-pressed="'+on+'"><span class="ck">'+(on?'✓':u.outro?'🔒':'')+'</span><span><b>'+esc(u.nome)+'</b><span class="meta">'+esc(meta)+'</span>'+tag+'</span></button>'}).join('')+'</div></section>'});
         if(!vis.length)h+='<div class="card muted">Nenhuma disciplina encontrada.</div>';
