@@ -2641,11 +2641,20 @@ function abrirPessoa(id,papelPadrao){
     return gravar(function(){return ref.set(dadosP)},'Cadastro salvo.').then(function(ok){if(ok)fechar();else G('dlg-salvar').disabled=false});
   };
   dlg._excluir=function(){
-    var n=Object.keys(S.data.entregas).filter(function(i){return S.data.entregas[i].professorId===ex.id}).length;
-    if(n)return erroDlg('Esta pessoa tem '+n+' '+pl(n,'entrega','entregas')+'. Exclua as entregas antes.');
+    // exclusão completa: tudo o que é do professor sai junto (alocações, entregas, e-mails, confirmações, habilitação, afinidade, escolhas etc.)
+    var apagar=[],cont={},entIds={};
+    Object.keys(S.data.entregas||{}).forEach(function(i){if(S.data.entregas[i].professorId===ex.id)entIds[i]=1});
+    Object.keys(S.data).forEach(function(col){var m=S.data[col];if(!m||typeof m!=='object'||col==='pessoas')return;
+      Object.keys(m).forEach(function(id){var d=m[id]||{};
+        var dele=d.professorId===ex.id||d.pessoaId===ex.id||d.profId===ex.id||(d.entregaId&&entIds[d.entregaId])||((col==='habilitacoes'||col==='afinidades'||col==='escolhas')&&id===ex.id)||id.indexOf(ex.id+'__')===0;
+        if(dele){apagar.push(col+'/'+id);cont[col]=(cont[col]||0)+1}})});
+    ['habilitacoes','afinidades','escolhas'].forEach(function(col){if(apagar.indexOf(col+'/'+ex.id)<0)apagar.push(col+'/'+ex.id)});
+    var ROT_COL={alocacoes:'alocação|alocações',entregas:'entrega|entregas',envios:'registro de e-mail|registros de e-mail',avisos:'aviso|avisos',confirmacoes:'confirmação|confirmações',historicoAlocacoes:'registro do histórico|registros do histórico',coords:'disciplina de outra coordenação|disciplinas de outra coordenação'};
+    var resumo=Object.keys(cont).filter(function(c){return ROT_COL[c]}).map(function(c){var r=ROT_COL[c].split('|');return cont[c]+' '+(cont[c]===1?r[0]:r[1])});
     var afetados=Object.keys(S.data.pessoas).map(function(i){return S.data.pessoas[i]}).filter(function(p){return (p.mediadorIds||[]).indexOf(ex.id)>=0});
     var afetadasA=Object.keys(S.data.alocacoes).map(function(k){return {k:k,a:S.data.alocacoes[k]}}).filter(function(x){return (x.a.mediadorIds||[]).indexOf(ex.id)>=0});
-    pedirConfirmacao('Excluir "'+ex.nome+'"?',afetadasA.length?'O mediador será removido de '+afetadasA.length+' '+pl(afetadasA.length,'alocação','alocações')+'. Esta ação não pode ser desfeita.':'Esta ação não pode ser desfeita.','Excluir').then(function(ok){
+    var txtEx=(resumo.length?'Também serão apagados: '+resumo.join(', ')+', além da habilitação, afinidades e escolhas de disciplinas. ':'Também serão apagadas a habilitação, as afinidades e as escolhas de disciplinas. ')+(afetadasA.length?'O mediador será removido de '+afetadasA.length+' '+pl(afetadasA.length,'alocação','alocações')+'. ':'')+'Esta ação não pode ser desfeita.';
+    pedirConfirmacao('Excluir "'+ex.nome+'"?',txtEx,'Excluir').then(function(ok){
       if(!ok)return;
       var seq=Promise.resolve(true);
       afetados.forEach(function(p){
@@ -2661,8 +2670,11 @@ function abrirPessoa(id,papelPadrao){
         });
       });
       seq.then(function(o){
+        if(!o)return false;
+        return apagarSeq(apagar);
+      }).then(function(o){
         if(!o)return;
-        gravar(function(){return S.db.doc('pessoas/'+ex.id).delete()},'Cadastro excluído.').then(function(o2){if(o2)fechar()});
+        gravar(function(){return S.db.doc('pessoas/'+ex.id).delete()},'Cadastro excluído, com tudo o que estava vinculado a ele.').then(function(o2){if(o2)fechar()});
       });
     });
   };
