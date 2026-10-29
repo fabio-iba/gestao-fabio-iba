@@ -34,6 +34,7 @@ button:disabled{opacity:.55;cursor:default}
 .disc .ck{flex:none;width:22px;height:22px;border-radius:7px;border:2px solid var(--line);display:grid;place-items:center;margin-top:1px;color:#fff;font-size:14px;font-weight:700}
 .disc.on{border-color:var(--ac);background:var(--ac-s)}
 .disc.on .ck{background:var(--ac);border-color:var(--ac)}
+.disc.lock .ck,.disc.lock.on .ck{background:transparent;border-color:var(--lock);color:var(--lock)}
 .disc b{display:block;font-size:14.5px;line-height:1.3}
 .disc span.meta{display:block;color:var(--mut);font-size:12.5px;margin-top:3px}
 .disc.lock{cursor:default;background:var(--lock-s);border-color:transparent}
@@ -112,7 +113,7 @@ a{color:var(--ac)}
       var D=lista(r.disciplinas),C=lista(r.cursos),P=lista(r.pessoas),H=lista(r.habilitacoes),E=lista(r.escolhas)[PID]||null;
       var eu=P[PID]||{nome:PID},FX=fixas(H),us=unidades(D,C,FILTRO),sel={},q='',fm='';
       if(E&&E.lista)E.lista.forEach(function(x){sel[x.id]=1});
-      us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;u.fixoNomes=f.filter(function(x){return x!==PID}).map(function(x){return nomeCurto((H[x]&&H[x].nome)||x)}).join(', ');if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
+      us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;u.fixoNomes=f.filter(function(x){return x!==PID}).map(function(x){return nomeCurto((H[x]&&H[x].nome)||String(x).split('-').filter(function(w){return w.length>2}).map(function(w){return w.charAt(0).toUpperCase()+w.slice(1)}).join(' '))}).join(', ');if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
       var mods=[];us.forEach(function(u){if(mods.indexOf(u.modulo)<0)mods.push(u.modulo)});
       var obs=E&&E.obs||'';
       var DIAS=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira'],dias={};
@@ -129,7 +130,7 @@ a{color:var(--ac)}
             var on=!!sel[u.id],cls='disc'+(on?' on':'')+(u.outro||u.minha?' lock':'');
             var meta=[u.inst?'Institucional':'',u.ano?u.ano+' ano':'',u.hora].filter(Boolean).join(' · ');
             var tag=u.outro?'<span class="tag">Fixa: '+esc(u.fixoNomes)+'</span>':u.minha?'<span class="tag">Fixa: '+esc(nomeCurto(eu.nome))+'</span>':'';
-            return '<button type="button" class="'+cls+'" data-id="'+esc(u.id)+'"'+(u.outro||u.minha?' aria-disabled="true"':'')+' aria-pressed="'+on+'"><span class="ck">'+(on?'✓':u.outro?'🔒':'')+'</span><span><b>'+esc(u.nome)+'</b><span class="meta">'+esc(meta)+'</span>'+tag+'</span></button>'}).join('')+'</div></section>'});
+            return '<button type="button" class="'+cls+'" data-id="'+esc(u.id)+'"'+(u.outro||u.minha?' aria-disabled="true"':'')+' aria-pressed="'+on+'"><span class="ck">'+(u.outro||u.minha?'🔒':on?'✓':'')+'</span><span><b>'+esc(u.nome)+'</b><span class="meta">'+esc(meta)+'</span>'+tag+'</span></button>'}).join('')+'</div></section>'});
         if(!vis.length)h+='<div class="card muted">Nenhuma disciplina encontrada.</div>';
         if(!REGENTE)h+='<div class="card"><b>Dias da semana disponíveis para dar aula</b><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px">'+DIAS.map(function(x){var on=!!dias[x];return '<button type="button" class="dia" data-dia="'+x+'" aria-pressed="'+on+'" style="padding:8px 16px;font-weight:600;'+(on?'background:var(--ac);border-color:var(--ac);color:#fff':'')+'">'+(on?'✓ ':'')+x+'</button>'}).join('')+'</div></div>';
         h+='<div class="card"><label for="obs"><b>Observação</b> <span class="muted">(opcional)</span></label><textarea id="obs" maxlength="2000" placeholder="Ex.: prefiro disciplinas do 2º ano">'+esc(obs)+'</textarea><div class="foot"><button class="pri" id="enviar">Enviar escolhas</button><span class="msg" id="msg"></span></div></div>';
