@@ -1591,7 +1591,7 @@ function htmlCadastros(){
         var sc=scoreProf(p.id),scTxt=sc?'<span class="carga-t '+scoreCls(sc.nota)+'" title="'+sc.n+' entregas avaliadas · '+sc.atrasadas+' com atraso">'+scoreTxt(sc.nota)+'</span>':'<span class="muted">—</span>';
         var pos=posicionamentoProf(p);
         var ct=p.contrato?esc(p.contrato)+(temValor(p.aulasContrato)?' · '+esc(p.aulasContrato)+' aulas':''):'<span class="muted">não informado</span>';
-        return sepX+'<tr><td>'+esc(p.nome)+'<div class="muted">'+(p.email?esc(p.email):'sem e-mail')+'</div></td><td>'+esc(PAPEL_CURTO[p.papel]||'')+'</td><td>'+ct+'</td><td><span class="carga-t '+pos.cls+'">'+esc(pos.txt)+'</span></td><td>'+scTxt+'</td><td>'+btn('edit-pessoa',p.id,'Editar')+' <button class="btn mini" type="button" data-act="link-prof" data-id="'+esc(p.id)+'" title="Link para o professor marcar as entregas">Link de entregas</button></td></tr>';
+        return sepX+'<tr><td>'+esc(p.nome)+'<div class="muted">'+(p.email?esc(p.email):'sem e-mail')+'</div></td><td>'+esc(PAPEL_CURTO[p.papel]||'')+'</td><td>'+ct+'</td><td><span class="carga-t '+pos.cls+'">'+esc(pos.txt)+'</span></td><td>'+scTxt+'</td><td>'+btn('edit-pessoa',p.id,'Editar')+'</td></tr>';
       }),'Nenhum professor com esses filtros.');
   }
 
