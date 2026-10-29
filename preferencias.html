@@ -156,8 +156,8 @@ a{color:var(--ac)}
   function coordenador(){
     document.getElementById('titulo').textContent='Escolha de disciplinas · envio';
     document.getElementById('voltar').style.display='';
-    GFI.api('listMany',{cols:['pessoas','escolhas','disciplinas','cursos']}).then(function(r){
-      var P=lista(r.pessoas),E=lista(r.escolhas),D=lista(r.disciplinas),C=lista(r.cursos);
+    GFI.api('listMany',{cols:['pessoas','escolhas','disciplinas','cursos','escolhasEnvio']}).then(function(r){
+      var P=lista(r.pessoas),E=lista(r.escolhas),D=lista(r.disciplinas),C=lista(r.cursos),EV=lista(r.escolhasEnvio);
       var ps=Object.keys(P).filter(function(id){var p=P[id];return p&&p.nome&&!/mediador/i.test(p.papel||'')}).sort(function(a,b){return P[a].nome.localeCompare(P[b].nome,'pt-BR')});
       var op={m:{},c:{},a:{},o:{}};
       Object.keys(D).forEach(function(id){var d=D[id];op.m[matrizDe(d)]=1;if(d.cursoId)op.c[d.cursoId]=1;if(d.ano)op.a[d.ano]=1;if(d.modulo)op.o[d.modulo]=1});
@@ -178,10 +178,10 @@ a{color:var(--ac)}
           ['m','c','a','o'].map(chips).join('')+
           '<div class="card"><b>'+contaDisc()+' disciplinas</b> <span class="muted">vão aparecer para os professores com esses filtros.</span></div>'+
           '<div class="card" style="overflow-x:auto"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><b>Professores</b><span><button type="button" id="todos">Marcar todos</button> <button type="button" id="nenhum">Desmarcar</button></span></div><table><thead><tr><th></th><th>Professor</th><th>Situação</th></tr></thead><tbody>'+
-          ps.map(function(id){var p=P[id],e=E[id];return '<tr><td style="width:36px"><input type="checkbox" class="sp" data-id="'+esc(id)+'"'+(SP[id]?' checked':'')+' style="width:18px;height:18px"'+(p.email?'':' title="Sem e-mail cadastrado"')+'></td><td><b>'+esc(p.nome)+'</b><br><span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail cadastrado')+'</span></td><td>'+(e?'<span class="pill s">Respondeu</span><br><span class="muted" style="font-size:12.5px">'+dataBR(e.enviadoEm)+' · '+((e.lista||[]).length)+' disc.</span>':'<span class="pill n">Aguardando</span>')+'</td></tr>'}).join('')+
+          ps.map(function(id){var p=P[id],e=E[id];return '<tr><td style="width:36px"><input type="checkbox" class="sp" data-id="'+esc(id)+'"'+(SP[id]?' checked':'')+' style="width:18px;height:18px"'+(p.email?'':' title="Sem e-mail cadastrado"')+'></td><td><b>'+esc(p.nome)+'</b><br><span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail cadastrado')+'</span></td><td>'+(e?'<span class="pill s">Respondeu</span><br><span class="muted" style="font-size:12.5px">'+dataBR(e.enviadoEm)+' · '+((e.lista||[]).length)+' disc.</span>':'<span class="pill n">Aguardando</span>'+(EV[id]&&EV[id].em?'<br><span class="muted" style="font-size:12.5px">E-mail enviado em '+dataBR(EV[id].em).slice(0,10)+'</span>':''))+'</td></tr>'}).join('')+
           '</tbody></table><div class="foot"><button class="pri" id="preparar"'+(nsel?'':' disabled')+'>Preparar e-mails ('+nsel+')</button></div></div>';
         if(fila){h+='<div class="card" id="fila"><b>E-mails prontos</b> <span class="muted">Clique em cada professor: o Outlook abre com o e-mail pronto. É só conferir e enviar.</span><div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">'+
-          fila.map(function(id){var p=P[id];return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><span><b>'+esc(p.nome)+'</b> <span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail')+'</span></span><span style="white-space:nowrap"><a class="abrir" data-id="'+esc(id)+'" href="'+mailto(id)+'" style="font-weight:700">Abrir no Outlook</a> · <a href="#" data-copy="'+esc(linkDe(id))+'">Copiar link</a></span></div>'}).join('')+'</div></div>'}
+          fila.map(function(id){var p=P[id];return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;border:1px solid var(--line);border-radius:12px;padding:10px 12px"><span><b>'+esc(p.nome)+'</b> <span class="muted" style="font-size:12.5px">'+esc(p.email||'sem e-mail')+'</span></span><span style="white-space:nowrap"><a class="abrir" data-id="'+esc(id)+'" href="'+mailto(id)+'" style="font-weight:700">'+(EV[id]&&EV[id].em&&EV[id].em.slice(0,10)===new Date().toISOString().slice(0,10)?'Enviado ✓':'Abrir no Outlook')+'</a> · <a href="#" data-copy="'+esc(linkDe(id))+'">Copiar link</a></span></div>'}).join('')+'</div></div>'}
         app.innerHTML=h;
         if(fila){var fl=document.getElementById('fila');if(fl)fl.scrollIntoView({behavior:'smooth',block:'start'})}
       }
@@ -190,7 +190,7 @@ a{color:var(--ac)}
         if(e.target.id==='todos'){ps.forEach(function(id){SP[id]=1});fila=null;desenhar();return}
         if(e.target.id==='nenhum'){SP={};fila=null;desenhar();return}
         if(e.target.id==='preparar'){fila=ps.filter(function(id){return SP[id]});desenhar();return}
-        var ab=e.target.closest('.abrir');if(ab){ab.textContent='Aberto ✓';return}
+        var ab=e.target.closest('.abrir');if(ab){var aid=ab.getAttribute('data-id'),em=new Date().toISOString();EV[aid]={em:em};ab.textContent='Enviado ✓';GFI.api('set',{col:'escolhasEnvio',id:aid,data:{em:em}}).catch(function(){});return}
         var cp=e.target.closest('[data-copy]');if(cp){e.preventDefault();var t2=cp.getAttribute('data-copy');(navigator.clipboard?navigator.clipboard.writeText(t2):Promise.reject()).then(function(){cp.textContent='Copiado!'},function(){prompt('Copie o link:',t2)})}
       });
       app.addEventListener('change',function(e){var x=e.target.closest('.sp');if(!x)return;var id=x.getAttribute('data-id');if(x.checked)SP[id]=1;else delete SP[id];fila=null;desenhar()});
