@@ -115,7 +115,7 @@ a{color:var(--ac)}
       us.forEach(function(u){var f=FX[u.chave]||[];u.minha=f.indexOf(PID)>=0;u.outro=!u.minha&&f.length>0;u.fixoNomes=f.filter(function(x){return x!==PID}).map(function(x){return nomeCurto((H[x]&&H[x].nome)||x)}).join(', ');if(u.minha)sel[u.id]=1;if(u.outro)delete sel[u.id]});
       var mods=[];us.forEach(function(u){if(mods.indexOf(u.modulo)<0)mods.push(u.modulo)});
       var obs=E&&E.obs||'';
-      var DIAS=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'],dias={};(E&&E.dias||[]).forEach(function(x){dias[x]=1});
+      var DIAS=['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira'],dias={};(E&&E.dias||[]).forEach(function(x){dias[x]=1});
       function desenhar(){
         var n=Object.keys(sel).length,nq=norm(q);
         var vis=us.filter(function(u){return (!fm||u.modulo===fm)&&(!nq||norm(u.nome).indexOf(nq)>=0)});
