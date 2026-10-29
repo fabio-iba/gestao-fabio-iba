@@ -3169,6 +3169,14 @@ function abrirMedAloc(pid,did){
 
 /* ---------- cancelar alocação ---------- */
 function apagarSeq(paths){
+  // no site (GitHub): apaga em lotes de 20 numa só chamada ao servidor, mais rápido e sem parar no meio
+  if(window.GFI&&GFI.api&&paths.length){
+    var lotes=[],ops=paths.map(function(p){var i=p.lastIndexOf('/');return {app:window.GFI_APP||'gd',op:'delete',col:p.slice(0,i),id:p.slice(i+1)}});
+    for(var i=0;i<ops.length;i+=20)lotes.push(ops.slice(i,i+20));
+    var sq=Promise.resolve();
+    lotes.forEach(function(l){sq=sq.then(function(){return GFI.api('batch',{ops:l})})});
+    return sq.then(function(){paths.forEach(function(p){var i=p.lastIndexOf('/'),c=p.slice(0,i),id=p.slice(i+1);if(S.data[c])delete S.data[c][id]});return true},function(err){toast(msgErro(err),true);return false});
+  }
   var seq=Promise.resolve(true);
   paths.forEach(function(path){
     seq=seq.then(function(ok){
