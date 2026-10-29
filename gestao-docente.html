@@ -4318,7 +4318,7 @@ function distListaHTML(D,adm,nq){
         +'<table class="dist-mat"><thead><tr><th></th><th>Ano</th><th>Ordem</th><th>Horário</th><th>Disciplina</th><th>Situação</th></tr></thead><tbody>'
         +ds.map(function(d){
           var k=chaveDisc(d.nome),vis=!nq||norm(d.nome).indexOf(nq)>=0;
-          var al=Object.keys(S.data.alocacoes).map(function(x){return S.data.alocacoes[x]}).filter(function(a){return (irm[d.id]||[d.id]).indexOf(a.disciplinaId)>=0&&(a.tipo||'ead')===D.mod})[0];
+          var skD=sinChave(d),al=Object.keys(S.data.alocacoes).map(function(x){return S.data.alocacoes[x]}).filter(function(a){if((a.tipo||'ead')!==D.mod)return false;if((irm[d.id]||[d.id]).indexOf(a.disciplinaId)>=0)return true;var da=S.data.disciplinas[a.disciplinaId];return !!(da&&skD&&temValor(d.ordem)&&d.hora&&sinChave(da)===skD)})[0];  // sinérgica (mesmo nome, módulo, ordem e horário): a alocação vale para todos os cursos
           var pa=al?S.data.pessoas[al.professorId]:null;
           var fx=distProfs().filter(function(p){return distHab(p.id).fixas[D.mod].indexOf(k)>=0}).map(function(p){return p.nome});
           var sit=(fx.length?'<span class="dist-fixo">Fixa: '+esc(fx.join(', '))+'</span>':'')+(pa?'<span class="dist-aloc">Alocada: '+esc(pa.nome)+'</span>':'')+(hab[k]?'<span class="muted">Habilitados: '+esc(hab[k].join(', '))+'</span>':'<span class="muted">ninguém habilitado</span>');
