@@ -347,4 +347,31 @@ body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}
   }
 })();
 </script>
+<style id="novas-style">
+.tem-novas .band .drive-btn{position:relative}
+.tem-novas .band .drive-btn::after{content:"";position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:#E5322D;border:2px solid #fff;box-shadow:0 0 0 2px rgba(229,50,45,.25)}
+</style>
+<script id="novas-script">
+/* bolinha vermelha no botão do Drive quando chegam novas respostas da Escolha de disciplinas;
+   some quando você clica no botão (o "visto" fica guardado na planilha, vale em qualquer computador) */
+(function(){
+  if(!window.GFI)return;
+  var vistoEm='',ultima='';
+  function marcar(){document.documentElement.classList.toggle('tem-novas',!!ultima&&ultima>vistoEm);
+    var b=document.querySelector('.drive-btn');if(b)b.title=document.documentElement.classList.contains('tem-novas')?'Novas respostas na Escolha de disciplinas':'Abrir pasta do Google Drive'}
+  function checar(){
+    Promise.all([GFI.api('listMany',{app:'gd',cols:['escolhas']}),GFI.api('listMany',{cols:['avisos']})]).then(function(r){
+      ultima='';(r[0].escolhas||[]).forEach(function(d){var e=d.data&&d.data.enviadoEm||'';if(e>ultima)ultima=e});
+      var v=(r[1].avisos||[]).filter(function(d){return d.id==='escolhas'})[0];vistoEm=(v&&v.data&&v.data.vistoEm)||'';
+      marcar()}).catch(function(){});
+  }
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.drive-btn')||!document.documentElement.classList.contains('tem-novas'))return;
+    vistoEm=new Date().toISOString();marcar();
+    GFI.db.doc('avisos/escolhas').set({vistoEm:vistoEm}).catch(function(){});
+  },true);
+  new MutationObserver(function(){marcar()}).observe(document.getElementById('tools'),{childList:true});
+  checar();setInterval(function(){if(!document.hidden)checar()},60000);
+})();
+</script>
 </body></html>
