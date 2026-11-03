@@ -827,6 +827,17 @@ function cmpDisc(a,b){return anoNum(a.ano)-anoNum(b.ano)||ordNum(a)-ordNum(b)||b
 function chaveDisc(n){return norm(n).replace(/[^a-z0-9]/g,'')}
 // disciplinas sinérgicas: mesmo nome, módulo, ordem e horário (1º e 3º anos às 19h; 2º e 4º às 20h40), em qualquer curso ou matriz; ou ligadas à mão pelo campo "Sinérgica com"
 function sinRaiz(d){var v={};while(d&&d.sinergiaCom&&S.data.disciplinas[d.sinergiaCom]&&!v[d.sinergiaCom]){v[d.sinergiaCom]=1;d=S.data.disciplinas[d.sinergiaCom]}return d}
+// sinalização de disciplina sinérgica: mesmo nome, módulo, ordem e horário em mais de um curso (calculado sempre a partir do cadastro, vale para toda disciplina nova)
+function sinCursos(d){
+  if(!d)return [];
+  var c0=S.data.cursos[d.cursoId];
+  if(cursoInst(c0))return Object.keys(S.data.cursos).filter(function(k){return !cursoInst(S.data.cursos[k])}).map(function(k){return S.data.cursos[k].nome});
+  if(!temValor(d.ordem)||!d.hora)return [];
+  var k=sinChave(d),cs={};
+  Object.keys(S.data.disciplinas).forEach(function(i){var x=S.data.disciplinas[i];if(x&&x.nome&&!x.semAoVivo&&sinChave(x)===k&&S.data.cursos[x.cursoId])cs[x.cursoId]=1});
+  var ids=Object.keys(cs);return ids.length>1?ids.map(function(i){return S.data.cursos[i].nome}):[];
+}
+function sinBadge(d){var cs=sinCursos(d);if(!cs.length)return '';return ' <span class="sin-tag" title="Sinérgica com: '+esc(cs.join(', '))+'">⇄ Sinérgica · '+cs.length+' cursos</span>'}
 function sinChave(d){d=sinRaiz(d);if(!d)return '';return [chaveDisc(d.nome||''),d.modulo||'',temValor(d.ordem)?String(d.ordem):'',norm(d.hora||'').replace(/\s/g,'')].join('|')}
 function chaveDoId(did){var d=S.data.disciplinas[did];return d?chaveDisc(d.nome):String(did)}
 // Disciplina outra coordenação: disciplinas de outros cursos/coordenações, só para contar a carga do professor e aparecer nos relatórios
@@ -1410,7 +1421,7 @@ function htmlBancoDados(f,nq){
     var lista=porMod[mod].sort(function(a,b){var ca=(S.data.cursos[a.cursoId]||{}).nome||'',cb=(S.data.cursos[b.cursoId]||{}).nome||'';return ca.localeCompare(cb,'pt-BR')||cmpDisc(a,b)});
     var cm=corMod(mod==='__sem__'?'':mod);
     html+='<div class="bd-mod"><div class="bd-modh '+cm+'"><strong>'+esc(mod==='__sem__'?'Sem módulo':mod)+'</strong><small>'+lista.length+' '+pl(lista.length,'disciplina','disciplinas')+'</small></div>'
-      +'<div class="tabela-wrap"><table class="lista bd-tab"><thead><tr><th>Curso</th><th>Matriz</th><th>Ano</th><th>Ordem</th><th>Disciplina</th><th>Hora</th><th></th></tr></thead><tbody>'
+      +'<div class="tabela-wrap"><table class="lista bd-tab"><thead><tr><th>Curso</th><th>Matriz</th><th>Ano</th><th>Ordem</th><th>Disciplina</th><th>Hora</th><th>Sinergia</th><th></th></tr></thead><tbody>'
       +lista.map(function(d){
         return '<tr>'
           +'<td><select data-bd-id="'+esc(d.id)+'" data-bd-campo="cursoId"'+(adm?'':' disabled')+'>'+optsCursos(d.cursoId)+'</select></td>'
@@ -1419,6 +1430,7 @@ function htmlBancoDados(f,nq){
           +'<td><input type="number" min="1" step="1" data-bd-id="'+esc(d.id)+'" data-bd-campo="ordem" value="'+(temValor(d.ordem)?esc(d.ordem):'')+'" class="bd-cel bd-w-sm"'+(adm?'':' disabled')+'></td>'
           +'<td><input data-bd-id="'+esc(d.id)+'" data-bd-campo="nome" value="'+esc(d.nome||'')+'" class="bd-cel bd-w-lg"'+(adm?'':' disabled')+'></td>'
           +'<td><input data-bd-id="'+esc(d.id)+'" data-bd-campo="hora" value="'+esc(d.hora||'')+'" class="bd-cel bd-w-sm"'+(adm?'':' disabled')+'></td>'
+          +'<td>'+(sinBadge(S.data.disciplinas[d.id]||d)||'<span class="muted" style="font-size:12px">—</span>')+'</td>'
           +'<td>'+(adm?'<button type="button" class="bd-x" data-act="excluir-disc" data-id="'+esc(d.id)+'" aria-label="Excluir '+esc(d.nome||'esta disciplina')+'" title="Excluir esta disciplina">✕</button>':'')+'</td>'
           +'</tr>';
       }).join('')
@@ -4342,7 +4354,7 @@ function distListaHTML(D,adm,nq){
           var pa=al?S.data.pessoas[al.professorId]:null;
           var fx=distProfs().filter(function(p){return distHab(p.id).fixas[D.mod].indexOf(k)>=0}).map(function(p){return p.nome});
           var sit=(fx.length?'<span class="dist-fixo">Fixa: '+esc(fx.join(', '))+'</span>':'')+(pa?'<span class="dist-aloc">Alocada: '+esc(pa.nome)+'</span>':'')+(hab[k]?'<span class="muted">Habilitados: '+esc(hab[k].join(', '))+'</span>':'<span class="muted">ninguém habilitado</span>');
-          return '<tr class="dist-row"'+(vis?'':' hidden')+' data-n="'+esc(norm(d.nome))+'" data-g="'+gid+'"><td><input type="checkbox" class="dist-chk" value="'+esc(k)+'"'+(D.sel[k]?' checked':'')+(adm&&D.prof?'':' disabled')+' aria-label="'+esc(d.nome)+'">'+(adm?'<button type="button" class="dist-pin'+(D.fix&&D.fix[k]?' on':'')+'" data-act="dist-fixar" data-k="'+esc(k)+'" title="Fixar esta disciplina para este professor" aria-label="Fixar '+esc(d.nome)+'" aria-pressed="'+!!(D.fix&&D.fix[k])+'">'+ICO_PIN+'</button>':'')+'</td><td>'+esc(d.ano||'—')+'</td><td>'+(temValor(d.ordem)?esc(d.ordem)+'ª':'—')+'</td><td>'+esc(d.hora||'—')+'</td><td class="dist-nome">'+(cursoInst(S.data.cursos[d.cursoId])?'<b>'+esc(d.nome)+'</b> <span class="dist-inst">institucional</span>':esc(d.nome))+'</td><td><div class="dist-sit">'+sit+'</div></td></tr>';
+          return '<tr class="dist-row"'+(vis?'':' hidden')+' data-n="'+esc(norm(d.nome))+'" data-g="'+gid+'"><td><input type="checkbox" class="dist-chk" value="'+esc(k)+'"'+(D.sel[k]?' checked':'')+(adm&&D.prof?'':' disabled')+' aria-label="'+esc(d.nome)+'">'+(adm?'<button type="button" class="dist-pin'+(D.fix&&D.fix[k]?' on':'')+'" data-act="dist-fixar" data-k="'+esc(k)+'" title="Fixar esta disciplina para este professor" aria-label="Fixar '+esc(d.nome)+'" aria-pressed="'+!!(D.fix&&D.fix[k])+'">'+ICO_PIN+'</button>':'')+'</td><td>'+esc(d.ano||'—')+'</td><td>'+(temValor(d.ordem)?esc(d.ordem)+'ª':'—')+'</td><td>'+esc(d.hora||'—')+'</td><td class="dist-nome">'+(cursoInst(S.data.cursos[d.cursoId])?'<b>'+esc(d.nome)+'</b> <span class="dist-inst">institucional</span>':esc(d.nome))+sinBadge(d)+'</td><td><div class="dist-sit">'+sit+'</div></td></tr>';
         }).join('')+'</tbody></table></div>';
     }).join('')+'</details>';
   }).join('')+'</div>';
@@ -5387,4 +5399,7 @@ init();
 </body>
 </html>
 
-</body></html>
+</body></html
+.sin-tag{display:inline-block;margin-left:4px;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap;background:#E8E5FB;color:#5B4BD6;vertical-align:middle}
+@media (prefers-color-scheme:dark){.sin-tag{background:#231F42;color:#9B8FF5}}
+>
