@@ -4839,7 +4839,7 @@ function htmlQuadro(){
       +g.linhas.map(function(x){
         var d=x.d,ano=d.ano||'—',cab='';
         if(ano!==anoAnt){cab='<tr class="qd-ano"><td colspan="6">'+(d.ano?esc(d.ano)+' ano':'Ano não informado')+'</td></tr>';anoAnt=ano}
-        return cab+'<tr'+(x.tem||semAoVivo(d)?'':' class="qd-semprof"')+'><td>'+esc(d.ano||'—')+'</td><td>'+esc(d.modulo||'—')+'</td><td>'+(temValor(d.ordem)?esc(d.ordem)+'ª':'—')+'</td><td>'+esc(d.hora||'—')+(diasDisc(d).length?'<div class="muted" style="font-size:12px">'+esc(diasTxtCurto(diasDisc(d)))+'</div>':'')+'</td><td>'+(x.inst?'<b>'+esc(d.nome)+'</b>':esc(d.nome))+'</td><td>'+qdCelProf(x)+'</td></tr>';
+        return cab+'<tr'+(x.tem||semAoVivo(d)?'':' class="qd-semprof"')+'><td>'+esc(d.ano||'—')+'</td><td>'+esc(d.modulo||'—')+'</td><td>'+(temValor(d.ordem)?esc(d.ordem)+'ª':'—')+'</td><td>'+esc(d.hora||'—')+(diasDisc(d).length?'<div class="muted" style="font-size:12px">'+esc(diasTxtCurto(diasDisc(d)))+'</div>':'')+'</td><td>'+(x.inst?'<b>'+esc(d.nome)+'</b>':esc(d.nome))+sinBadge(d)+'</td><td>'+qdCelProf(x)+'</td></tr>';
       }).join('')+'</tbody></table></div></div>';
   }).join('')+'<p class="muted" style="margin-top:6px">Em negrito: disciplinas institucionais (aparecem em cada curso, como na matriz).</p>';
 }
