@@ -2321,7 +2321,8 @@ function abrirAloc(preset){
   }
   // Editar entregas: curso, módulo, disciplina, professor, tipo e dias definidos (ex.: pela Distribuição) ficam travados
   function travarFixos(){
-    ['a-curso','a-mod','a-nome','a-prof','a-tipo','a-ano','a-ord'].forEach(function(i){var e=G(i);if(e)e.disabled=true});
+    // só trava o que já está preenchido: campo vazio (ex.: professor ou tipo ainda não escolhidos) fica livre para preencher
+    ['a-curso','a-mod','a-nome','a-prof','a-tipo','a-ano','a-ord'].forEach(function(i){var e=G(i);if(e)e.disabled=!!e.value});
     var al=S.data.alocacoes[preset.pid+'__'+preset.did];
     // dias da semana ficam livres para alterar ao editar a alocação
   }
