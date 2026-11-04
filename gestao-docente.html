@@ -632,6 +632,9 @@ tr.dist-row[hidden]{display:none}
 .top::before{content:""!important;position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px,linear-gradient(90deg,rgba(255,255,255,.05) 1px,transparent 1px) 0 0/30px 30px!important;-webkit-mask-image:linear-gradient(90deg,#000 0%,transparent 70%);mask-image:linear-gradient(90deg,#000 0%,transparent 70%);pointer-events:none}
 .top::after{content:"";position:absolute;right:-70px;top:-90px;width:260px;height:260px;border-radius:50%;border:38px solid rgba(76,199,194,.10);pointer-events:none}
 .top>*{position:relative;z-index:1}
+
+.ge-fer{margin-top:3px;font-size:11.5px;font-weight:700;color:#B4541A;white-space:nowrap}
+@media (prefers-color-scheme:dark){.ge-fer{color:#F0A070}}
 </style>
 </head>
 <body>
@@ -772,7 +775,11 @@ function aulas10(iniIso){var ini=isoSegunda(iniIso),out={};['sem2','sem3','sem4'
   [1,2,3,4].forEach(function(n){out[ch].d1[n]=isoAdd(ini,(2*n-2)*7+off);out[ch].d2[n]=isoAdd(ini,(2*n-1)*7+off)})});return out}
 // prazos automáticos das entregas a partir do início do módulo (critério do cronograma 2026; iguais para a 1ª e a 2ª disciplina)
 var PRAZO_REGRAS=[['mapaAe1',-38,'Mapa'],['ae2Ae3',-31,'AE2 e AE3'],['estudoCaso',-36,'Gravação - Estudo de caso'],['videosMapa',-12,'Vídeo explicativo Mapa'],['videosAe1',-12,'Vídeos AE1'],['slides',-5,'04 Slides + Roteiro']];
-var FERIADOS=['2026-01-01','2026-02-17','2026-04-03','2026-04-21','2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02','2026-11-20','2026-12-25','2027-01-01','2027-02-08','2027-03-26','2027-04-21','2027-05-01','2027-05-10','2027-05-27','2027-05-28','2027-09-06','2027-09-07','2027-10-11','2027-10-12','2027-11-01','2027-11-02','2027-11-15','2027-11-20','2027-12-25']; // 2027: feriados e pontes do Calendário Acadêmico 2027 (04/11/2026)
+var FERIADOS=['2026-01-01','2026-02-17','2026-04-03','2026-04-21','2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02','2026-11-20','2026-12-25','2027-01-01','2027-02-08','2027-02-09','2027-03-26','2027-04-21','2027-05-01','2027-05-10','2027-05-27','2027-05-28','2027-09-06','2027-09-07','2027-10-11','2027-10-12','2027-11-01','2027-11-02','2027-11-15','2027-11-20','2027-12-25']; // 2027: feriados e pontes do Calendário Acadêmico 2027 (04/11/2026)
+var FERIADO_NOME={'2027-01-01':'Confraternização Universal','2027-02-08':'Ponte de Carnaval','2027-02-09':'Carnaval','2027-03-26':'Sexta-feira Santa','2027-04-21':'Tiradentes','2027-05-01':'Dia do Trabalho','2027-05-10':'Aniversário de Maringá','2027-05-27':'Corpus Christi','2027-05-28':'Ponte de Corpus Christi','2027-09-06':'Ponte da Independência','2027-09-07':'Independência do Brasil','2027-10-11':'Ponte de N. Sra. Aparecida','2027-10-12':'Nossa Senhora Aparecida','2027-11-01':'Ponte de Finados','2027-11-02':'Finados','2027-11-15':'Proclamação da República','2027-11-20':'Consciência Negra','2027-12-25':'Natal'};
+// aula mantida em feriado/ponte (gravada com antecedência): só sinaliza
+function ferNome(iso){return FERIADO_NOME[iso]||(FERIADOS.indexOf(iso)>=0?'Feriado':'')}
+function ferTxt(iso){var n=ferNome(iso);return n?' ('+(/^Ponte/.test(n)?n:'Feriado: '+n)+')':''}
 function diaUtilAntes(iso){var g=0;while(g++<10){var p=iso.split('-'),w=new Date(+p[0],+p[1]-1,+p[2]).getDay();if(w!==0&&w!==6&&FERIADOS.indexOf(iso)<0)return iso;iso=isoAdd(iso,-1)}return iso}
 function prazosAuto(iniIso){var ini=isoSegunda(iniIso),o={};PRAZO_REGRAS.forEach(function(r){o[r[0]]=diaUtilAntes(isoAdd(ini,r[1]))});return o}
 function fmtBR(s){if(!s)return '—';var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0]}
@@ -1442,7 +1449,9 @@ function setPorCaminho(obj,caminho,val){
   o[parts[parts.length-1]]=val;
 }
 function geCampo(docId,caminho,doc,adm,travado){
-  return '<input type="date" class="ge-cel" data-ge-id="'+esc(docId)+'" data-ge-path="'+esc(caminho)+'" value="'+esc(geValor(doc,caminho))+'"'+(adm&&!travado?'':' disabled')+(travado?' data-ge-travado="1"':'')+'>';
+  var v=geValor(doc,caminho),fn=/\.prazo$|\.entregue$/.test(caminho)?'':ferNome(v);
+  return '<input type="date" class="ge-cel" data-ge-id="'+esc(docId)+'" data-ge-path="'+esc(caminho)+'" value="'+esc(v)+'"'+(adm&&!travado?'':' disabled')+(travado?' data-ge-travado="1"':'')+'>'
+    +(fn?'<div class="ge-fer" title="Aula em feriado/ponte: gravar com antecedência">⚑ '+esc(fn)+'</div>':'');
 }
 function htmlGradeEntregas(){
   var adm=S.isAdmin&&S.canWrite;
@@ -2907,7 +2916,7 @@ function dadosMediacao(prof,disc,curso,ents,aulas,meds,al){
     professor:prof.nome,email:emailValido(prof.email)?prof.email:'não cadastrado',celular:prof.celular?fmtCel(prof.celular):'não cadastrado',
     entregas:ents.map(function(e){return {rot:e.rot,data:e.prazo?dataExtenso(e.prazo):'Data não definida'}}),
     aulas:arr.map(function(x,n){return {n:'Aula '+(n+1),dia:x?diaSemanaExt(x):'',data:x?dataExtenso(x):'Data não informada'}}),
-    gruposAulas:grupos.length?grupos.map(function(g){return {rot:g.rot,datas:g.datas.map(function(d){return dataExtenso(d)})}}):null,
+    gruposAulas:grupos.length?grupos.map(function(g){return {rot:g.rot,datas:g.datas.map(function(d){return dataExtenso(d)+ferTxt(d)})}}):null,
     mediadores:(meds||[]).map(function(m){return {nome:m.nome,email:emailValido(m.email)?m.email:'sem e-mail cadastrado'}})
   };
 }
@@ -3357,7 +3366,7 @@ function abrirEmail(pid,did,ov){
   var alocReg=S.data.alocacoes[pid+'__'+did]||ov;
   var aulasAloc=ov.datasAulas||((S.data.alocacoes[pid+'__'+did]||{}).datasAulas)||null;
   var gruposE=agruparAulasPorDia(alocReg);
-  var listaAulas=gruposE.length?'Datas das aulas:\n'+gruposE.map(function(g){return g.rot+':\n'+g.datas.map(function(d){return '- '+fmtBR(d)}).join('\n')}).join('\n\n')+'\n\n':'';
+  var listaAulas=gruposE.length?'Datas das aulas:\n'+gruposE.map(function(g){return g.rot+':\n'+g.datas.map(function(d){return '- '+fmtBR(d)+ferTxt(d)}).join('\n')}).join('\n\n')+'\n\n':'';
   var listaEntregas=ents.length?'Entregas e datas:\n'+ents.map(function(e){return '- '+((ATV[e.atv]||{}).rot||e.atv)+': '+fmtBR(e.prazo)}).join('\n')+'\n\n':'';
   var corpo='Olá, '+primeiro+'.\n\nSegue em anexo a sua alocação na disciplina '+disc.nome+(local?' ('+local+')':'')+', com as entregas e as datas de cada uma.\n\n'+listaEntregas+listaAulas+(frase?frase+'\n\n':'')+'Registro das entregas: quando concluir cada atividade, acesse o link abaixo e clique em "Entreguei". A data é registrada automaticamente no controle da coordenação.\n'+linkProf(pid)+'\nAo abrir o link, informe o código: '+pid+'.'+codProf(pid)+' (é preciso entrar com uma conta Claude, gratuita).\n\n'+'Em caso de dúvida, responda a esta mensagem.\n\nAtenciosamente,\n'+ASSINATURA_AVISO;
   var pdfNome='alocacao-'+(slug(disc.nome)||'disciplina')+'-'+(slug(prof.nome)||'professor')+'.pdf';
