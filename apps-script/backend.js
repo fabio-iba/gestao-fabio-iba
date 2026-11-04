@@ -136,6 +136,17 @@ function salvarEscolhas(pid, lista, obs, dias) {
   return { total: lista.length, enviadoEm: agora.toISOString() };
 }
 
+// professor excluído do cadastro: apaga as linhas dele e a aba dele na planilha de escolhas
+function apagarRespostasEscolhas(pid) {
+  var pes = listMany('gd', ['pessoas']).pessoas.filter(function (d) { return d.id === pid; })[0];
+  var nome = (pes && pes.data && pes.data.nome) || '';
+  var sh = planilhaEscolhas(), dados = sh.getDataRange().getValues();
+  for (var i = dados.length - 1; i >= 1; i--) if (String(dados[i][1]) === pid) sh.deleteRow(i + 1);
+  if (!nome) return;
+  var ss = sh.getParent(), aba1 = ss.getSheetByName(String(nome).replace(/[\/\\?*\[\]:]/g, ' ').slice(0, 90));
+  if (aba1 && ss.getSheets().length > 1) ss.deleteSheet(aba1);
+}
+
 // uma aba por professor, refeita a cada envio
 function abaProfessor(ss, nome, email, agora, lista, obs, diasTxt) {
   var titulo = String(nome).replace(/[\/\\?*\[\]:]/g, ' ').slice(0, 90) || 'Professor';
@@ -225,6 +236,7 @@ function gravar(req) {
   for (var i = 0; i < rows.length; i++) if (String(rows[i][0]) === id) { idx = i; break; }
   var linha = idx + 2;
   if (req.op === 'delete') {
+    if (req.app === 'gd' && req.col === 'pessoas') { try { apagarRespostasEscolhas(id); } catch (e) {} }
     if (idx >= 0) { guardarJson(req.app, req.col, id, '', rows[idx][1]); sh.deleteRow(linha); }
     return null;
   }
