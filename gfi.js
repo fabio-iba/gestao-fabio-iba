@@ -27,8 +27,11 @@
     var m = /[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(src);
     return m ? m[1] : '';
   }
+  // página pública (ex.: Calendário Docente): quem não tem a chave só visualiza, sem pedido de senha
+  var PUBLICO = !!window.GFI_PUBLICO;
   function chave() {
     var k = lsGet(KEY_LS);
+    if (!k && PUBLICO) return '';
     if (!k && portal()) return '';
     while (!k) {
       k = window.prompt('Gestão Fabio Iba\n\nDigite a chave de acesso (definida no Apps Script, propriedade CHAVE).\nEla fica guardada neste navegador.');
@@ -93,7 +96,7 @@
   window.__gfiPre = function (j) { PRE.ok = !!(j && j.ok); PRE.data = PRE.ok ? j.data : null; };
   if (API && document.readyState === 'loading') {
     var colsPre = []; if (APP === 'inicio' || APP === 'cal') colsPre.push('paginas'); if ((window.GFI_LS || []).length) colsPre.push('navegador');
-    if (colsPre.length) document.write('<script src="' + API + '?callback=__gfiPre&q=' + encodeURIComponent(JSON.stringify({ op: 'listMany', key: chave(), app: APP, cols: colsPre })) + '"><\/script>');
+    if (colsPre.length && (!PUBLICO || lsGet(KEY_LS))) document.write('<script src="' + API + '?callback=__gfiPre&q=' + encodeURIComponent(JSON.stringify({ op: 'listMany', key: chave(), app: APP, cols: colsPre })) + '"><\/script>');
   }
   function apiSync(op, dados) { return PRE.ok ? PRE.data : null; }
 
@@ -208,7 +211,7 @@
   var user = {
     me: function () { return Promise.resolve({ id: 'coordenador', name: CFG.nome || 'Fabio Iba', isOwner: true }); },
     isOwner: function () { return Promise.resolve(true); },
-    canEdit: function () { return Promise.resolve(true); },
+    canEdit: function () { if (!PUBLICO) return Promise.resolve(true); if (!lsGet(KEY_LS)) return Promise.resolve(false); return api('ping').then(function () { return true; }, function () { return false; }); },
     can: function () { return Promise.resolve(true); }
   };
 
@@ -324,5 +327,8 @@
   var CAPS = { db: db, user: user, downloads: downloads, assets: assets, mcp: mcp, sample: sample, artifact: artifact };
   window.claude = window.claude || {};
   window.claude.use = function (nome) { return Promise.resolve(CAPS[nome] || null); };
-  window.GFI = { api: api, trocarChave: trocarChave, imgUrl: imgUrl, db: db };
+  // coordenador entra para editar uma página pública
+  function entrar() { var k = window.prompt('Chave de acesso do coordenador (propriedade CHAVE do Apps Script):'); if (k && String(k).trim()) { lsSet(KEY_LS, String(k).trim()); location.reload(); } }
+  function sair() { try { localStorage.removeItem(KEY_LS); } catch (e) {} location.reload(); }
+  window.GFI = { entrar: entrar, sair: sair, temChave: function () { return !!lsGet(KEY_LS); }, api: api, trocarChave: trocarChave, imgUrl: imgUrl, db: db };
 })();
