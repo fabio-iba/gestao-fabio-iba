@@ -234,12 +234,11 @@ var MESES=["janeiro","fevereiro","março","abril","maio","junho","julho","agosto
 var MES3=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
 var state=(function(){
   // Fonte do calendário: a cópia salva pela página (planilha) + os eventos oficiais (id "k27_…") publicados no arquivo.
-  // Se o arquivo for mais novo (ex.: atualização diária pela página oficial), os eventos oficiais dele prevalecem,
+  // Os eventos oficiais do arquivo sempre prevalecem (a conferência diária atualiza o arquivo),
   // sem apagar eventos criados à mão no site.
   var emb=JSON.parse(document.getElementById("cal-data").textContent);
   var sal=window.GFI_DADOS_PAGINA&&GFI_DADOS_PAGINA("cal-data");
   if(!sal||!sal.events)return emb;
-  if((emb.atualizado||"")<=(sal.atualizado||""))return sal;
   var oficial=function(e){return /^k27_/.test(e.id)},ids={};
   emb.events.filter(oficial).forEach(function(e){ids[e.id]=1});
   var ev=sal.events.filter(function(e){return !oficial(e)}).concat(emb.events.filter(oficial));
