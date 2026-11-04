@@ -1761,7 +1761,7 @@ function dataPlanilhaDe(blocos,e){
 // Uma aba por módulo ("Módulo 51"...). Colunas: A Item, D/E 1ª disciplina (Data limite / Data entrega), F/G 2ª disciplina.
 // Regra: a planilha é a fonte da tabela de Cadastros > Entregas (Data limite e Data entrega ficam iguais às da planilha; módulo bloqueado não muda a Data limite).
 var PE_CAMPOS={mapa:'mapaAe1',ae2:'ae2Ae3',ae3:'ae2Ae3'};
-function pePlanCfg(){return S.data.config.planilhaEntregas||null}
+function pePlanCfg(){return null}   // planilha "Entregas dos professores" descontinuada em 04/11/2026: as entregas vêm do link do professor
 function peCampo(rot){
   var k=normK(rot);
   if(PE_CAMPOS[k])return PE_CAMPOS[k];
