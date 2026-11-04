@@ -3914,7 +3914,7 @@ function posicionamentoProf(p){
       var ne=sc.n;feito=ne;unid='disciplinas';tipoP='externo';clsFinal='';
       posic=ne+' '+pl(ne,'disciplina lecionada','disciplinas lecionadas')+'.';
     }
-    var lmP=limiteMinhas(p);if(lmP!==null&&!p.externo){var nmP=discMinhasProf(p.id);posic+=' Na sua coordenação: '+nmP+' de '+lmP+' '+pl(lmP,'disciplina','disciplinas')+(nmP>lmP?' (acima do limite).':'.');if(nmP>lmP)clsFinal='bad'}
+    var lmP=limiteMinhas(p);if(lmP!==null&&!p.externo){var nmP=discMinhasProf(p.id);posic+=' Na sua coordenação: '+nmP+' de '+lmP+' '+pl(lmP,'disciplina','disciplinas')+(nmP>lmP?' (acima do limite).':(nmP===lmP?' Limite comigo atingido.':'.'));if(nmP>lmP)clsFinal='bad';else if(nmP===lmP&&clsFinal==='warn')clsFinal='ok'}  // atingiu o previsto comigo: verde, como carga completa
     return {txt:posic,cls:clsFinal,feito:feito,meta:meta,unid:unid,tipo:tipoP};
 }
 function relatorioProfessores(){
