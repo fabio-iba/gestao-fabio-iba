@@ -4798,12 +4798,12 @@ function qdDados(f){
   var profsDe=qdIndice(),cursos=Object.keys(S.data.cursos).map(function(i){return S.data.cursos[i]}).sort(byNome);
   var instIds=cursos.filter(cursoInst).map(function(c){return c.id});
   var todas=Object.keys(S.data.disciplinas).map(function(i){return Object.assign({id:i},S.data.disciplinas[i])}).filter(function(d){return d.nome});
-  var okMod=function(d){return (!f.mod||(d.modulo||'__sem__')===f.mod)&&(!f.mat||matrizDe(d)===f.mat)};
+  var msel=qdMats(f),okMod=function(d){return (!f.mod||(d.modulo||'__sem__')===f.mod)&&(!msel.length||msel.indexOf(matrizDe(d))>=0)};
   var inst=todas.filter(function(d){return instIds.indexOf(d.cursoId)>=0&&okMod(d)});
   var normais=cursos.filter(function(c){return !cursoInst(c)});
   var alvo=f.curso?cursos.filter(function(c){return c.id===f.curso}):(normais.length?normais:cursos);
   var grupos=[],unicas={},nCom=0,nSem=0;
-  var mats=f.mat?[f.mat]:listaMatrizes(),pares=[];
+  var mats=msel.length?listaMatrizes().filter(function(m){return msel.indexOf(m)>=0}):listaMatrizes(),pares=[];
   alvo.forEach(function(c){mats.forEach(function(m){pares.push({c:c,m:m})})});
   pares.forEach(function(pr){
     var c=pr.c,m=pr.m,inst0=inst;inst=inst0.filter(function(d){return matrizDe(d)===m});
@@ -4819,13 +4819,16 @@ function qdDados(f){
   });
   return {grupos:grupos,nCom:nCom,nSem:nSem};
 }
+// matrizes escolhidas no Quadro geral (várias ao mesmo tempo); vazio = todas
+function qdMats(f){var m=f&&f.mat;return Array.isArray(m)?m:(m?[m]:[])}
+document.addEventListener('click',function(ev){var b=ev.target.closest&&ev.target.closest('[data-qd-mat]');if(!b)return;var m=b.getAttribute('data-qd-mat'),l=qdMats(S.qd).slice(),i=l.indexOf(m);if(i>=0)l.splice(i,1);else l.push(m);S.qd.mat=l;render()});
 function htmlQuadro(){
   var f=S.qd,cursos=Object.keys(S.data.cursos).map(function(i){return S.data.cursos[i]}).sort(byNome),mods=modulosDoCurso('');
   var Q=qdDados(f);
   var filtros='<div class="ca-campos qd-filtros">'
     +'<label class="fld">Curso<select id="qd-curso"><option value="">Todos os cursos</option>'+cursos.map(function(c){return '<option value="'+esc(c.id)+'"'+(f.curso===c.id?' selected':'')+'>'+esc(c.nome)+'</option>'}).join('')+'</select></label>'
     +'<label class="fld">Módulo<select id="qd-mod"><option value="">Todos os módulos</option>'+mods.lista.map(function(m){return '<option value="'+esc(m)+'"'+(f.mod===m?' selected':'')+'>'+esc(m)+'</option>'}).join('')+(mods.sem?'<option value="__sem__"'+(f.mod==='__sem__'?' selected':'')+'>Sem módulo</option>':'')+'</select></label>'
-    +'<label class="fld">Matriz<select id="qd-mat"><option value="">Todas as matrizes</option>'+listaMatrizes().map(function(m){return '<option value="'+esc(m)+'"'+(f.mat===m?' selected':'')+'>Matriz '+esc(m)+'</option>'}).join('')+'</select></label>'
+    +'<div class="fld"><span>Matriz <small class="muted">(marque uma ou mais; nenhuma = todas)</small></span><div class="bd-mats" role="group" aria-label="Matrizes">'+listaMatrizes().map(function(m){var on=qdMats(f).indexOf(m)>=0;return '<button type="button" class="bd-mat'+(on?' on':'')+'" data-qd-mat="'+esc(m)+'" aria-pressed="'+on+'">'+(on?'✓ ':'')+'Matriz '+esc(m)+'</button>'}).join('')+'</div></div>'
     +'<label class="fld">Situação<select id="qd-sit"><option value="">Todas as disciplinas</option><option value="sem"'+(f.sit==='sem'?' selected':'')+'>Só sem professor</option><option value="com"'+(f.sit==='com'?' selected':'')+'>Só com professor</option></select></label></div>';
   var resumo='<div class="qd-resumo"><span class="qd-chip ok">'+Q.nCom+' com professor</span><span class="qd-chip bad">'+Q.nSem+' sem professor</span></div>';
   if(!Q.grupos.length)return filtros+resumo+'<p class="muted">Nenhuma disciplina para esses filtros.</p>';
@@ -4933,7 +4936,7 @@ function imprimirQuadro(){
   var Q=qdDados(S.qd);
   if(!Q.grupos.length){toast('Nenhuma disciplina para esses filtros.',true);return}
   var agora=new Date(),pdf,f=S.qd;
-  var filtros=[f.mat?'Matriz '+f.mat:'Todas as matrizes',f.mod?(f.mod==='__sem__'?'Sem módulo':f.mod):'Todos os módulos',f.sit==='sem'?'Só disciplinas sem professor':(f.sit==='com'?'Só disciplinas com professor':'Todas as disciplinas')];
+  var filtros=[qdMats(f).length?(qdMats(f).length>1?'Matrizes ':'Matriz ')+qdMats(f).join(', '):'Todas as matrizes',f.mod?(f.mod==='__sem__'?'Sem módulo':f.mod):'Todos os módulos',f.sit==='sem'?'Só disciplinas sem professor':(f.sit==='com'?'Só disciplinas com professor':'Todas as disciplinas')];
   try{pdf=pdfMatriz({quadro:Q,filtros:filtros,emitido:fmtBR(hoje())+' às '+pad(agora.getHours())+':'+pad(agora.getMinutes())})}
   catch(err){toast('Não foi possível gerar o quadro: '+(err&&err.message?err.message:'erro inesperado'),true);return}
   var nomeArq='quadro-alocacao-'+(f.curso?(slug((S.data.cursos[f.curso]||{}).nome)||'curso'):'cursos')+'-'+hoje()+'.pdf';
