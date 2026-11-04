@@ -2317,7 +2317,7 @@ function abrirAloc(preset){
     var off={s2:!okMod,s3:!okNome,s4:!okDis,s5:!okDis,s6:!okDis,s7:!okDis,s8:!okDis,s9:!ok,s10:!ok,s11:!ok,s12:!ok};
     Object.keys(off).forEach(function(k){G(k).classList.toggle('off',off[k])});
     atualizarContMed();
-    if(preset)travarFixos();
+    if(preset&&!preset.novo)travarFixos();  // Nova alocação pelo Quadro geral: professor e demais campos ficam livres
   }
   // Editar entregas: curso, módulo, disciplina, professor, tipo e dias definidos (ex.: pela Distribuição) ficam travados
   function travarFixos(){
