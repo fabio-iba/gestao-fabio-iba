@@ -778,6 +778,13 @@ var PRAZO_REGRAS=[['mapaAe1',-38,'Mapa'],['ae2Ae3',-31,'AE2 e AE3'],['estudoCaso
 var FERIADOS=['2026-01-01','2026-02-17','2026-04-03','2026-04-21','2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02','2026-11-20','2026-12-25','2027-01-01','2027-02-08','2027-02-09','2027-03-26','2027-04-21','2027-05-01','2027-05-10','2027-05-27','2027-05-28','2027-09-06','2027-09-07','2027-10-11','2027-10-12','2027-11-01','2027-11-02','2027-11-15','2027-11-20','2027-12-25']; // 2027: feriados e pontes do Calendário Acadêmico 2027 (04/11/2026)
 var FERIADO_NOME={'2027-01-01':'Confraternização Universal','2027-02-08':'Ponte de Carnaval','2027-02-09':'Carnaval','2027-03-26':'Sexta-feira Santa','2027-04-21':'Tiradentes','2027-05-01':'Dia do Trabalho','2027-05-10':'Aniversário de Maringá','2027-05-27':'Corpus Christi','2027-05-28':'Ponte de Corpus Christi','2027-09-06':'Ponte da Independência','2027-09-07':'Independência do Brasil','2027-10-11':'Ponte de N. Sra. Aparecida','2027-10-12':'Nossa Senhora Aparecida','2027-11-01':'Ponte de Finados','2027-11-02':'Finados','2027-11-15':'Proclamação da República','2027-11-20':'Consciência Negra','2027-12-25':'Natal'};
 // aula mantida em feriado/ponte (gravada com antecedência): só sinaliza
+// feriados e pontes também lidos do Calendário Docente (fonte única): o que for incluído lá passa a valer aqui
+(function(){try{fetch('calendario.html',{cache:'no-cache'}).then(function(r){return r.text()}).then(function(t){
+  var m=/id="cal-data">([\s\S]*?)<\/script>/.exec(t);if(!m)return;var d=JSON.parse(m[1]),novos=0;
+  (d.events||[]).forEach(function(e){var ehF=e.c==='feriado',ehP=/^Ponte/.test(e.t||'');if(!ehF&&!ehP)return;
+    for(var x=e.s;x<=(e.e||e.s);){if(FERIADOS.indexOf(x)<0){FERIADOS.push(x);novos++}if(!FERIADO_NOME[x])FERIADO_NOME[x]=ehP?'Ponte':e.t;var dt=new Date(x+'T12:00:00Z');dt.setUTCDate(dt.getUTCDate()+1);x=dt.toISOString().slice(0,10)}});
+  if(novos&&typeof render==='function')render();
+}).catch(function(){})}catch(e){}})();
 function ferNome(iso){return FERIADO_NOME[iso]||(FERIADOS.indexOf(iso)>=0?'Feriado':'')}
 function ferTxt(iso){var n=ferNome(iso);return n?' ('+(/^Ponte/.test(n)?n:'Feriado: '+n)+')':''}
 function diaUtilAntes(iso){var g=0;while(g++<10){var p=iso.split('-'),w=new Date(+p[0],+p[1]-1,+p[2]).getDay();if(w!==0&&w!==6&&FERIADOS.indexOf(iso)<0)return iso;iso=isoAdd(iso,-1)}return iso}

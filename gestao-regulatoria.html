@@ -703,7 +703,25 @@ function htmlDocs(){
         +'<td>'+esc(d.versao||'—')+'</td><td class="num">'+br(d.aprovadoEm)+'</td>'+'<td>'+chip(ST_DOC,d.status)+'</td><td>'+(d.arquivo?'<button class="btn mini" type="button" data-arq="'+esc(d.id)+'" title="'+esc(d.arquivo.nome||'')+'">Abrir PDF</button>':d.link?'<a class="btn mini" href="'+esc(d.link)+'" target="_blank" rel="noopener" title="Arquivo no Google Drive. Edite e anexe o PDF para guardá-lo no painel.">Abrir link</a>':'<span class="mut">sem arquivo</span>')+'</td><td>'+(d._virt?(t==='PPC'?'<button class="btn mini" type="button" data-ppc-novo="'+esc(d.curso)+'">Cadastrar</button>':'<button class="btn mini" type="button" data-virt-novo="'+esc(JSON.stringify({tipo:d.tipo,disciplina:d.disciplina||'',modulo:d.modulo||'',versao:d.versao||'',cursos:d.cursos||[]}))+'">Cadastrar</button>'):'<span style="display:inline-flex;gap:6px;align-items:center"><button class="btn mini" type="button" data-doc="'+esc(d.id)+'">Editar</button><button class="btn-x" type="button" data-del="docs|'+esc(d.id)+'" aria-label="Excluir" title="Excluir">×</button></span>')+'</td></tr>'}).join('')+'</tbody></table></div>'
       :'<div class="card vazio"><b>Nenhum documento cadastrado</b>Clique em + para cadastrar.</div>');
 }
-function catDisc(){return (S.d.config&&S.d.config.disciplinas)||[]}
+// catálogo de disciplinas e diretório de professores: lidos AO VIVO do Gestão Docente (mesma planilha), para não ficarem desatualizados.
+// A cópia antiga guardada no Regulatório só é usada se o Gestão Docente não responder.
+var GD_VIVO=null;
+var GD_CURSO_REG={'curso-administracao':['adm','pger'],'1xrbzca9o7sxxtcxetat':['cfel'],'curso-gestao-saude-mental':['gsmt'],'curso-psicologia-aplicada':['psiorg'],'curso-recursos-humanos':['rh'],'curso-institucionais':['adm','pger','rh','psiorg','cfel','gsmt','inst']};
+function gdCursoReg(cid,cursos){if(GD_CURSO_REG[cid])return GD_CURSO_REG[cid];var n=String((cursos[cid]||{}).nome||'').toLowerCase();
+  if(/institucion/.test(n))return GD_CURSO_REG['curso-institucionais'];if(/felicidade/.test(n))return ['cfel'];if(/sa[uú]de mental/.test(n))return ['gsmt'];if(/psicolog/.test(n))return ['psiorg'];if(/recursos humanos/.test(n))return ['rh'];if(/administra|processos gerenciais/.test(n))return ['adm','pger'];return []}
+function carregarGdVivo(){
+  if(!window.GFI||!GFI.api)return;
+  GFI.api('listMany',{app:'gd',cols:['disciplinas','cursos','pessoas']}).then(function(r){
+    var cur={};(r.cursos||[]).forEach(function(x){cur[x.id]=x.data||{}});
+    var disc=(r.disciplinas||[]).map(function(x){var d=x.data||{};return d.nome?{a:d.ano||'',c:gdCursoReg(d.cursoId,cur),m:d.modulo||'',n:d.nome,v:d.matriz||'2026N'}:null}).filter(Boolean);
+    var antigos={};((S.d.config&&S.d.config.professores)||[]).forEach(function(p){antigos[p.id]=p});
+    var prof=(r.pessoas||[]).map(function(x){var p=x.data||{};if(!p.nome)return null;var a=antigos[x.id]||{};return Object.assign({},a,{id:x.id,nome:p.nome,email:p.email||a.email||'',papel:p.papel||a.papel||''})}).filter(Boolean);
+    Object.keys(antigos).forEach(function(id){if(antigos[id].papel==='coordenador'&&!prof.some(function(p){return p.id===id}))prof.push(antigos[id])});
+    if(disc.length){GD_VIVO={disciplinas:disc,professores:prof};if(typeof render==='function')render()}
+  }).catch(function(){});
+}
+setTimeout(carregarGdVivo,800);
+function catDisc(){return (GD_VIVO&&GD_VIVO.disciplinas)||(S.d.config&&S.d.config.disciplinas)||[]}
 function docCursos(d){return (d.cursos&&d.cursos.length)?d.cursos:(d.curso?[d.curso]:[])}
 function cursosMarcados(){return $$('[data-dcurso]').filter(function(i){return i.checked}).map(function(i){return i.value})}
 function discDoCurso(c){var cs=[].concat(c||[]);var vist={};return catDisc().filter(function(x){return (x.c||[]).some(function(k){return cs.indexOf(k)>=0})}).filter(function(x){var k=x.n+'|'+x.m+'|'+x.v;if(vist[k])return false;vist[k]=1;return true})}
@@ -774,7 +792,7 @@ function abrirCurso(c){S.editC=c;
   if(!$('#dlg').open)$('#dlg').showModal()}
 function fmtCel(v){var d=String(v||'').replace(/\D/g,'');if(d.length>11&&d.slice(0,2)==='55')d=d.slice(2);
   if(d.length===11)return '('+d.slice(0,2)+') '+d.slice(2,7)+'-'+d.slice(7);if(d.length===10)return '('+d.slice(0,2)+') '+d.slice(2,6)+'-'+d.slice(6);return String(v||'').trim()}
-function diretorio(){return (S.d.config&&S.d.config.professores)||[]}
+function diretorio(){return (GD_VIVO&&GD_VIVO.professores)||(S.d.config&&S.d.config.professores)||[]}
 function normN(t){return String(t||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z ]/g,' ').split(/\s+/).filter(function(x){return x.length>1&&!/^(de|da|do|dos|das|e)$/.test(x)})}
 function achaDir(nome){var tk=normN(nome);if(tk.length<2&&!(tk.length===1&&tk[0].length>3))return null;
   var hits=diretorio().filter(function(d){var dn=normN(d.nome);return tk.every(function(t){return dn.indexOf(t)>=0})});return hits.length===1?hits[0]:null}
