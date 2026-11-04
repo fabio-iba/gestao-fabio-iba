@@ -1,4 +1,6 @@
-<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='cal';window.GFI_LS=[]</script><script src="config.js?v=6"></script><script src="gfi.js?v=6"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><script>window.GFI_APP='cal';window.GFI_LS=[]</script><script src="config.js?v=6"></script><script src="gfi.js?v=6"></script><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}
+@media print{@page{size:A4 landscape;margin:10mm}*{-webkit-print-color-adjust:exact;print-color-adjust:exact}.b-actions,.tabs,#btnAdd{display:none!important}body{background:#fff!important}}
+</style></head><body>
 <title>Calendário Docente</title><link id="page-fonts" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=JetBrains+Mono:wght@500&amp;display=swap"><style id="page-css">/* Layout: banner em degradê no topo, abas (Mês · Linha do tempo · Lista) à esquerda e "Próximas datas" fixas à direita */
 :root{
   --bg:#F2F5F7; --bg2:#EDF3F6; --surface:#ffffff; --surface2:#F5F8FA; --line:#DCE6EA;
@@ -524,6 +526,7 @@ $("root").innerHTML='<div class="wrap">'+
  '<header class="banner"><div class="b-left"><div class="b-title"><span class="b-icon">'+ICON.cal+'</span><h1>Calendário Docente</h1></div><p class="b-sub" id="bsub">Carregando…</p></div>'+
  '<nav class="b-actions" aria-label="Ações"><button class="rbtn" id="btnHome" title="Tela inicial do calendário" aria-label="Voltar à tela inicial do calendário">'+ICON.home+'</button>'+
  '<button class="rbtn" id="btnTl" title="Linha do tempo dos módulos" aria-label="Ver linha do tempo">'+ICON.chart+'</button>'+
+ '<button class="rbtn" id="btnPdf" title="Gerar PDF (imprimir ou salvar como PDF)" aria-label="Gerar PDF do calendário"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg></button>'+
  '<button class="rbtn plus" id="btnAdd" title="Novo evento" aria-label="Adicionar evento" hidden>'+ICON.plus+'</button></nav></header>'+
  '<div class="toolbar"><div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="ano">Ano</button><button class="tab" role="tab" data-tab="mes">Mês</button><button class="tab" role="tab" data-tab="linha">Linha do tempo</button><button class="tab" role="tab" data-tab="lista">Lista</button></div>'+
  '<div class="legend">'+MODS.map(function(m){return '<button class="lmod" data-mod="'+m+'" aria-pressed="false" title="Ver os meses do módulo '+m+'"><span class="sw" style="background:var(--m'+m+')"></span>M'+m+'</button>'}).join("")+
@@ -555,5 +558,7 @@ if(window.claude&&window.claude.use){
   }).catch(function(){});
 }
 })();
+
+document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#btnPdf')){var t=document.title;document.title='Calendário Docente '+new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');setTimeout(function(){window.print();document.title=t},50)}});
 </script>
 </body></html>
