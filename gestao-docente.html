@@ -4989,17 +4989,18 @@ function pdfMatriz(D){
       var anoAnt=null,zebra=false;
       g.linhas.forEach(function(x){
         var d=x.d,larg=cols[4].w-2*pd-2,largP=cols[5].w-2*pd-2;
-        var nm=pdfQuebra(d.nome||'',larg,sz,x.inst),pr=x.tem?[].concat.apply([],x.profs.map(function(t){return pdfQuebra(t,largP,8.5,false)})):pdfQuebra('Sem professor alocado',largP,8.5,true);
+        var nm=pdfQuebra(d.nome||'',larg,sz,x.inst),pr=x.tem?[].concat.apply([],x.profs.map(function(t){return pdfQuebra(t,largP,8.5,false)})):pdfQuebra(semAoVivo(d)?'Sem aula ao vivo':'Sem professor alocado',largP,8.5,true);
         var h=Math.max(nm.length,pr.length,1)*lh+2*pd,anoAtual=d.ano||'—',novoAno=anoAtual!==anoAnt;
         if(y-h-(novoAno?20:0)<M+24){nova();ret(0,H-6,W,6,ROXO);tx((g.titulo||g.curso.nome)+' (continuação)',M,y-12,11,true,ROXO);y-=24;cabTabela();novoAno=true}
         if(novoAno){if(anoAnt!==null)y-=4;ret(M,y-18,LW,18,FD);tx((d.ano?d.ano+' ano':'Ano não informado'),M+pd,y-12.5,9,true,ROXO);y-=18;zebra=false;anoAnt=anoAtual}
-        if(!x.tem)ret(M,y-h,LW,h,'1 0.95 0.94');else if(zebra)ret(M,y-h,LW,h,'0.985 0.985 0.995');
+        var sav=!x.tem&&semAoVivo(d);
+        if(!x.tem&&!sav)ret(M,y-h,LW,h,'1 0.95 0.94');else if(zebra)ret(M,y-h,LW,h,'0.985 0.985 0.995');
         zebra=!zebra;
         var meio=y-pd-sz*0.85-((Math.max(nm.length,pr.length)-1)*lh)/2;
         txC(d.ano||'—',cx[0],cols[0].w,meio,sz,false,INK);txC(d.modulo||'—',cx[1],cols[1].w,meio,sz,false,INK);
         txC(temValor(d.ordem)?d.ordem+'ª':'—',cx[2],cols[2].w,meio,sz,false,INK);txC(d.hora||'—',cx[3],cols[3].w,meio,sz,false,INK);
         nm.forEach(function(t,k){tx(t,cx[4]+pd,y-pd-sz*0.85-k*lh,sz,x.inst,INK)});
-        pr.forEach(function(t,k){tx(t,cx[5]+pd,y-pd-sz*0.85-k*lh,8.5,!x.tem,x.tem?INK:VERM)});
+        pr.forEach(function(t,k){tx(t,cx[5]+pd,y-pd-sz*0.85-k*lh,8.5,!x.tem&&!sav,x.tem?INK:(sav?CZ:VERM))});
         y-=h;lin(y);
       });
       if(g.linhas.some(function(x){return x.inst})){var lg1='Em negrito: ';tx(lg1,M,y-12,8.5,false,CZ);tx('disciplinas institucionais',M+pdfW(lg1,8.5,false),y-12,8.5,true,CZ);y-=18}
