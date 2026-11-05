@@ -43,3 +43,6 @@ Espaço Calouro e Prepare-se; ENADE (edital, grupos de WhatsApp institucional); 
 projetos institucionais (AMPLIAR, ACOLHE+); redes sociais; sites e mediação de projetos, palestras e semanas acadêmicas; evidências de reconhecimento;
 GTs; e-mail institucional e reuniões semanais; VitruAcademy; alinhamento com regentes.
 Encerramento do módulo: concluir book; conferir pendências das planilhas; prazos da SUB; provas, MPNM e demais prazos do calendário.
+
+## Decisão para 2027 (05/11/2026)
+Ficam FORA do painel: Semana de Conhecimentos Gerais (SCG) e vídeo explicativo da AE1 (AE1 não é mais encomendada).
