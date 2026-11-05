@@ -418,10 +418,10 @@ function renderAta(){
 function htmlAss(m){var a=m.assinatura;return '<div class="ass-ed">'+(a?'<img src="'+esc(figSrc(a))+'" alt="Assinatura">':'<span class="mut">Nenhuma assinatura cadastrada.</span>')+'<button class="btn mini" type="button" data-act="ass-add">'+(a?'Trocar imagem':'Incluir assinatura')+'</button>'+(a?'<button class="btn-x" type="button" data-act="ass-del" aria-label="Remover assinatura" title="Remover assinatura">×</button>':'')+'</div>'}
 function addAss(file){
   if(!file||!/^image\//.test(file.type)){toast('Escolha um arquivo de imagem.',true);return}
-  if(!S.as){toast('Envio de imagens indisponível nesta visualização.',true);return}
   var rd=new FileReader();rd.onload=function(){var im=new Image();im.onload=function(){
     var k=Math.min(1,600/im.width,240/im.height),w=Math.round(im.width*k),hh=Math.round(im.height*k),cv=document.createElement('canvas');cv.width=w;cv.height=hh;var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,hh);cx.drawImage(im,0,0,w,hh);
-    toast('Enviando a assinatura…');cv.toBlob(function(bl){S.as.upload(bl).then(function(r){if(!S.editM)return;S.editM.assinatura={id:r.id,url:r.url,w:w,h:hh};var b=$('#m-ass-box');if(b)b.innerHTML=htmlAss(S.editM);toast('Assinatura incluída. Clique em Salvar para gravar.')}).catch(function(e){toast('Não foi possível enviar a imagem'+(e&&e.message?': '+e.message:'.'),true)})},'image/jpeg',0.9)};im.src=rd.result};rd.readAsDataURL(file);
+    // a imagem fica gravada no próprio cadastro do membro (sem depender do Drive), e entra nas atas e no PDF
+    if(!S.editM)return;S.editM.assinatura={src:cv.toDataURL('image/jpeg',0.85),w:w,h:hh};var b=$('#m-ass-box');if(b)b.innerHTML=htmlAss(S.editM);toast('Assinatura incluída. Clique em Salvar para gravar.')};im.src=rd.result};rd.readAsDataURL(file);
 }
 function binDe(f){if(f._bin)return Promise.resolve();if(f.src){f._bin=atob(f.src.split(',')[1]);return Promise.resolve()}return fetch(figSrc(f)).then(function(r){if(!r.ok)throw 0;return r.arrayBuffer()}).then(function(b){var u=new Uint8Array(b),s='';for(var i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));f._bin=s})}
 function verArq(d){var a=d.arquivo;if(!a)return;toast('Abrindo o arquivo…');
@@ -978,7 +978,9 @@ document.addEventListener('change',function(ev){if(ev.target&&ev.target.id==='a-
 $('#dlg').addEventListener('close',function(){S.edit=null;$('#dlg').classList.remove('curto');if(S.carregado)setTimeout(render,0)});
 
 /* ---------- inicialização ---------- */
-var COLS=['cursos','membros','atas','planos','cpa','docs','indicadores','config'];
+var COLS=['cursos','membros','atas','planos','cpa','docs','indicadores','config','assinaturas'];
+// assinaturas antigas (enviadas quando o painel era um artefato do Claude) ficam guardadas como imagem na coleção "assinaturas"
+function ligarAss(){var A=S.d.assinaturas||{},M=S.d.membros||{};Object.keys(M).forEach(function(k){var a=M[k].assinatura,x=A[k];if(a&&!a.src&&x&&x.src&&(!x.aid||x.aid===a.id))a.src=x.src})}
 function iniciar(){
   render();
   if(!window.claude||typeof window.claude.use!=='function'){$('#st').textContent='Abra este painel no claude.ai para ler e salvar os dados.';S.carregado=true;render();return}
@@ -988,6 +990,7 @@ function iniciar(){
     COLS.forEach(function(c){db.collection(c).onSnapshot(function(snap){var m={};snap.docs.forEach(function(d){var x;try{x=JSON.parse(JSON.stringify(d.data()||{}))}catch(e){x=Object.assign({},d.data())}m[d.id]=Object.assign({id:d.id},x)});
       if(c==='membros')Object.keys(m).forEach(function(k){try{m[k].vinculos=(m[k].vinculos||[]).map(function(v){return Object.assign({},v,{funcao:normFuncao(v.funcao)})})}catch(e){}});
       if(c==='config'){var cf={};Object.keys(m).forEach(function(k){Object.assign(cf,m[k])});S.d.config=cf}else S.d[c]=m;
+      if(c==='membros'||c==='assinaturas')ligarAss();
       if(faltam>0){faltam--;if(!faltam){S.carregado=true;$('#dot').className='dot ok';$('#st').textContent='Dados sincronizados · hoje '+br(hoje())}}
       if(S.carregado&&!($('#dlg').open))render()},function(){$('#dot').className='dot bad';$('#st').textContent='Sem permissão para ler parte dos dados deste painel.';S.carregado=true;render()})});
   });
