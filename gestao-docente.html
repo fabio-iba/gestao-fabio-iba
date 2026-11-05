@@ -857,10 +857,17 @@ function cargaProf(pid){
   return Object.keys(set).length;
 }
 // disciplinas na coordenação do Fábio (alocações deste painel, sem as de outra coordenação) e o limite por professor
-function discMinhasProf(pid){var set={};Object.keys(S.data.alocacoes).forEach(function(k){var a=S.data.alocacoes[k];if(a.professorId===pid)set[chaveDoId(a.disciplinaId)]=1});return Object.keys(set).length}
-function limiteMinhas(p){return p&&temValor(p.discMinhaCoord)?Number(p.discMinhaCoord):null}
+// Carga de todos os professores (formadores e regentes) é contada em AULAS.
+// Disciplina sinérgica (mesmo nome, módulo, ordem e horário em vários cursos) é uma turma só: conta as aulas uma vez.
+function aulasAlocProf(pid,exceto){var g={};Object.keys(S.data.alocacoes).forEach(function(k){var a=S.data.alocacoes[k];if(!a||a.professorId!==pid||k===exceto)return;var d=S.data.disciplinas[a.disciplinaId];
+  var t=a.tipo||(d&&distEhEstendida(d)?'estendida':'ead'),ch=(d?sinChave(d):a.disciplinaId)+'#'+t,n=diasDaAlocacao(a);if(!(ch in g)||n>g[ch])g[ch]=n});
+  return Object.keys(g).reduce(function(s,k){return s+g[k]},0)}
+function discMinhasProf(pid){return aulasAlocProf(pid)}
+// limite de aulas na sua coordenação (cadastros antigos: "máx. disciplinas comigo" × 4 aulas)
+function limiteMinhas(p){if(!p)return null;if(temValor(p.aulasMinhaCoord))return Number(p.aulasMinhaCoord);return temValor(p.discMinhaCoord)?Number(p.discMinhaCoord)*4:null}
 // Bloqueia alocações que estouram a carga do professor. minha = alocação na sua coordenação (false = Disciplina outra coordenação).
 // nova = {tipo, diasSemana} da alocação, quando já se sabe os dias; did = disciplina do painel (null para outra coordenação)
+function n0Aulas(pid,exceto){var n=aulasAlocProf(pid,exceto);coordsDoProf(pid).forEach(function(c){n+=diasDaAlocacao(c)});return n}
 function bloqueioCarga(pid,did,nova,minha){
   var p=S.data.pessoas[pid];if(!p||p.papel==='mediador')return '';
   if(p.externo){if(did&&nova){var cfx=conflitoHorario(pid,did,nova.tipo||'ead');if(cfx)return textoConflito(p,cfx)}return ''}
@@ -868,8 +875,10 @@ function bloqueioCarga(pid,did,nova,minha){
   var ex=minha&&did?S.data.alocacoes[pid+'__'+did]:null;
   var jaMinha=minha&&!!k&&Object.keys(S.data.alocacoes).some(function(x){var a=S.data.alocacoes[x];return a.professorId===pid&&chaveDoId(a.disciplinaId)===k});
   var novaDisc=minha?!jaMinha:true;
-  var ct=temValor(p.aulasContrato)?Number(p.aulasContrato):null,dp=temValor(p.discPrevistas)?Number(p.discPrevistas):null;
-  var aulas=aulasProf(pid)-(ex?diasDaAlocacao(ex):0),nd=cargaProf(pid);
+  var ct=temValor(p.aulasContrato)?Number(p.aulasContrato):null,dp=null;
+  var aulas=n0Aulas(pid,ex?pid+'__'+did:null),nd=cargaProf(pid);
+  // mesma turma sinérgica já alocada a este professor em outro curso: não soma aulas de novo
+  var sinJa=!!(did&&nova)&&Object.keys(S.data.alocacoes).some(function(x){var a=S.data.alocacoes[x],d1=S.data.disciplinas[did],d2=a&&S.data.disciplinas[a.disciplinaId];return a&&a.professorId===pid&&x!==pid+'__'+did&&d1&&d2&&sinChave(d1)===sinChave(d2)&&(a.tipo||'ead')===(nova.tipo||'ead')});
   var cheia=(ct!==null&&aulas>=ct)||(dp!==null&&nd>=dp&&novaDisc);
   if(cheia)return 'Carga horária cheia: '+p.nome+' já está com '+(ct!==null?aulas+' de '+ct+' aulas':'')+(ct!==null&&dp!==null?' e ':'')+(dp!==null?nd+' de '+dp+' disciplinas':'')+', somando você e as outras coordenações. A alocação não foi feita.';
   if(minha&&did&&nova&&!podeAlocar(p,cursoInst(S.data.cursos[(S.data.disciplinas[did]||{}).cursoId]),nova.tipo))return p.nome+' só pode ser alocada em disciplinas institucionais ou na modalidade estendida. A alocação não foi feita.';
@@ -879,8 +888,9 @@ function bloqueioCarga(pid,did,nova,minha){
     if(outro)return '"'+(dd0.nome||'Esta disciplina')+'" ('+(dd0.modulo||'')+', '+(DIST_MODS[tp0]||tp0)+') já está com '+((S.data.pessoas[outro.professorId]||{}).nome||'outro professor')+'. A mesma disciplina não pode ter dois professores. Exclua a alocação existente antes. A alocação não foi feita.'}
   if(did&&nova&&!jaMinha){var cf=conflitoHorario(pid,did,nova.tipo||'ead');if(cf)return textoConflito(p,cf)}
   var lm=limiteMinhas(p);
-  if(minha&&!jaMinha&&lm!==null&&discMinhasProf(pid)>=lm)return nome+' já tem '+discMinhasProf(pid)+' de '+lm+' disciplinas com você. Para alocá-lo, escolha "Disciplina outra coordenação" no campo Curso (passo 1). A alocação não foi feita.';
-  if(nova&&ct!==null){var na=diasDaAlocacao(nova);if(aulas+na>ct)return p.nome+' tem só '+(ct-aulas)+' '+pl(ct-aulas,'aula livre','aulas livres')+' no contrato, e esta alocação soma '+na+' aulas. Diminua os dias da semana ou escolha outro professor. A alocação não foi feita.'}
+  var naM=nova&&!sinJa?diasDaAlocacao(nova):0,jaM=aulasAlocProf(pid,ex?pid+'__'+did:null);
+  if(minha&&lm!==null&&jaM+naM>lm)return nome+' já tem '+jaM+' de '+lm+' aulas com você'+(naM?' e esta alocação soma '+naM:'')+'. Para alocá-lo, escolha "Disciplina outra coordenação" no campo Curso (passo 1). A alocação não foi feita.';
+  if(nova&&ct!==null&&!sinJa){var na=diasDaAlocacao(nova);if(aulas+na>ct)return p.nome+' tem só '+(ct-aulas)+' '+pl(ct-aulas,'aula livre','aulas livres')+' no contrato, e esta alocação soma '+na+' aulas. Diminua os dias da semana ou escolha outro professor. A alocação não foi feita.'}
   return '';
 }
 // Restrição por professor: restricaoAloc = 'inst-est' → só disciplinas institucionais ou na modalidade estendida
@@ -900,13 +910,13 @@ function textoConflito(p,h){return p.nome+' já está alocado(a) na disciplina "
 function podeAlocar(p,inst,tipo){return !(p&&p.restricaoAloc==='inst-est')||!!inst||tipo==='estendida'}
 function statusCarga(p){
   if(!p||p.papel==='mediador')return null;
-  var n=cargaProf(p.id),m=temValor(p.discPrevistas)?Number(p.discPrevistas):null;
-  var lm=limiteMinhas(p),nm=lm===null?0:discMinhasProf(p.id),xm=lm===null?'':' · comigo: '+nm+' de '+lm;
-  if(lm!==null&&nm>lm)return {n:n,m:m,cls:'bad',txt:n+(m!==null?' de '+m:'')+xm+' · acima do limite comigo (+'+(nm-lm)+')'};
-  if(m===null)return {n:n,m:null,cls:'',txt:n+' '+pl(n,'disciplina','disciplinas')+' · sem limite definido'+xm};
-  if(n>m)return {n:n,m:m,cls:'bad',txt:n+' de '+m+' · acima do previsto (+'+(n-m)+')'+xm};
-  if(n<m)return {n:n,m:m,cls:'warn',txt:n+' de '+m+' · faltam '+(m-n)+xm};
-  return {n:n,m:m,cls:'ok',txt:n+' de '+m+' · completo'+xm};
+  var n=aulasProf(p.id),m=temValor(p.aulasContrato)?Number(p.aulasContrato):null;
+  var lm=limiteMinhas(p),nm=lm===null?0:discMinhasProf(p.id),xm=lm===null?'':' · comigo: '+nm+' de '+lm+' aulas';
+  if(lm!==null&&nm>lm)return {n:n,m:m,cls:'bad',txt:n+(m!==null?' de '+m:'')+' aulas'+xm+' · acima do limite comigo (+'+(nm-lm)+')'};
+  if(m===null)return {n:n,m:null,cls:'',txt:n+' '+pl(n,'aula','aulas')+' · sem contrato definido'+xm};
+  if(n>m)return {n:n,m:m,cls:'bad',txt:n+' de '+m+' aulas · acima do contrato (+'+(n-m)+')'+xm};
+  if(n<m)return {n:n,m:m,cls:'warn',txt:n+' de '+m+' aulas · faltam '+(m-n)+xm};
+  return {n:n,m:m,cls:'ok',txt:n+' de '+m+' aulas · completo'+xm};
 }
 function montarCoresModulos(){
   var set={};
@@ -2315,15 +2325,17 @@ function abrirAloc(preset){
     var cg=G('a-carga'),pp2=S.data.pessoas[pro];
     if(!pro||!pp2){cg.textContent='';cg.className='carga'}
     else{
-      var n0=cargaProf(pro),k0=dis?chaveDoId(dis):'';
-      var jaConta=!!k0&&Object.keys(S.data.entregas).some(function(i){var x=S.data.entregas[i];return x.professorId===pro&&chaveDoId(x.disciplinaId)===k0});
-      var apos=n0+((k0&&!jaConta)?1:0),mx=temValor(pp2.discPrevistas)?Number(pp2.discPrevistas):null;
-      var t=(pp2.contrato?pp2.contrato+' · ':'')+'hoje '+n0+(mx!==null?' de '+mx:'')+' '+pl(n0,'disciplina alocada','disciplinas alocadas')+'.';
+      // tudo em AULAS: contrato do professor e limite com você (disciplina sinérgica conta uma vez)
+      var exK=dis?pro+'__'+dis:null,tp0=G('a-tipo').value||'ead',dsN=(typeof diasSel==='function'?diasSel():[]).length;
+      var naN=dis?diasDaAlocacao({tipo:tp0,diasSemana:dsN?new Array(dsN):null}):0;
+      var n0=n0Aulas(pro,exK),mx=temValor(pp2.aulasContrato)?Number(pp2.aulasContrato):null,apos=n0+naN;
+      var t=(pp2.contrato?pp2.contrato+' · ':'')+'hoje '+n0+(mx!==null?' de '+mx:'')+' '+pl(n0,'aula','aulas')+'.';
       var estoura=mx!==null&&apos>mx;
-      var lm0=limiteMinhas(pp2),nm0=discMinhasProf(pro),jaMinha=!!k0&&Object.keys(S.data.alocacoes).some(function(k){var a=S.data.alocacoes[k];return a.professorId===pro&&chaveDoId(a.disciplinaId)===k0}),aposM=nm0+((k0&&!jaMinha)?1:0);
-      if(lm0!==null){t+=' Na sua coordenação: '+nm0+' de '+lm0+'.';if(aposM>lm0){estoura=true;t+=' Com esta alocação: '+aposM+' de '+lm0+', acima do limite permitido com você. Só é possível alocá-lo como Disciplina outra coordenação.'}}
-      if(mx!==null&&apos>mx)t+=' Com esta alocação: '+apos+' de '+mx+', acima do previsto.';
-      else if(mx===null)t+=' Sem limite de disciplinas definido.';
+      var lm0=limiteMinhas(pp2),nm0=aulasAlocProf(pro,exK),aposM=nm0+naN;
+      if(lm0!==null){t+=' Na sua coordenação: '+nm0+' de '+lm0+' aulas.';if(aposM>lm0){estoura=true;t+=' Com esta alocação: '+aposM+' de '+lm0+', acima do limite permitido com você. Só é possível alocá-lo como Disciplina outra coordenação.'}}
+      if(mx!==null&&apos>mx)t+=' Com esta alocação: '+apos+' de '+mx+' aulas, acima do contrato.';
+      else if(mx!==null&&naN)t+=' Com esta alocação: '+apos+' de '+mx+' aulas.';
+      else if(mx===null)t+=' Sem aulas de contrato definidas.';
       cg.textContent=t;cg.className='carga'+(estoura?' bad':'');
     }
     var off={s2:!okMod,s3:!okNome,s4:!okDis,s5:!okDis,s6:!okDis,s7:!okDis,s8:!okDis,s9:!ok,s10:!ok,s11:!ok,s12:!ok};
@@ -2635,8 +2647,7 @@ function abrirPessoa(id,papelPadrao){
     +'<div class="fields tres" id="p-ctbox" style="grid-column:1/-1">'
       +'<label class="fld">Modelo de contrato<input id="p-contrato" list="dl-contratos" placeholder="Ex.: professor EAD 40" value="'+esc(ex&&ex.contrato?ex.contrato:'')+'"><datalist id="dl-contratos"><option value="regente 40"><option value="professor EAD 40"><option value="professor EAD 20"></datalist></label>'
       +'<label class="fld">Aulas previstas<input type="number" min="0" step="1" id="p-aulasct" value="'+esc(ex&&ex.aulasContrato!=null?ex.aulasContrato:'')+'"></label>'
-      +'<label class="fld">Disciplinas previstas<input type="number" min="0" step="1" id="p-discct" placeholder="sem limite" value="'+esc(ex&&ex.discPrevistas!=null?ex.discPrevistas:'')+'"></label>'
-      +'<label class="fld">Máx. disciplinas comigo<input type="number" min="0" step="1" id="p-discmin" placeholder="sem limite" title="Quantas disciplinas você pode alocar a este professor na sua coordenação. As demais ficam com outras coordenações (cadastre-as como Disciplina outra coordenação)." value="'+esc(ex&&ex.discMinhaCoord!=null?ex.discMinhaCoord:'')+'"></label></div>'
+      +'<label class="fld">Máx. aulas comigo<input type="number" min="0" step="1" id="p-discmin" placeholder="sem limite" title="Quantas aulas este professor pode ter na sua coordenação. O restante fica com outras coordenações (cadastre como Disciplina outra coordenação)." value="'+esc(ex?(ex.aulasMinhaCoord!=null?ex.aulasMinhaCoord:(ex.discMinhaCoord!=null?ex.discMinhaCoord*4:'')):'')+'"></label></div>'
     +'</div><p class="erro" id="dlg-erro" role="alert"></p>'+rodape({excluir:!!ex})+'</div>');
   dlg._onInput=function(){
     G('p-ctbox').hidden=G('p-papel').value==='mediador';
@@ -2649,8 +2660,8 @@ function abrirPessoa(id,papelPadrao){
     if(email&&!emailValido(email))return erroDlg('Informe um e-mail válido, como nome@instituicao.edu.br.');
     var cel=G('p-cel').value.replace(/\D/g,'');
     if(cel&&(cel.length<10||cel.length>11))return erroDlg('Informe o celular com DDD, como (44) 99999-9999.');
-    var aulasct=num(G('p-aulasct').value),discct=num(G('p-discct').value),discmin=num(G('p-discmin').value),contrato=G('p-contrato').value.trim();
-    if(papel!=='mediador'&&(Number.isNaN(aulasct)||Number.isNaN(discct)||Number.isNaN(discmin)))return erroDlg('Use números inteiros a partir de zero nas aulas e disciplinas previstas.');
+    var aulasct=num(G('p-aulasct').value),discct=null,discmin=num(G('p-discmin').value),contrato=G('p-contrato').value.trim();
+    if(papel!=='mediador'&&(Number.isNaN(aulasct)||Number.isNaN(discct)||Number.isNaN(discmin)))return erroDlg('Use números inteiros a partir de zero nas aulas.');
     if(ex){
       var teveEnt=Object.keys(S.data.entregas).some(function(i){return S.data.entregas[i].professorId===ex.id});
       if(ex.papel!=='mediador'&&papel==='mediador'&&teveEnt)return erroDlg('Esta pessoa tem entregas como professor. Exclua as entregas antes de mudar o papel.');
@@ -2661,7 +2672,7 @@ function abrirPessoa(id,papelPadrao){
     G('dlg-salvar').disabled=true;
     var dadosP={nome:nome,papel:papel,mediadorIds:(ex&&ex.mediadorIds)?ex.mediadorIds:[],email:email||null,celular:cel||null};
     if(ex&&ex.externo)dadosP.externo=true;
-    if(papel!=='mediador'){dadosP.contrato=contrato||null;dadosP.aulasContrato=aulasct;dadosP.discPrevistas=discct;dadosP.discMinhaCoord=discmin}
+    if(papel!=='mediador'){dadosP.contrato=contrato||null;dadosP.aulasContrato=aulasct;dadosP.discPrevistas=null;dadosP.discMinhaCoord=null;dadosP.aulasMinhaCoord=discmin}
     return gravar(function(){return ref.set(dadosP)},'Cadastro salvo.').then(function(ok){if(ok)fechar();else G('dlg-salvar').disabled=false});
   };
   dlg._excluir=function(){
@@ -3804,7 +3815,7 @@ function diasDaAlocacao(a){
 }
 function aulasProf(pid){
   var n=0;
-  Object.keys(S.data.alocacoes).forEach(function(k){var a=S.data.alocacoes[k];if(a&&a.professorId===pid)n+=diasDaAlocacao(a)});
+  n+=aulasAlocProf(pid);
   coordsDoProf(pid).forEach(function(c){n+=diasDaAlocacao(c)});
   return n;
 }
@@ -3926,7 +3937,7 @@ function posicionamentoProf(p){
       var ne=sc.n;feito=ne;unid='disciplinas';tipoP='externo';clsFinal='';
       posic=ne+' '+pl(ne,'disciplina lecionada','disciplinas lecionadas')+'.';
     }
-    var lmP=limiteMinhas(p);if(lmP!==null&&!p.externo){var nmP=discMinhasProf(p.id);posic+=' Na sua coordenação: '+nmP+' de '+lmP+' '+pl(lmP,'disciplina','disciplinas')+(nmP>lmP?' (acima do limite).':(nmP===lmP?' Limite comigo atingido.':'.'));if(nmP>lmP)clsFinal='bad';else if(nmP===lmP&&clsFinal==='warn')clsFinal='ok'}  // atingiu o previsto comigo: verde, como carga completa
+    var lmP=limiteMinhas(p);if(lmP!==null&&!p.externo){var nmP=discMinhasProf(p.id);posic+=' Na sua coordenação: '+nmP+' de '+lmP+' '+pl(lmP,'aula','aulas')+(nmP>lmP?' (acima do limite).':(nmP===lmP?' Limite comigo atingido.':'.'));if(nmP>lmP)clsFinal='bad';else if(nmP===lmP&&clsFinal==='warn')clsFinal='ok'}  // atingiu o previsto comigo: verde, como carga completa
     return {txt:posic,cls:clsFinal,feito:feito,meta:meta,unid:unid,tipo:tipoP};
 }
 function relatorioProfessores(){
@@ -4252,7 +4263,7 @@ function distGerar(){
       slots[[d.modulo||'',String(temValor(d.ordem)?d.ordem:''),(a.tipo==='estendida'||distEhEstendida(d))?'est':distHoraK(d)].join('|')]=1});
     coordsDoProf(p.id).forEach(function(c){if(c.modulo&&temValor(c.ordem))slots[[c.modulo,String(c.ordem),c.tipo==='estendida'?'est':norm(c.hora||'').replace(/\s/g,'')].join('|')]=1});
     var h=distHab(p.id);
-    est[p.id]={p:p,cap:distCapacidade(p),lim:limiteMinhas(p),minhas:discMinhasProf(p.id),tot:cargaProf(p.id),dp:temValor(p.discPrevistas)?Number(p.discPrevistas):null,uso:aulasProf(p.id),slots:slots,hab:{ead:h.ead,estendida:h.estendida},fix:h.fixas,dias:h.dias.length?h.dias:DIAS_SEM.map(function(x){return x[0]}),n:0};
+    est[p.id]={p:p,cap:distCapacidade(p),lim:limiteMinhas(p),minhas:discMinhasProf(p.id),tot:cargaProf(p.id),dp:null,na:0,uso:aulasProf(p.id),slots:slots,hab:{ead:h.ead,estendida:h.estendida},fix:h.fixas,dias:h.dias.length?h.dias:DIAS_SEM.map(function(x){return x[0]}),n:0};
   });
   var abertas=[],feitas=[];
   us.forEach(function(u){var a=distAlocDe(u);if(a)feitas.push({u:u,pid:a.professorId,existente:true});else abertas.push(u)});
@@ -4260,12 +4271,12 @@ function distGerar(){
   function todosDias(e){return DIAS_SEM.every(function(x){return e.dias.indexOf(x[0])>=0})}
   // afinidade 0 a 3 (3 = já lecionou a disciplina ou equivalente), vinda dos currículos e do histórico de cada professor
   function afin(p,u){var a=(S.data.afinidades||{})[p.id];return a&&a.notas&&a.notas[u.chave]?Number(a.notas[u.chave])||0:0}
-  function cabeLim(e){return (e.lim===null||e.minhas+e.n<e.lim)&&(e.dp===null||e.tot+e.n<e.dp)}
+  function cabeLim(e,u){return e.lim===null||e.minhas+e.na+(u?u.aulas:0)<=e.lim}
   function livreSlots(e,u){return distSlots(u).every(function(k){return !e.slots[k]})}
-  function cabe(e,u){return cabeLim(e)&&e.uso+u.aulas<=e.cap&&livreSlots(e,u)&&(!u.inst||todosDias(e))}
+  function cabe(e,u){return cabeLim(e,u)&&e.uso+u.aulas<=e.cap&&livreSlots(e,u)&&(!u.inst||todosDias(e))}
   function sobra(e){return e.cap===Infinity?9999-e.uso:e.cap-e.uso}
-  function poe(e,u){e.uso+=u.aulas;distSlots(u).forEach(function(k){e.slots[k]=1});e.n++}
-  function tira(e,u){e.uso-=u.aulas;distSlots(u).forEach(function(k){delete e.slots[k]});e.n--}
+  function poe(e,u){e.uso+=u.aulas;e.na+=u.aulas;distSlots(u).forEach(function(k){e.slots[k]=1});e.n++}
+  function tira(e,u){e.uso-=u.aulas;e.na-=u.aulas;distSlots(u).forEach(function(k){delete e.slots[k]});e.n--}
   abertas.sort(function(a,b){return hab(a).length-hab(b).length||b.aulas-a.aulas});
   var prop=[];
   // 1º as disciplinas fixas: o professor fixado sempre recebe, antes de qualquer outro
@@ -4274,8 +4285,8 @@ function distGerar(){
     if(!fx.length)return true;
     var p=fx.filter(function(q){return livreSlots(est[q.id],u)})[0];
     if(!p){prop.push({u:u,pid:'',motivo:'Disciplina fixa de '+fx.map(function(q){return q.nome}).join(', ')+', mas ele já tem outra disciplina no mesmo módulo, ordem e horário.'});return false}
-    var e=est[p.id],acimaLim=!cabeLim(e),acima=e.uso+u.aulas>e.cap,semDias=u.inst&&!todosDias(e);poe(e,u);
-    prop.push({u:u,pid:p.id,fixo:true,aviso:(fx.length>1?'Fixada também para '+fx.filter(function(q){return q.id!==p.id}).map(function(q){return q.nome}).join(', ')+'. ':'')+(acimaLim?'Passa do limite de '+e.lim+' disciplinas com você. ':'')+(acima?'Passa da carga do contrato. ':'')+(semDias?'Institucional exige 2ª a 5ª feira, e o professor não marcou todos esses dias.':'')});
+    var e=est[p.id],acimaLim=!cabeLim(e,u),acima=e.uso+u.aulas>e.cap,semDias=u.inst&&!todosDias(e);poe(e,u);
+    prop.push({u:u,pid:p.id,fixo:true,aviso:(fx.length>1?'Fixada também para '+fx.filter(function(q){return q.id!==p.id}).map(function(q){return q.nome}).join(', ')+'. ':'')+(acimaLim?'Passa do limite de '+e.lim+' aulas com você. ':'')+(acima?'Passa da carga do contrato. ':'')+(semDias?'Institucional exige 2ª a 5ª feira, e o professor não marcou todos esses dias.':'')});
     return false;
   });
   // professor que pode receber u: direto (tem aula sobrando e não tem conflito) ou passando uma disciplina dele para outro habilitado (até 3 trocas em cadeia)
@@ -4298,8 +4309,8 @@ function distGerar(){
   function motivoSem(u){
     var cands=hab(u);
     if(u.inst&&cands.every(function(p){return !todosDias(est[p.id])}))return 'Disciplina institucional: exige professor disponível de 2ª a 5ª feira, e nenhum habilitado tem os quatro dias.';
-    if(cands.every(function(p){return !cabeLim(est[p.id])}))return 'Todos os professores habilitados já atingiram o limite de disciplinas com você.';
-    if(cands.every(function(p){return est[p.id].uso+u.aulas>est[p.id].cap||!cabeLim(est[p.id])}))return 'Todos os professores habilitados estão com a carga cheia ou no limite de disciplinas com você.';
+    if(cands.every(function(p){return !cabeLim(est[p.id],u)}))return 'Todos os professores habilitados já atingiram o limite de aulas com você.';
+    if(cands.every(function(p){return est[p.id].uso+u.aulas>est[p.id].cap||!cabeLim(est[p.id],u)}))return 'Todos os professores habilitados estão com a carga cheia ou no limite de aulas com você.';
     return 'Os professores habilitados já têm disciplina no mesmo módulo, ordem e horário ou estão com a carga cheia.';
   }
   abertas.forEach(function(u){
