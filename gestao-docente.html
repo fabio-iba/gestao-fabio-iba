@@ -1445,10 +1445,15 @@ function htmlBancoDados(f,nq){
 /* ---------- grade de entregas (Item/Aula por módulo, editável só nas datas) ---------- */
 var GE_MODS=['Módulo 51','Módulo 52','Módulo 53','Módulo 54'];
 function geDocId(mod){return 'm'+mod.replace(/\D/g,'')}
+// Disciplina estendida: 9 aulas, uma por semana (Semanas 1 a 9), no dia da semana escolhido, a partir do início do módulo
+function extPadrao(doc,caminho){
+  var m=/^extsem\.sem([2-5])\.([1-9])$/.exec(caminho);if(!m||!doc||!doc.inicio)return '';
+  return isoAdd(isoSegunda(doc.inicio),(+m[1]-2)+7*(+m[2]-1));
+}
 function geValor(doc,caminho){
   var o=doc,parts=caminho.split('.');
-  for(var i=0;i<parts.length;i++){if(!o)return '';o=o[parts[i]]}
-  return o||'';
+  for(var i=0;i<parts.length;i++){if(!o)return extPadrao(doc,caminho);o=o[parts[i]]}
+  return o||extPadrao(doc,caminho);
 }
 function setPorCaminho(obj,caminho,val){
   var parts=caminho.split('.'),o=obj;
