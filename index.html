@@ -225,7 +225,7 @@ body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}
     'validacao.html': U('1457369804613-52c61a468e7d'),
     'calendario.html': U('1435527173128-983b87201f4d'),
     'gestao-regulatoria.html': U('1583521214690-73421a1829a9'),
-    'gestao-equipe.html': U('1675637792427-14bf01a3ca21')
+    'gestao-equipe.html': 'https://images.unsplash.com/photo-1675637792427-14bf01a3ca21?auto=format&fit=crop&crop=faces&w=800&h=360&q=70'
   };
   const arrow = svg('<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>');
 
@@ -237,7 +237,7 @@ body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}
       const { icon, tone } = look(p.category, p.name);
       const has = !!p.url;
       const foto = p.img || FOTOS[p.url] || '';
-      const inner = `${foto ? `<div class="card-img" style="background-image:url('${esc(foto)}')" role="img" aria-label="${esc(p.name)}"></div>` : ''}
+      const inner = `${foto ? `<div class="card-img" style="background-image:url('${esc(foto)}');background-position:${p.url==='gestao-equipe.html'?'center 20%':'center'}" role="img" aria-label="${esc(p.name)}"></div>` : ''}
         <div class="card-head">
           <div class="ico">${icon}</div>
           <div>
