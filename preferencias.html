@@ -71,7 +71,7 @@ a{color:var(--ac)}
   function chaveDisc(n){return norm(n).replace(/[^a-z0-9]/g,'')}
   function codProf(pid){var s=String(pid)+'|gd-entregas',x=7;for(var i=0;i<s.length;i++)x=(x*31+s.charCodeAt(i))>>>0;return x.toString(36).slice(-5)}
   function dataBR(iso){if(!iso)return '';var d=new Date(iso),p=function(n){return String(n).padStart(2,'0')};return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes())}
-  function sigla(nome,matriz){var n=norm(nome),s=/psicolog/.test(n)?'PSIORG':/administra/.test(n)?'ADM/PGER':/felicidade/.test(n)?'CFEL':/saude mental/.test(n)?'GSMT':/recursos humanos/.test(n)?'RH':/institucion/.test(n)?'Institucional':nome;return s+(matriz?' '+matriz:'')}
+  function sigla(nome,matriz){var n=norm(nome),s=/psicolog/.test(n)?'PSIORG':/administra/.test(n)?'ADM/PGER':/felicidade/.test(n)?'CFEL':/saude mental/.test(n)?'SMENT':/recursos humanos/.test(n)?'RH':/institucion/.test(n)?'Institucional':nome;return s+(matriz?' '+matriz:'')}
   // disciplinas sem matriz indicada pertencem à Matriz 2026N (padrão do painel)
   function matrizDe(d){return (d&&d.matriz)||'2026N'}
   // fora da escolha: disciplinas ECT e as marcadas como sem aula ao vivo

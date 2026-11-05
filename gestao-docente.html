@@ -2039,7 +2039,7 @@ var SINERGIAS={responsavel:'Curso Responsável',unico:'Curso Único',convidado:'
 // sigla do curso (usada no PDF da matriz); o campo Sigla do cadastro tem prioridade
 function siglaCurso(c){if(!c)return '';if(c.sigla)return c.sigla;var n=norm(c.nome||'');
   if(/administra/.test(n)&&/processos gerenciais/.test(n))return 'ADM / PGER';if(/administra/.test(n))return 'ADM';if(/processos gerenciais/.test(n))return 'PGER';
-  if(/recursos humanos/.test(n))return 'RH';if(/felicidade/.test(n))return 'CFEL';if(/saude mental/.test(n))return 'GSMT';if(/psicologia/.test(n))return 'PSIORG';if(/institucion/.test(n))return 'INST';
+  if(/recursos humanos/.test(n))return 'RH';if(/felicidade/.test(n))return 'CFEL';if(/saude mental/.test(n))return 'SMENT';if(/psicologia/.test(n))return 'PSIORG';if(/institucion/.test(n))return 'INST';
   return (c.nome||'').split(/\s+/).filter(function(w){return w.length>2}).map(function(w){return w[0]}).join('').toUpperCase().slice(0,6)}
 function cursoInst(c){return /institucion/.test(norm(c&&c.nome||''))}
 // disciplina de mais de um curso (mesma disciplina, módulo, ordem e horário em cursos diferentes) ou alocação marcada como cluster
