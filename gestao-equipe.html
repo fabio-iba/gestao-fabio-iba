@@ -209,6 +209,11 @@ dialog::backdrop{background:rgba(25,21,39,.55)}
 .marcos{padding:14px 16px;margin-bottom:14px}.marcos ul{margin:6px 0 0;padding-left:18px}.marcos li{margin:3px 0}
 .pill{display:inline-block;border-radius:99px;padding:2px 9px;font-size:12px;font-weight:700}
 .pill.ok{background:var(--ok-s);color:var(--ok)}.pill.warn{background:var(--warn-s);color:var(--warn)}.pill.bad{background:var(--bad-s);color:var(--bad)}
+.escolha{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;margin-top:8px}
+.esc-card{display:flex;flex-direction:column;gap:14px;text-align:left;border:1px solid var(--line);background:#fff;border-radius:18px;padding:22px;cursor:pointer;font:inherit;color:var(--ink);box-shadow:var(--shadow);transition:transform .15s ease}
+.esc-card:hover{transform:translateY(-3px)}.esc-card h2{margin:0;font:800 22px Manrope,sans-serif}.esc-card p{margin:0;color:var(--muted)}
+.esc-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center}.esc-ico svg{width:28px;height:28px}
+.esc-go{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:12px;font-weight:700}
 .lista-at{columns:2;column-gap:28px;margin:0;padding-left:18px}.lista-at li{break-inside:avoid;margin:0 0 6px}
 @media (max-width:760px){.wk{grid-template-columns:repeat(5,1fr)}.lista-at{columns:1}}
 </style>
@@ -304,8 +309,10 @@ var COMP=[
 ];
 
 var MODS=['Módulo 51','Módulo 52','Módulo 53','Módulo 54'];
-var TABS=[['geral','Visão geral'],['plan','Planejamento do módulo'],['sem','Semana a semana'],['comp','Atividades complementares'],['equipe','Equipe docente']];
-var S={tab:'geral',ano:'2027',mod:'',med:'',sem:0,gd:{},checks:{},db:null,carregado:false,podeEditar:true};
+var TABS_MED=[['geral','Visão geral'],['plan','Planejamento do módulo'],['sem','Semana a semana'],['comp','Atividades complementares'],['equipe','Equipe de mediação']];
+var TABS_PROF=[['profs','Formadores e regentes']];
+var TABS=TABS_MED;
+var S={area:'',tab:'geral',ano:'2027',mod:'',med:'',sem:0,gd:{},checks:{},db:null,carregado:false,podeEditar:true};
 
 /* ---------- dados da Gestão das Entregas (somente leitura) ---------- */
 function L(c){var m=S.gd[c]||{};return Object.keys(m).map(function(k){return m[k]})}
@@ -418,22 +425,36 @@ function htmlEquipe(){
     return h+'<div class="tw"><table><thead><tr><th style="text-align:left">Nome</th><th style="text-align:left">Contato</th>'+(papel==='mediador'?'':'<th>Aulas do contrato</th>')+'<th style="text-align:left">Disciplinas no '+esc(S.mod)+'</th></tr></thead><tbody>'
      +l.map(function(p){var ds=discs(p);return '<tr><td><b>'+esc(p.nome)+'</b>'+(p.externo?' <span class="pill warn">externo</span>':'')+'</td><td>'+esc(p.email||'—')+'</td>'+(papel==='mediador'?'':'<td style="text-align:center">'+(p.aulasContrato!=null?p.aulasContrato:'—')+'</td>')+'<td>'+(ds.length?esc(ds.join(' · ')):'<span class="mut">—</span>')+'</td></tr>'}).join('')+'</tbody></table></div>';
   }
-  return '<p class="mut">Cadastro e alocação ficam na Gestão das Entregas. Aqui é só consulta.</p>'+bloco('Professores formadores','formador')+bloco('Professores regentes','regente')+bloco('Professores mediadores','mediador');
+  var nota='<p class="mut">Cadastro e alocação ficam na <a href="gestao-docente.html">Gestão das Entregas</a>. Aqui é só consulta.</p>';
+  if(S.area==='med')return nota+bloco('Professores mediadores','mediador');
+  return nota+bloco('Professores formadores','formador')+bloco('Professores regentes','regente');
 }
 function vazio(){return '<div class="card vazio"><b>Nenhuma disciplina</b>Não há disciplinas com aula ao vivo neste módulo'+(S.med?' para este mediador':'')+'.</div>'}
 
+function htmlEscolha(){
+  var card=function(area,tit,txt,cor,fundo,ico){return '<button type="button" class="esc-card" data-area="'+area+'"><span class="esc-ico" style="background:'+fundo+';color:'+cor+'">'+ico+'</span><div><h2>'+tit+'</h2></div><p>'+txt+'</p><span class="esc-go" style="color:'+cor+'">Abrir <span aria-hidden="true">→</span></span></button>'};
+  return '<div class="escolha">'
+   +card('med','Professor mediador','Planejamento do módulo, atividades semana a semana, atividades complementares e andamento de cada mediador.','#0F6E7A','#DDF1F1','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19c0-3 2.7-5 6-5s6 2 6 5"/><path d="M15 14.2c.6-.1 1.3-.2 2-.2 2.4 0 4 1.5 4 4"/></svg>')
+   +card('prof','Professor formador e regente','Equipe de formadores e regentes, contrato em aulas e disciplinas de cada um no módulo.','#5B4BD6','#ECE9FC','<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-4 9 4-9 4-9-4z"/><path d="M7 11v4.5c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V11"/><path d="M21 9v5"/></svg>')
+   +'</div>';
+}
 function render(){
-  $('#tabs').innerHTML=TABS.map(function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('');
+  TABS=S.area==='prof'?TABS_PROF:TABS_MED;
+  if(S.area==='prof'&&S.tab!=='profs')S.tab='profs';if(S.area==='med'&&S.tab==='profs')S.tab='geral';
+  $('#tabs').hidden=!S.area;$('.per-claro').hidden=!S.area;$('#f-med').parentNode.hidden=S.area!=='med';
+  $('#tabs').innerHTML=(S.area?'<button type="button" data-area="" title="Voltar à escolha">← Voltar</button>':'')+TABS.map(function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('');
   $('#f-ano').innerHTML=['2027','2026'].map(function(a){return '<option'+(a===S.ano?' selected':'')+'>'+a+'</option>'}).join('');
   $('#f-mod').innerHTML=MODS.map(function(m){return '<option'+(m===S.mod?' selected':'')+'>'+m+'</option>'}).join('');
   var meds=L('pessoas').filter(function(p){return p.papel==='mediador'}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')});
   $('#f-med').innerHTML='<option value="">Todos</option>'+meds.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===S.med?' selected':'')+'>'+esc(m.nome)+'</option>'}).join('');
   if(!S.carregado)return;
-  $('#view').innerHTML={geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe}[S.tab]();
+  if(!S.area){$('#view').innerHTML=htmlEscolha();return}
+  $('#view').innerHTML={geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,profs:htmlEquipe}[S.tab]();
 }
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
-  if(b.dataset.tab){S.tab=b.dataset.tab;render()}
+  if(b.hasAttribute('data-area')){S.area=b.dataset.area;S.tab=S.area==='prof'?'profs':'geral';try{history.replaceState(null,'',S.area?'#'+S.area:location.pathname)}catch(e){}render();window.scrollTo(0,0)}
+  else if(b.dataset.tab){S.tab=b.dataset.tab;render()}
   else if(b.dataset.sem){S.sem=Number(b.dataset.sem);render()}
   else if(b.dataset.ck){marcar(b.dataset.ck,b.dataset.k)}
 });
@@ -443,6 +464,7 @@ document.addEventListener('change',function(ev){var t=ev.target;
 /* ---------- início ---------- */
 function modPadrao(){var h=hoje(),r='Módulo 51';MODS.forEach(function(m){var i=inicioMod(m);if(i&&i<=isoAdd(h,21))r=m});return r}
 function iniciar(){
+  var hs=location.hash.replace('#','');if(hs==='med'||hs==='prof')S.area=hs;
   render();
   var api=window.GFI&&GFI.api;if(!api||!window.claude){$('#st').textContent='Não foi possível conectar ao banco.';return}
   Promise.all([
