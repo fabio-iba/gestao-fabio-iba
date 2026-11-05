@@ -2099,7 +2099,7 @@ function abrirAloc(preset){
       }).join('')+'</div>')
     +passo(10,'<div class="atv-lista" id="a-datas"></div><p class="meta" id="a-datas-nota" aria-live="polite"></p><small>Toda entrega marcada precisa de data. Sem data, a alocação não é criada.</small>')
     +passo(11,'<div class="dias-sem" id="a-dias" role="group" aria-label="Dias da semana das aulas" hidden><span class="dias-rot">Dias da semana das aulas (marque um ou mais):</span><span class="dias-rot" id="a-dias-inst" hidden>Disciplina institucional: o professor fica com os quatro dias (2ª a 5ª feira) na carga.</span>'+DIAS_SEM.map(function(d){return '<label class="atv-chk"><input type="checkbox" id="a-dia-'+d[0]+'" name="dia-sem" value="'+d[0]+'" disabled> '+d[1]+'</label>'}).join('')+'</div><div class="aulas" id="a-aulas">'+[1,2,3,4].map(function(n){return '<label class="aula-l"><span>Aula '+n+'</span><input type="date" class="aula-in" id="a-au'+n+'" disabled></label>'}).join('')+'</div><small id="a-aulas-nota">Selecione o tipo da disciplina para ver quantas aulas informar.</small>')
-    +passo(12,'<span class="ajuda">Um ou mais, sem limite. Vale só para esta disciplina: em outra alocação você escolhe outros.</span>'+htmlMedCheck([],null))
+    +passo(12,'<span class="ajuda">Opcional: pode deixar em branco e vincular depois. Vale só para esta disciplina: em outra alocação você escolhe outros.</span>'+htmlMedCheck([],null))
     +'</ol><p class="erro" id="dlg-erro" role="alert"></p>'+rodape()+'</div>');
   atualizarContMed();
   // datas de entrega vêm da planilha do Drive (aba "Datas de entrega"), lida a cada nova alocação
@@ -2501,7 +2501,7 @@ function abrirAloc(preset){
     if(aulaRuim){G(aulaRuim).classList.add('invalido');G(aulaRuim).focus();return erroDlg('Passo 11: confira o ano da data da aula ('+fmtBR(G(aulaRuim).value)+'). Use um ano com 4 dígitos, como '+new Date().getFullYear()+'.')}
     if(diasSalvar.length)aulas=aulas.slice().sort();   // lista única em ordem cronológica, usada no e-mail e no relatório
     var meds=marcadosMed();
-    if(!meds.length)return erroDlg('Passo 12: selecione ao menos um mediador.');
+    // mediador é opcional: pode ser vinculado depois (link "vincular" no Quadro geral)
     erroDlg('');
     G('dlg-salvar').disabled=true;
     var agora=new Date().toISOString(),eu=meuId();
