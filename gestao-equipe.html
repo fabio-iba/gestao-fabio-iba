@@ -610,8 +610,8 @@ function excluirCoord(id,btn){
 }
 function htmlCoordsFicha(pid){
   var cs=coordsDe(pid).sort(function(a,b){return String(a.modulo).localeCompare(String(b.modulo))||String(a.disciplina).localeCompare(String(b.disciplina),'pt-BR')});
-  var h='<div class="sec-h" style="margin-top:18px"><div><h2>Disciplinas em outras coordenações</h2><p class="mut">Entram na carga horária do professor. Cadastre aqui as aulas que ele dá para outros coordenadores.</p></div>'
-   +(S.editCoord?'':'<button type="button" data-oc="novo" style="border:0;background:var(--accent);color:#fff;border-radius:99px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer">+ Adicionar disciplina</button>')+'</div>';
+  var h='<div class="sec-h" style="margin-top:18px"><div><h2>Disciplinas em outras coordenações</h2><p class="mut">Entram na carga horária do professor. Use o botão + no topo para incluir uma disciplina.</p></div>'
+   +'</div>';
   if(S.editCoord)h+=htmlFormCoord(pid);
   if(!cs.length)return h+(S.editCoord?'':'<div class="card vazio">Nenhuma disciplina em outra coordenação.</div>');
   return h+'<div class="tw"><table><thead><tr><th style="text-align:left">Módulo</th><th style="text-align:left">Disciplina</th><th style="text-align:left">Curso</th><th style="text-align:left">Coordenador(a)</th><th>Ano</th><th>Ordem</th><th>Horário</th><th>Tipo</th><th>Dias</th><th>Aulas</th><th></th></tr></thead><tbody>'
