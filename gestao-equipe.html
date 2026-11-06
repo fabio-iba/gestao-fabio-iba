@@ -310,9 +310,9 @@ var COMP=[
 
 var MODS=['Módulo 51','Módulo 52','Módulo 53','Módulo 54'];
 var TABS_MED=[['geral','Visão geral'],['plan','Planejamento do módulo'],['sem','Semana a semana'],['comp','Atividades complementares'],['equipe','Equipe de mediação']];
-var TABS_PROF=[['profs','Formadores e regentes']];
+var TABS_PROF=[['pvis','Visão geral'],['plista','Professores'],['pcarga','Carga por módulo'],['pent','Entregas']];
 var TABS=TABS_MED;
-var S={area:'',tab:'geral',ano:'2027',mod:'',med:'',sem:0,gd:{},checks:{},db:null,carregado:false,podeEditar:true};
+var S={area:'',tab:'geral',ficha:'',fPapel:'',fBusca:'',reg:{},feriados:{},ano:'2027',mod:'',med:'',sem:0,gd:{},checks:{},db:null,carregado:false,podeEditar:true};
 
 /* ---------- dados da Gestão das Entregas (somente leitura) ---------- */
 function L(c){var m=S.gd[c]||{};return Object.keys(m).map(function(k){return m[k]})}
@@ -431,6 +431,137 @@ function htmlEquipe(){
 }
 function vazio(){return '<div class="card vazio"><b>Nenhuma disciplina</b>Não há disciplinas com aula ao vivo neste módulo'+(S.med?' para este mediador':'')+'.</div>'}
 
+/* ================= Formadores e regentes: espelho da Gestão das Entregas e da Gestão Regulatória ================= */
+function profs(){return L('pessoas').filter(function(p){return p.papel==='formador'||p.papel==='regente'})}
+function diasDaAlocacao(a){var pd=a.tipo==='estendida'?9:4;if(a.diasSemana&&a.diasSemana.length)return a.diasSemana.length*pd;
+  var set={};(a.datasAulas||[]).forEach(function(d){var m=/^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');if(m)set[new Date(Date.UTC(+m[1],+m[2]-1,+m[3])).getUTCDay()]=1});
+  var n=Object.keys(set).length;return (n||1)*pd}
+function alocsDe(pid){return L('alocacoes').filter(function(a){return a.professorId===pid})}
+function coordsDe(pid){return L('coords').filter(function(c){return c.professorId===pid})}
+function contratoDe(p){return p.aulasContrato!=null&&p.aulasContrato!==''?Number(p.aulasContrato):null}
+// mesma regra da Gestão das Entregas: dias marcados × 4 aulas (EAD) ou × 9 (estendida); turma sinérgica conta uma vez
+function cargaDe(pid,mod){var g={},D=S.gd.disciplinas||{};
+  alocsDe(pid).forEach(function(a){var d=D[a.disciplinaId];if(mod&&(!d||d.modulo!==mod))return;var ch=(d?sinChave(d):a.disciplinaId)+'#'+(a.tipo||'ead'),n=diasDaAlocacao(a);if(!(ch in g)||n>g[ch])g[ch]=n});
+  var minhas=Object.keys(g).reduce(function(t,k){return t+g[k]},0),outras=0;
+  coordsDe(pid).forEach(function(c){if(!mod||c.modulo===mod)outras+=diasDaAlocacao(c)});
+  return {minhas:minhas,outras:outras,total:minhas+outras}}
+function limiteComigo(p){if(p.aulasMinhaCoord!=null&&p.aulasMinhaCoord!=='')return Number(p.aulasMinhaCoord);return p.discMinhaCoord!=null&&p.discMinhaCoord!==''?Number(p.discMinhaCoord)*4:null}
+function entregasDe(pid){return L('entregas').filter(function(e){return e.professorId===pid&&e.atividade!=='AE1'})}
+function stEntrega(e){var h=hoje();if(e.entregueEm)return e.prazo&&String(e.entregueEm).slice(0,10)>e.prazo?'atraso':'ok';if(!e.prazo)return 'semprazo';return e.prazo<h?'vencida':'pendente'}
+function resumoEnt(pid){var r={total:0,ok:0,atraso:0,vencida:0,pendente:0,prox:0,notas:[]},h=hoje(),lim=isoAdd(h,14);
+  entregasDe(pid).forEach(function(e){var st=stEntrega(e);r.total++;if(st in r)r[st]++;if(st==='pendente'&&e.prazo<=lim)r.prox++;
+    if(e.prazo&&(e.entregueEm||e.prazo<h)){var fim=String(e.entregueEm||h).slice(0,10),dias=Math.max(0,Math.round((new Date(fim+'T12:00:00')-new Date(e.prazo+'T12:00:00'))/864e5));r.notas.push(Math.max(0,10-0.5*dias))}});
+  r.score=r.notas.length?(r.notas.reduce(function(a,b){return a+b},0)/r.notas.length).toFixed(1).replace('.',','):'—';return r}
+function membroReg(p){var em=norm(p.email),nm=norm(p.nome);var ms=Object.keys(S.reg.membros||{}).map(function(k){return S.reg.membros[k]});
+  return ms.filter(function(m){return (em&&norm(m.email)===em)||norm(m.nome)===nm})[0]||null}
+var ORG={NDE:'NDE',COL:'Colegiado'};
+function vincTxt(m){if(!m||!(m.vinculos||[]).length)return '';return m.vinculos.map(function(v){return String(v.curso||'').toUpperCase().replace('GSMT','SMENT')+' · '+(ORG[v.orgao]||v.orgao)+(v.funcao&&!/membro docente/i.test(v.funcao)?' ('+v.funcao+')':'')}).join('; ')}
+function pctBar(v,max){if(!max)return '';var p=Math.min(100,Math.round(v/max*100)),c=v>max?'var(--bad)':(v===max?'var(--ok)':'var(--warn)');return '<div style="height:7px;background:var(--line);border-radius:9px;overflow:hidden;margin-top:5px"><div style="height:100%;width:'+p+'%;background:'+c+'"></div></div>'}
+function situacaoCarga(p,c){var ct=contratoDe(p);
+  if(ct===null)return '<span class="pill warn">Sem contrato</span>';if(c.total>ct)return '<span class="pill bad">Acima (+'+(c.total-ct)+')</span>';
+  if(c.total===ct)return '<span class="pill ok">Completa</span>';return '<span class="pill warn">Faltam '+(ct-c.total)+'</span>'}
+function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||p.papel===S.fPapel)&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
+function lnkProf(p){return '<button type="button" data-ficha="'+esc(p.id)+'" style="border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-align:left">'+esc(p.nome)+'</button>'}
+function htmlPVis(){
+  var ps=profs(),ct=0,al=0,inc=0,acima=0,venc=0,prox=0;
+  ps.forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id);al+=c.total;if(n!==null){ct+=n;if(c.total<n)inc++;if(c.total>n)acima++}venc+=e.vencida;prox+=e.prox});
+  var form=ps.filter(function(p){return p.papel==='formador'}).length,reg=ps.length-form;
+  var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">'
+   +kpi('Professores',ps.length+' ('+form+' formadores · '+reg+' regentes)','var(--accent)')
+   +kpi('Aulas alocadas / contratadas',al+' / '+ct,'#1D6FA3')
+   +kpi('Com carga incompleta',inc,inc?'var(--warn)':'var(--ok)')
+   +kpi('Acima do contrato',acima,acima?'var(--bad)':'var(--ok)')
+   +kpi('Entregas vencidas',venc,venc?'var(--bad)':'var(--ok)')
+   +kpi('Entregas nos próximos 14 dias',prox,'#5B4BD6')+'</div>';
+  var pend=[];
+  ps.sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')}).forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id),m=membroReg(p);
+    if(n===null)pend.push([p,'Sem aulas de contrato cadastradas']);else if(c.total<n)pend.push([p,'Faltam '+(n-c.total)+' aulas para completar o contrato ('+c.total+' de '+n+')']);else if(c.total>n)pend.push([p,c.total+' aulas alocadas para '+n+' do contrato']);
+    if(e.vencida)pend.push([p,e.vencida+' '+pl(e.vencida,'entrega vencida','entregas vencidas')]);
+    if(!p.email)pend.push([p,'Sem e-mail no cadastro']);
+    if(m&&m.vinculos&&m.vinculos.length&&!m.assinatura)pend.push([p,'Membro do NDE/Colegiado sem assinatura cadastrada'])});
+  h+='<div class="sec-h"><div><h2>O que precisa da sua atenção</h2><p class="mut">Carga, entregas e cadastro de todos os formadores e regentes, inclusive as aulas em outras coordenações.</p></div></div>';
+  if(!pend.length)return h+'<div class="card vazio"><b>Tudo em dia</b>Nenhuma pendência encontrada.</div>';
+  return h+'<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th><th style="text-align:left">Pendência</th></tr></thead><tbody>'
+   +pend.map(function(x){return '<tr><td>'+lnkProf(x[0])+' <small class="mut">'+(x[0].papel==='regente'?'regente':'formador')+'</small></td><td>'+esc(x[1])+'</td></tr>'}).join('')+'</tbody></table></div>';
+}
+function htmlPLista(){
+  if(S.ficha)return htmlFicha(S.ficha);
+  var ps=filtroProfs();
+  var h='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><input id="p-busca" placeholder="Buscar professor" value="'+esc(S.fBusca)+'" style="padding:9px 12px;border-radius:10px;border:1px solid var(--line);min-width:240px;font:inherit">'
+   +[['','Todos'],['formador','Formadores'],['regente','Regentes']].map(function(o){return '<button type="button" data-fp="'+o[0]+'" style="border:1px solid var(--line);border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;'+(S.fPapel===o[0]?'background:var(--accent);color:#fff;border-color:var(--accent)':'background:#fff')+'">'+o[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th><th>Contrato</th><th>Aulas comigo</th><th>Outras coord.</th><th>Total / contrato</th><th>Situação</th><th>Entregas</th><th>Score</th><th style="text-align:left">NDE / Colegiado</th></tr></thead><tbody>';
+  ps.forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id),m=membroReg(p),lm=limiteComigo(p);
+    h+='<tr><td>'+lnkProf(p)+'<br><small class="mut">'+(p.papel==='regente'?'Regente':'Formador')+(p.externo?' · externo':'')+'</small></td>'
+     +'<td style="text-align:center">'+esc(p.contrato||'—')+'</td>'
+     +'<td style="text-align:center">'+c.minhas+(lm!==null?'<br><small class="mut">limite '+lm+'</small>':'')+'</td>'
+     +'<td style="text-align:center">'+c.outras+'</td>'
+     +'<td style="text-align:center;min-width:110px">'+c.total+' / '+(n===null?'—':n)+pctBar(c.total,n)+'</td>'
+     +'<td style="text-align:center">'+situacaoCarga(p,c)+'</td>'
+     +'<td style="text-align:center">'+(e.total?(e.vencida?'<span class="pill bad">'+e.vencida+' vencidas</span><br>':'')+'<small class="mut">'+(e.ok+e.atraso)+' de '+e.total+' entregues</small>':'<span class="mut">—</span>')+'</td>'
+     +'<td style="text-align:center">'+e.score+'</td>'
+     +'<td><small>'+esc(vincTxt(m)||'—')+'</small></td></tr>'});
+  return h+'</tbody></table></div><p class="mut" style="margin-top:10px">Clique no nome para abrir a ficha. Aulas: cada dia da semana marcado conta 4 aulas (EAD) ou 9 (estendida); disciplina sinérgica conta uma vez. "Outras coord." são as disciplinas cadastradas como outra coordenação.</p>';
+}
+function linhaInfo(r,v){return '<div style="display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)"><span class="mut" style="min-width:150px">'+r+'</span><span>'+v+'</span></div>'}
+var DIAS={sem2:'2ª',sem3:'3ª',sem4:'4ª',sem5:'5ª',sem6:'6ª'};
+function htmlFicha(pid){
+  var p=(S.gd.pessoas||{})[pid];if(!p){S.ficha='';return htmlPLista()}
+  var c=cargaDe(pid),n=contratoDe(p),e=resumoEnt(pid),m=membroReg(p),D=S.gd.disciplinas||{},hab=(S.gd.habilitacoes||{})[pid]||{},es0=(S.gd.escolhas||{})[pid];
+  var h='<button type="button" data-ficha="" style="border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer">← Lista de professores</button>';
+  h+='<div class="sec-h" style="margin-top:12px"><div><h2>'+esc(p.nome)+'</h2><p class="mut">'+(p.papel==='regente'?'Professor regente':'Professor formador')+(p.contrato?' · '+esc(p.contrato):'')+(p.externo?' · externo':'')+'</p></div></div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">';
+  h+='<div class="card" style="padding:16px"><b>Cadastro</b>'+linhaInfo('E-mail',esc(p.email||'—'))+linhaInfo('Celular',esc(p.celular||'—'))+linhaInfo('Titulação',esc((m&&m.titulacao)||'—'))+linhaInfo('Formação',esc((m&&m.formacao)||'—'))+linhaInfo('Regime',esc((m&&m.regime)||'—'))
+    +linhaInfo('Lattes',m&&m.lattes?'<a href="'+esc(m.lattes)+'" target="_blank" rel="noopener">abrir</a>':'—')+linhaInfo('Assinatura',m&&m.assinatura?'<span class="pill ok">cadastrada</span>':'<span class="pill warn">não cadastrada</span>')
+    +linhaInfo('NDE / Colegiado',esc(vincTxt(m)||'não participa'))+'</div>';
+  h+='<div class="card" style="padding:16px"><b>Carga horária (aulas)</b>'+linhaInfo('Contrato',n===null?'—':n+' aulas')+linhaInfo('Alocadas comigo',c.minhas+(limiteComigo(p)!==null?' (limite '+limiteComigo(p)+')':''))+linhaInfo('Outras coordenações',c.outras)
+    +linhaInfo('Total',c.total+' '+situacaoCarga(p,c))+pctBar(c.total,n)
+    +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px">'+MODS.map(function(md){var x=cargaDe(pid,md);return '<div style="text-align:center;border:1px solid var(--line);border-radius:10px;padding:6px"><small class="mut">'+md.replace('Módulo ','M')+'</small><div style="font-weight:800">'+x.total+'</div></div>'}).join('')+'</div>'
+    +linhaInfo('Dias disponíveis',(hab.dias||[]).map(function(d){return DIAS[d]||d}).join(', ')||'—')+'</div>';
+  h+='<div class="card" style="padding:16px"><b>Entregas</b>'+linhaInfo('Score',e.score)+linhaInfo('Entregues no prazo',e.ok)+linhaInfo('Entregues com atraso',e.atraso)+linhaInfo('Vencidas',e.vencida?'<span class="pill bad">'+e.vencida+'</span>':'0')+linhaInfo('Pendentes',e.pendente+(e.prox?' ('+e.prox+' nos próximos 14 dias)':''))
+    +linhaInfo('Escolha de disciplinas',es0?'enviada em '+br(String(es0.enviadoEm||'').slice(0,10))+' · '+((es0.lista||[]).length)+' disciplinas':'não enviada')+'</div>';
+  h+='</div>';
+  var als=alocsDe(pid).map(function(a){return {a:a,d:D[a.disciplinaId]||{}}}).sort(function(x,y){return String(x.d.modulo).localeCompare(String(y.d.modulo))||(x.d.ordem||0)-(y.d.ordem||0)});
+  var cs=coordsDe(pid);
+  h+='<div class="sec-h" style="margin-top:18px"><div><h2>Disciplinas</h2></div></div>';
+  if(!als.length&&!cs.length)h+='<div class="card vazio">Nenhuma alocação.</div>';
+  else h+='<div class="tw"><table><thead><tr><th style="text-align:left">Módulo</th><th style="text-align:left">Disciplina</th><th style="text-align:left">Curso</th><th>Tipo</th><th>Dias</th><th>Aulas</th><th style="text-align:left">Datas das aulas</th><th style="text-align:left">Mediação</th></tr></thead><tbody>'
+    +als.map(function(x){var a=x.a,d=x.d,ds=(a.datasAulas||[]).slice().sort();
+      return '<tr><td>'+esc(d.modulo||'—')+'</td><td><b>'+esc(d.nome||a.disciplinaId)+'</b><br><small class="mut">'+(d.ordem?d.ordem+'ª · ':'')+esc(d.ano||'')+' ano · '+esc(d.hora||'')+'</small></td><td>'+esc(cursoSigla(d.cursoId))+'</td><td style="text-align:center">'+(a.tipo==='estendida'?'Estendida':'EAD')+'</td>'
+       +'<td style="text-align:center">'+((a.diasSemana||[]).map(function(k){return DIAS[k]||k}).join(', ')||'—')+'</td><td style="text-align:center">'+diasDaAlocacao(a)+'</td>'
+       +'<td><small>'+(ds.length?ds.map(function(dt){var f=S.feriados[dt];return '<span'+(f?' title="'+esc(f)+'" style="color:var(--bad);font-weight:700"':'')+'>'+br(dt).slice(0,5)+(f?' ⚑':'')+'</span>'}).join(' · '):'—')+'</small></td>'
+       +'<td><small>'+esc((a.mediadorIds||[]).map(medNome).join(', ')||'—')+'</small></td></tr>'}).join('')
+    +cs.map(function(c){return '<tr><td>'+esc(c.modulo||'—')+'</td><td><b>'+esc(c.disciplina)+'</b><br><small class="mut">outra coordenação'+(c.coordenador?' · '+esc(c.coordenador):'')+'</small></td><td>'+esc(c.curso||'')+'</td><td style="text-align:center">'+(c.tipo==='estendida'?'Estendida':'EAD')+'</td><td style="text-align:center">'+((c.diasSemana||[]).map(function(k){return DIAS[k]||k}).join(', ')||'—')+'</td><td style="text-align:center">'+diasDaAlocacao(c)+'</td><td>—</td><td>—</td></tr>'}).join('')
+    +'</tbody></table></div>';
+  var es=entregasDe(pid).sort(function(a,b){return String(a.prazo).localeCompare(String(b.prazo))});
+  h+='<div class="sec-h" style="margin-top:18px"><div><h2>Entregas</h2></div></div>';
+  h+=es.length?tabelaEntregas(es,false):'<div class="card vazio">Nenhuma entrega cadastrada.</div>';
+  return h;
+}
+var ST_TXT={ok:['ok','Entregue'],atraso:['warn','Entregue com atraso'],vencida:['bad','Vencida'],pendente:['','Pendente'],semprazo:['','Sem prazo']};
+function tabelaEntregas(es,comProf){var D=S.gd.disciplinas||{};
+  return '<div class="tw"><table><thead><tr>'+(comProf?'<th style="text-align:left">Professor</th>':'')+'<th style="text-align:left">Atividade</th><th style="text-align:left">Disciplina</th><th>Módulo</th><th>Prazo</th><th>Entregue em</th><th>Situação</th></tr></thead><tbody>'
+   +es.map(function(e){var d=D[e.disciplinaId]||{},st=ST_TXT[stEntrega(e)],p=(S.gd.pessoas||{})[e.professorId]||{id:e.professorId,nome:e.professorId};
+     return '<tr>'+(comProf?'<td>'+lnkProf(p)+'</td>':'')+'<td>'+esc(e.atividade)+'</td><td>'+esc(d.nome||'—')+'</td><td style="text-align:center">'+esc((d.modulo||'').replace('Módulo ','M'))+'</td><td style="text-align:center">'+br(e.prazo)+'</td><td style="text-align:center">'+(e.entregueEm?br(String(e.entregueEm).slice(0,10)):'—')+'</td><td style="text-align:center"><span class="pill '+st[0]+'">'+st[1]+'</span></td></tr>'}).join('')+'</tbody></table></div>'}
+function htmlPCarga(){
+  var ps=filtroProfs(),tot=[0,0,0,0];
+  var h='<div class="sec-h"><div><h2>Carga por módulo</h2><p class="mut">Aulas de cada professor em cada módulo (sua coordenação + outras coordenações).</p></div></div>';
+  h+='<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th>'+MODS.map(function(m){return '<th>'+m.replace('Módulo ','M')+'</th>'}).join('')+'<th>Total</th><th>Contrato</th><th>Situação</th></tr></thead><tbody>';
+  ps.forEach(function(p){var c=cargaDe(p.id);h+='<tr><td>'+lnkProf(p)+'</td>'
+    +MODS.map(function(m,i){var x=cargaDe(p.id,m).total;tot[i]+=x;return '<td style="text-align:center">'+(x||'<span class="mut">—</span>')+'</td>'}).join('')
+    +'<td style="text-align:center;font-weight:800">'+c.total+'</td><td style="text-align:center">'+(contratoDe(p)===null?'—':contratoDe(p))+'</td><td style="text-align:center">'+situacaoCarga(p,c)+'</td></tr>'});
+  return h+'<tr><td><b>Total</b></td>'+tot.map(function(t){return '<td style="text-align:center;font-weight:800">'+t+'</td>'}).join('')+'<td></td><td></td><td></td></tr></tbody></table></div>';
+}
+function htmlPEnt(){
+  var D=S.gd.disciplinas||{},h=hoje(),lim=isoAdd(h,14),ids={};profs().forEach(function(p){ids[p.id]=1});
+  var es=L('entregas').filter(function(e){return ids[e.professorId]&&e.atividade!=='AE1'&&(D[e.disciplinaId]||{}).modulo===S.mod});
+  var por=function(a,b){return String(a.prazo).localeCompare(String(b.prazo))};
+  var venc=es.filter(function(e){return stEntrega(e)==='vencida'}).sort(por),prox=es.filter(function(e){return stEntrega(e)==='pendente'&&e.prazo<=lim}).sort(por),feitas=es.filter(function(e){return e.entregueEm}).length;
+  var out='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">'+kpi('Entregas no '+S.mod,es.length,'var(--accent)')+kpi('Entregues',feitas,'var(--ok)')+kpi('Vencidas',venc.length,venc.length?'var(--bad)':'var(--ok)')+kpi('Próximos 14 dias',prox.length,'#5B4BD6')+'</div>';
+  out+='<div class="sec-h"><div><h2>Vencidas</h2></div></div>'+(venc.length?tabelaEntregas(venc,true):'<div class="card vazio">Nenhuma entrega vencida.</div>');
+  out+='<div class="sec-h" style="margin-top:16px"><div><h2>Vencem nos próximos 14 dias</h2></div></div>'+(prox.length?tabelaEntregas(prox,true):'<div class="card vazio">Nada vence nos próximos 14 dias.</div>');
+  return out;
+}
+
 function htmlEscolha(){
   var card=function(area,tit,txt,cor,fundo,ico){return '<button type="button" class="esc-card" data-area="'+area+'"><span class="esc-ico" style="background:'+fundo+';color:'+cor+'">'+ico+'</span><div><h2>'+tit+'</h2></div><p>'+txt+'</p><span class="esc-go" style="color:'+cor+'">Abrir <span aria-hidden="true">→</span></span></button>'};
   return '<div class="escolha">'
@@ -440,8 +571,9 @@ function htmlEscolha(){
 }
 function render(){
   TABS=S.area==='prof'?TABS_PROF:TABS_MED;
-  if(S.area==='prof'&&S.tab!=='profs')S.tab='profs';if(S.area==='med'&&S.tab==='profs')S.tab='geral';
+  if(S.area==='prof'&&!/^p(vis|lista|carga|ent)$/.test(S.tab))S.tab='pvis';if(S.area==='med'&&/^p(vis|lista|carga|ent)$/.test(S.tab))S.tab='geral';
   $('#tabs').hidden=!S.area;$('.per-claro').hidden=!S.area;$('#f-med').parentNode.hidden=S.area!=='med';
+  $('#f-mod').parentNode.hidden=S.area==='prof'&&S.tab!=='pent';
   $('#tabs').innerHTML=(S.area?'<button type="button" data-area="" title="Voltar à escolha">← Voltar</button>':'')+TABS.map(function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('');
   $('#f-ano').innerHTML=['2027','2026'].map(function(a){return '<option'+(a===S.ano?' selected':'')+'>'+a+'</option>'}).join('');
   $('#f-mod').innerHTML=MODS.map(function(m){return '<option'+(m===S.mod?' selected':'')+'>'+m+'</option>'}).join('');
@@ -449,30 +581,41 @@ function render(){
   $('#f-med').innerHTML='<option value="">Todos</option>'+meds.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===S.med?' selected':'')+'>'+esc(m.nome)+'</option>'}).join('');
   if(!S.carregado)return;
   if(!S.area){$('#view').innerHTML=htmlEscolha();return}
-  $('#view').innerHTML={geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,profs:htmlEquipe}[S.tab]();
+  $('#view').innerHTML={geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,pvis:htmlPVis,plista:htmlPLista,pcarga:htmlPCarga,pent:htmlPEnt}[S.tab]();
 }
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
-  if(b.hasAttribute('data-area')){S.area=b.dataset.area;S.tab=S.area==='prof'?'profs':'geral';try{history.replaceState(null,'',S.area?'#'+S.area:location.pathname)}catch(e){}render();window.scrollTo(0,0)}
+  if(b.hasAttribute('data-area')){S.area=b.dataset.area;S.tab=S.area==='prof'?'pvis':'geral';S.ficha='';try{history.replaceState(null,'',S.area?'#'+S.area:location.pathname)}catch(e){}render();window.scrollTo(0,0)}
   else if(b.dataset.tab){S.tab=b.dataset.tab;render()}
+  else if(b.dataset.ficha!==undefined){S.ficha=b.dataset.ficha;if(S.ficha)S.tab='plista';render();window.scrollTo(0,0)}
+  else if(b.dataset.fp!==undefined){S.fPapel=b.dataset.fp;render()}
   else if(b.dataset.sem){S.sem=Number(b.dataset.sem);render()}
   else if(b.dataset.ck){marcar(b.dataset.ck,b.dataset.k)}
 });
+document.addEventListener('input',function(ev){if(ev.target.id==='p-busca'){S.fBusca=ev.target.value;var pos=ev.target.selectionStart;render();var i=document.getElementById('p-busca');if(i){i.focus();try{i.setSelectionRange(pos,pos)}catch(e){}}}});
 document.addEventListener('change',function(ev){var t=ev.target;
   if(t.id==='f-ano')S.ano=t.value;else if(t.id==='f-mod'){S.mod=t.value;S.sem=0}else if(t.id==='f-med')S.med=t.value;else return;render()});
 
 /* ---------- início ---------- */
+var GD_COLS=['pessoas','disciplinas','cursos','alocacoes','gradeEntregas','coords','entregas','habilitacoes','escolhas'];
+function guardarGd(g){Object.keys(g||{}).forEach(function(c){var m={};(g[c]||[]).forEach(function(x){m[x.id]=Object.assign({id:x.id},x.data||{})});S.gd[c]=m})}
+// tempo real: relê a Gestão das Entregas a cada 2 minutos e quando a aba volta a ficar visível
+function atualizarGd(){if(!window.GFI||!GFI.api)return;GFI.api('listMany',{app:'gd',cols:GD_COLS}).then(function(g){guardarGd(g);$('#st').textContent='Dados sincronizados · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});render()}).catch(function(){})}
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.carregado)atualizarGd()});
+function carregarFeriados(){try{fetch('calendario.html',{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){var m=/<script type="application\/json" id="cal-data">([\s\S]*?)<\/script>/.exec(t);if(!m)return;
+  (JSON.parse(m[1]).events||[]).forEach(function(ev){if(ev.c==='feriado'||/ponte/i.test(ev.t||'')){var d=ev.s;while(d&&d<=(ev.e||ev.s)){S.feriados[d]=ev.t;d=isoAdd(d,1)}}});render()}).catch(function(){})}catch(e){}}
 function modPadrao(){var h=hoje(),r='Módulo 51';MODS.forEach(function(m){var i=inicioMod(m);if(i&&i<=isoAdd(h,21))r=m});return r}
 function iniciar(){
   var hs=location.hash.replace('#','');if(hs==='med'||hs==='prof')S.area=hs;
   render();
   var api=window.GFI&&GFI.api;if(!api||!window.claude){$('#st').textContent='Não foi possível conectar ao banco.';return}
   Promise.all([
-    api('listMany',{app:'gd',cols:['pessoas','disciplinas','cursos','alocacoes','gradeEntregas']}),
+    api('listMany',{app:'gd',cols:GD_COLS}),
+    api('listMany',{app:'reg',cols:['membros']}).catch(function(){return {}}),
     window.claude.use('db')
   ]).then(function(r){
-    var g=r[0]||{};Object.keys(g).forEach(function(c){var m={};(g[c]||[]).forEach(function(x){m[x.id]=Object.assign({id:x.id},x.data||{})});S.gd[c]=m});
-    S.db=r[1];
+    guardarGd(r[0]);var rg=r[1]||{};S.reg.membros={};(rg.membros||[]).forEach(function(x){S.reg.membros[x.id]=Object.assign({id:x.id},x.data||{})});
+    S.db=r[2];carregarFeriados();setInterval(atualizarGd,120000);
     S.db.collection('checks').onSnapshot(function(snap){var m={};snap.docs.forEach(function(d){m[d.id]=d.data()});S.checks=m;
       if(!S.carregado){S.carregado=true;S.mod=modPadrao();$('#dot').className='dot ok';$('#st').textContent='Dados sincronizados · hoje '+br(hoje())}
       render()},function(){$('#dot').className='dot bad';$('#st').textContent='Sem permissão para ler os dados.'});
