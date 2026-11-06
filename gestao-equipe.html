@@ -312,7 +312,7 @@ var MODS=['Módulo 51','Módulo 52','Módulo 53','Módulo 54'];
 var TABS_MED=[['geral','Visão geral'],['plan','Planejamento do módulo'],['sem','Semana a semana'],['comp','Atividades complementares'],['equipe','Equipe de mediação']];
 var TABS_PROF=[['pvis','Visão geral'],['plista','Professores'],['pcarga','Carga por módulo'],['pent','Entregas']];
 var TABS=TABS_MED;
-var S={area:'',tab:'geral',ficha:'',fPapel:'',fBusca:'',reg:{},feriados:{},ano:'2027',mod:'',med:'',sem:0,gd:{},checks:{},db:null,carregado:false,podeEditar:true};
+var S={area:'',tab:'geral',ficha:'',editCoord:'',fPapel:'',fBusca:'',reg:{},feriados:{},ano:'2027',mod:'',med:'',sem:0,gd:{},checks:{},db:null,carregado:false,podeEditar:true};
 
 /* ---------- dados da Gestão das Entregas (somente leitura) ---------- */
 function L(c){var m=S.gd[c]||{};return Object.keys(m).map(function(k){return m[k]})}
@@ -521,9 +521,9 @@ function htmlFicha(pid){
     +linhaInfo('Escolha de disciplinas',es0?'enviada em '+br(String(es0.enviadoEm||'').slice(0,10))+' · '+((es0.lista||[]).length)+' disciplinas':'não enviada')+'</div>';
   h+='</div>';
   var als=alocsDe(pid).map(function(a){return {a:a,d:D[a.disciplinaId]||{}}}).sort(function(x,y){return String(x.d.modulo).localeCompare(String(y.d.modulo))||(x.d.ordem||0)-(y.d.ordem||0)});
-  var cs=coordsDe(pid);
-  h+='<div class="sec-h" style="margin-top:18px"><div><h2>Disciplinas</h2></div></div>';
-  if(!als.length&&!cs.length)h+='<div class="card vazio">Nenhuma alocação.</div>';
+  var cs=[];
+  h+='<div class="sec-h" style="margin-top:18px"><div><h2>Disciplinas na sua coordenação</h2></div></div>';
+  if(!als.length)h+='<div class="card vazio">Nenhuma alocação na sua coordenação.</div>';
   else h+='<div class="tw"><table><thead><tr><th style="text-align:left">Módulo</th><th style="text-align:left">Disciplina</th><th style="text-align:left">Curso</th><th>Tipo</th><th>Dias</th><th>Aulas</th><th style="text-align:left">Datas das aulas</th><th style="text-align:left">Mediação</th></tr></thead><tbody>'
     +als.map(function(x){var a=x.a,d=x.d,ds=(a.datasAulas||[]).slice().sort();
       return '<tr><td>'+esc(d.modulo||'—')+'</td><td><b>'+esc(d.nome||a.disciplinaId)+'</b><br><small class="mut">'+(d.ordem?d.ordem+'ª · ':'')+esc(d.ano||'')+' ano · '+esc(d.hora||'')+'</small></td><td>'+esc(cursoSigla(d.cursoId))+'</td><td style="text-align:center">'+(a.tipo==='estendida'?'Estendida':'EAD')+'</td>'
@@ -532,6 +532,7 @@ function htmlFicha(pid){
        +'<td><small>'+esc((a.mediadorIds||[]).map(medNome).join(', ')||'—')+'</small></td></tr>'}).join('')
     +cs.map(function(c){return '<tr><td>'+esc(c.modulo||'—')+'</td><td><b>'+esc(c.disciplina)+'</b><br><small class="mut">outra coordenação'+(c.coordenador?' · '+esc(c.coordenador):'')+'</small></td><td>'+esc(c.curso||'')+'</td><td style="text-align:center">'+(c.tipo==='estendida'?'Estendida':'EAD')+'</td><td style="text-align:center">'+((c.diasSemana||[]).map(function(k){return DIAS[k]||k}).join(', ')||'—')+'</td><td style="text-align:center">'+diasDaAlocacao(c)+'</td><td>—</td><td>—</td></tr>'}).join('')
     +'</tbody></table></div>';
+  h+=htmlCoordsFicha(pid);
   var es=entregasDe(pid).sort(function(a,b){return String(a.prazo).localeCompare(String(b.prazo))});
   h+='<div class="sec-h" style="margin-top:18px"><div><h2>Entregas</h2></div></div>';
   h+=es.length?tabelaEntregas(es,false):'<div class="card vazio">Nenhuma entrega cadastrada.</div>';
@@ -562,6 +563,60 @@ function htmlPEnt(){
   return out;
 }
 
+/* ---------- disciplinas de outra coordenação (coleção "coords" da Gestão das Entregas) ---------- */
+function salvarCoord(id,dados){return GFI.api('set',{app:'gd',col:'coords',id:id,data:dados})}
+function apagarCoord(id){return GFI.api('delete',{app:'gd',col:'coords',id:id})}
+var DIAS_OP=[['sem2','2ª feira'],['sem3','3ª feira'],['sem4','4ª feira'],['sem5','5ª feira']];
+function htmlFormCoord(pid){
+  var c=S.editCoord&&S.editCoord!=='novo'?((S.gd.coords||{})[S.editCoord]||{}):{},sel=function(id,ops,v){return '<select id="'+id+'" style="padding:9px;border-radius:10px;border:1px solid var(--line);font:inherit">'+ops.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(v||'')===String(o[0])?' selected':'')+'>'+esc(o[1])+'</option>'}).join('')+'</select>'};
+  var fld=function(r,html){return '<label style="display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:13px">'+r+html+'</label>'};
+  var inp=function(id,v,ph){return '<input id="'+id+'" value="'+esc(v||'')+'" placeholder="'+esc(ph||'')+'" style="padding:9px 12px;border-radius:10px;border:1px solid var(--line);font:inherit">'};
+  var dias=c.diasSemana||[];
+  return '<div class="card" style="padding:18px;margin:10px 0;border:2px solid var(--accent)"><b>'+(S.editCoord==='novo'?'Nova disciplina de outra coordenação':'Editar disciplina de outra coordenação')+'</b>'
+   +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">'
+   +fld('Curso',inp('oc-curso',c.curso,'Ex.: Ciências Contábeis'))+fld('Coordenador(a)',inp('oc-coord',c.coordenador,'Nome do coordenador'))
+   +fld('Disciplina',inp('oc-disc',c.disciplina,'Nome da disciplina'))
+   +fld('Módulo',sel('oc-mod',MODS.map(function(m){return [m,m]}),c.modulo||S.mod||'Módulo 51'))
+   +fld('Ano',sel('oc-ano',[['1º','1º ano'],['2º','2º ano'],['3º','3º ano'],['4º','4º ano']],c.ano||'1º'))
+   +fld('Ordem',sel('oc-ord',[['1','1ª disciplina'],['2','2ª disciplina']],c.ordem||'1'))
+   +fld('Horário',sel('oc-hora',[['19h','19h'],['20h40','20h40']],c.hora||'19h'))
+   +fld('Tipo',sel('oc-tipo',[['ead','EAD (4 aulas por dia)'],['estendida','Estendida (9 aulas por dia)']],c.tipo||'ead'))
+   +'</div><div style="margin-top:12px;font-weight:700;font-size:13px">Dias da semana das aulas</div><div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:6px">'
+   +DIAS_OP.map(function(d){return '<label style="display:flex;gap:6px;align-items:center"><input type="checkbox" class="oc-dia" value="'+d[0]+'"'+(dias.indexOf(d[0])>=0?' checked':'')+'>'+d[1]+'</label>'}).join('')+'</div>'
+   +'<p class="mut" id="oc-aulas" style="margin:10px 0 0"></p><p id="oc-err" style="color:var(--bad);font-weight:700;margin:6px 0 0" hidden></p>'
+   +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button type="button" data-oc="cancelar" style="border:1px solid var(--line);background:#fff;border-radius:99px;padding:8px 16px;font:inherit;font-weight:700;cursor:pointer">Cancelar</button>'
+   +'<button type="button" data-oc="salvar" data-pid="'+esc(pid)+'" style="border:0;background:var(--accent);color:#fff;border-radius:99px;padding:8px 18px;font:inherit;font-weight:700;cursor:pointer">Salvar</button></div></div>';
+}
+function aulasForm(){var n=document.querySelectorAll('.oc-dia:checked').length,t=(document.getElementById('oc-tipo')||{}).value;var el=document.getElementById('oc-aulas');if(el)el.textContent=n?'Soma '+(n*(t==='estendida'?9:4))+' aulas na carga do professor.':'Marque ao menos um dia da semana.'}
+function salvarFormCoord(pid){
+  var v=function(id){return ((document.getElementById(id)||{}).value||'').trim()},err=document.getElementById('oc-err');
+  var dias=[].slice.call(document.querySelectorAll('.oc-dia:checked')).map(function(i){return i.value});
+  var falta=!v('oc-curso')?'Informe o curso.':!v('oc-disc')?'Informe a disciplina.':!dias.length?'Marque ao menos um dia da semana.':'';
+  if(falta){err.textContent=falta;err.hidden=false;return}
+  var novo=S.editCoord==='novo',id=novo?('oc'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)):S.editCoord,ant=novo?{}:((S.gd.coords||{})[id]||{});
+  var dados=Object.assign({},ant,{professorId:pid,curso:v('oc-curso'),coordenador:v('oc-coord'),disciplina:v('oc-disc'),modulo:v('oc-mod'),ano:v('oc-ano'),ordem:Number(v('oc-ord')),hora:v('oc-hora'),tipo:v('oc-tipo'),diasSemana:dias,por:'coordenador',origem:'gestao-docente'});
+  delete dados.id;if(novo)dados.criadoEm=new Date().toISOString();else dados.atualizadoEm=new Date().toISOString();
+  var bt=document.querySelector('[data-oc="salvar"]');if(bt){bt.disabled=true;bt.textContent='Salvando…'}
+  salvarCoord(id,dados).then(function(){S.gd.coords=S.gd.coords||{};S.gd.coords[id]=Object.assign({id:id},dados);S.editCoord='';toast('Disciplina de outra coordenação salva.');render()})
+   .catch(function(e){if(bt){bt.disabled=false;bt.textContent='Salvar'}err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+}
+function excluirCoord(id,btn){
+  if(!btn.dataset.conf){btn.dataset.conf='1';btn.textContent='Confirmar exclusão';return}
+  btn.disabled=true;apagarCoord(id).then(function(){delete S.gd.coords[id];toast('Disciplina removida da carga.');render()}).catch(function(e){btn.disabled=false;toast('Não foi possível excluir: '+((e&&e.message)||'erro'),true)});
+}
+function htmlCoordsFicha(pid){
+  var cs=coordsDe(pid).sort(function(a,b){return String(a.modulo).localeCompare(String(b.modulo))||String(a.disciplina).localeCompare(String(b.disciplina),'pt-BR')});
+  var h='<div class="sec-h" style="margin-top:18px"><div><h2>Disciplinas em outras coordenações</h2><p class="mut">Entram na carga horária do professor. Cadastre aqui as aulas que ele dá para outros coordenadores.</p></div>'
+   +(S.editCoord?'':'<button type="button" data-oc="novo" style="border:0;background:var(--accent);color:#fff;border-radius:99px;padding:9px 16px;font:inherit;font-weight:700;cursor:pointer">+ Adicionar disciplina</button>')+'</div>';
+  if(S.editCoord)h+=htmlFormCoord(pid);
+  if(!cs.length)return h+(S.editCoord?'':'<div class="card vazio">Nenhuma disciplina em outra coordenação.</div>');
+  return h+'<div class="tw"><table><thead><tr><th style="text-align:left">Módulo</th><th style="text-align:left">Disciplina</th><th style="text-align:left">Curso</th><th style="text-align:left">Coordenador(a)</th><th>Ano</th><th>Ordem</th><th>Horário</th><th>Tipo</th><th>Dias</th><th>Aulas</th><th></th></tr></thead><tbody>'
+   +cs.map(function(c){return '<tr><td>'+esc(c.modulo||'—')+'</td><td><b>'+esc(c.disciplina||'—')+'</b></td><td>'+esc(c.curso||'—')+'</td><td>'+esc(c.coordenador||'—')+'</td><td style="text-align:center">'+esc(c.ano||'—')+'</td><td style="text-align:center">'+(c.ordem?c.ordem+'ª':'—')+'</td><td style="text-align:center">'+esc(c.hora||'—')+'</td><td style="text-align:center">'+(c.tipo==='estendida'?'Estendida':'EAD')+'</td>'
+     +'<td style="text-align:center">'+((c.diasSemana||[]).map(function(k){return DIAS[k]||k}).join(', ')||'—')+'</td><td style="text-align:center;font-weight:800">'+diasDaAlocacao(c)+'</td>'
+     +'<td style="white-space:nowrap;text-align:right"><button type="button" data-oc="editar" data-id="'+esc(c.id)+'" style="border:1px solid var(--line);background:#fff;border-radius:99px;padding:5px 12px;font:inherit;font-weight:700;cursor:pointer">Editar</button> <button type="button" data-oc="excluir" data-id="'+esc(c.id)+'" style="border:1px solid var(--line);background:#fff;color:var(--bad);border-radius:99px;padding:5px 12px;font:inherit;font-weight:700;cursor:pointer">Excluir</button></td></tr>'}).join('')
+   +'</tbody></table></div>';
+}
+
 function htmlEscolha(){
   var card=function(area,tit,txt,cor,fundo,ico){return '<button type="button" class="esc-card" data-area="'+area+'"><span class="esc-ico" style="background:'+fundo+';color:'+cor+'">'+ico+'</span><div><h2>'+tit+'</h2></div><p>'+txt+'</p><span class="esc-go" style="color:'+cor+'">Abrir <span aria-hidden="true">→</span></span></button>'};
   return '<div class="escolha">'
@@ -581,18 +636,21 @@ function render(){
   $('#f-med').innerHTML='<option value="">Todos</option>'+meds.map(function(m){return '<option value="'+esc(m.id)+'"'+(m.id===S.med?' selected':'')+'>'+esc(m.nome)+'</option>'}).join('');
   if(!S.carregado)return;
   if(!S.area){$('#view').innerHTML=htmlEscolha();return}
+  setTimeout(function(){if(document.getElementById('oc-aulas'))aulasForm()},0);
   $('#view').innerHTML={geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,pvis:htmlPVis,plista:htmlPLista,pcarga:htmlPCarga,pent:htmlPEnt}[S.tab]();
 }
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
   if(b.hasAttribute('data-area')){S.area=b.dataset.area;S.tab=S.area==='prof'?'pvis':'geral';S.ficha='';try{history.replaceState(null,'',S.area?'#'+S.area:location.pathname)}catch(e){}render();window.scrollTo(0,0)}
   else if(b.dataset.tab){S.tab=b.dataset.tab;render()}
-  else if(b.dataset.ficha!==undefined){S.ficha=b.dataset.ficha;if(S.ficha)S.tab='plista';render();window.scrollTo(0,0)}
+  else if(b.dataset.oc){var o=b.dataset.oc;if(o==='novo')S.editCoord='novo';else if(o==='editar')S.editCoord=b.dataset.id;else if(o==='cancelar')S.editCoord='';else if(o==='salvar'){salvarFormCoord(b.dataset.pid);return}else if(o==='excluir'){excluirCoord(b.dataset.id,b);return}render();var f=document.getElementById('oc-curso');if(f)f.focus()}
+  else if(b.dataset.ficha!==undefined){S.editCoord='';S.ficha=b.dataset.ficha;if(S.ficha)S.tab='plista';render();window.scrollTo(0,0)}
   else if(b.dataset.fp!==undefined){S.fPapel=b.dataset.fp;render()}
   else if(b.dataset.sem){S.sem=Number(b.dataset.sem);render()}
   else if(b.dataset.ck){marcar(b.dataset.ck,b.dataset.k)}
 });
 document.addEventListener('input',function(ev){if(ev.target.id==='p-busca'){S.fBusca=ev.target.value;var pos=ev.target.selectionStart;render();var i=document.getElementById('p-busca');if(i){i.focus();try{i.setSelectionRange(pos,pos)}catch(e){}}}});
+document.addEventListener('change',function(ev){if(ev.target.classList&&ev.target.classList.contains('oc-dia')||ev.target.id==='oc-tipo'){aulasForm();return}});
 document.addEventListener('change',function(ev){var t=ev.target;
   if(t.id==='f-ano')S.ano=t.value;else if(t.id==='f-mod'){S.mod=t.value;S.sem=0}else if(t.id==='f-med')S.med=t.value;else return;render()});
 
@@ -600,7 +658,7 @@ document.addEventListener('change',function(ev){var t=ev.target;
 var GD_COLS=['pessoas','disciplinas','cursos','alocacoes','gradeEntregas','coords','entregas','habilitacoes','escolhas'];
 function guardarGd(g){Object.keys(g||{}).forEach(function(c){var m={};(g[c]||[]).forEach(function(x){m[x.id]=Object.assign({id:x.id},x.data||{})});S.gd[c]=m})}
 // tempo real: relê a Gestão das Entregas a cada 2 minutos e quando a aba volta a ficar visível
-function atualizarGd(){if(!window.GFI||!GFI.api)return;GFI.api('listMany',{app:'gd',cols:GD_COLS}).then(function(g){guardarGd(g);$('#st').textContent='Dados sincronizados · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});render()}).catch(function(){})}
+function atualizarGd(){if(!window.GFI||!GFI.api||S.editCoord)return;GFI.api('listMany',{app:'gd',cols:GD_COLS}).then(function(g){guardarGd(g);$('#st').textContent='Dados sincronizados · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});render()}).catch(function(){})}
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.carregado)atualizarGd()});
 function carregarFeriados(){try{fetch('calendario.html',{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){var m=/<script type="application\/json" id="cal-data">([\s\S]*?)<\/script>/.exec(t);if(!m)return;
   (JSON.parse(m[1]).events||[]).forEach(function(ev){if(ev.c==='feriado'||/ponte/i.test(ev.t||'')){var d=ev.s;while(d&&d<=(ev.e||ev.s)){S.feriados[d]=ev.t;d=isoAdd(d,1)}}});render()}).catch(function(){})}catch(e){}}
