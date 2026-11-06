@@ -214,6 +214,8 @@ dialog::backdrop{background:rgba(25,21,39,.55)}
 .esc-card:hover{transform:translateY(-3px)}.esc-card h2{margin:0;font:800 22px Manrope,sans-serif}.esc-card p{margin:0;color:var(--muted)}
 .esc-ico{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center}.esc-ico svg{width:28px;height:28px}
 .esc-go{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding-top:12px;font-weight:700}
+@media print{#p-busca,button[data-fp],.wrap-top,.status-line,.acoes-prof,.toast,button[data-oc],button[data-ficha=""]{display:none!important}body{background:#fff!important}.card,.tw{box-shadow:none!important;break-inside:avoid}.tw{overflow:visible!important}#rel-cab{display:block!important}}
+#rel-cab{display:none;margin-bottom:12px}#rel-cab h1{font:800 20px Manrope,sans-serif;margin:0}#rel-cab p{margin:2px 0 0;color:#555}
 .lista-at{columns:2;column-gap:28px;margin:0;padding-left:18px}.lista-at li{break-inside:avoid;margin:0 0 6px}
 @media (max-width:760px){.wk{grid-template-columns:repeat(5,1fr)}.lista-at{columns:1}}
 </style>
@@ -572,8 +574,9 @@ function htmlFormCoord(pid){
   var fld=function(r,html){return '<label style="display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:13px">'+r+html+'</label>'};
   var inp=function(id,v,ph){return '<input id="'+id+'" value="'+esc(v||'')+'" placeholder="'+esc(ph||'')+'" style="padding:9px 12px;border-radius:10px;border:1px solid var(--line);font:inherit">'};
   var dias=c.diasSemana||[];
+  var selProf=pid?'':fld('Professor',sel('oc-prof',[['','Escolha o professor']].concat(profs().sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')}).map(function(x){return [x.id,x.nome]})),c.professorId||''));
   return '<div class="card" style="padding:18px;margin:10px 0;border:2px solid var(--accent)"><b>'+(S.editCoord==='novo'?'Nova disciplina de outra coordenação':'Editar disciplina de outra coordenação')+'</b>'
-   +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">'
+   +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">'+selProf
    +fld('Curso',inp('oc-curso',c.curso,'Ex.: Ciências Contábeis'))+fld('Coordenador(a)',inp('oc-coord',c.coordenador,'Nome do coordenador'))
    +fld('Disciplina',inp('oc-disc',c.disciplina,'Nome da disciplina'))
    +fld('Módulo',sel('oc-mod',MODS.map(function(m){return [m,m]}),c.modulo||S.mod||'Módulo 51'))
@@ -590,6 +593,7 @@ function htmlFormCoord(pid){
 function aulasForm(){var n=document.querySelectorAll('.oc-dia:checked').length,t=(document.getElementById('oc-tipo')||{}).value;var el=document.getElementById('oc-aulas');if(el)el.textContent=n?'Soma '+(n*(t==='estendida'?9:4))+' aulas na carga do professor.':'Marque ao menos um dia da semana.'}
 function salvarFormCoord(pid){
   var v=function(id){return ((document.getElementById(id)||{}).value||'').trim()},err=document.getElementById('oc-err');
+  if(!pid)pid=v('oc-prof');if(!pid){err.textContent='Escolha o professor.';err.hidden=false;return}
   var dias=[].slice.call(document.querySelectorAll('.oc-dia:checked')).map(function(i){return i.value});
   var falta=!v('oc-curso')?'Informe o curso.':!v('oc-disc')?'Informe a disciplina.':!dias.length?'Marque ao menos um dia da semana.':'';
   if(falta){err.textContent=falta;err.hidden=false;return}
@@ -637,12 +641,15 @@ function render(){
   if(!S.carregado)return;
   if(!S.area){$('#view').innerHTML=htmlEscolha();return}
   setTimeout(function(){if(document.getElementById('oc-aulas'))aulasForm()},0);
-  $('#view').innerHTML={geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,pvis:htmlPVis,plista:htmlPLista,pcarga:htmlPCarga,pent:htmlPEnt}[S.tab]();
+  var TIT={pvis:'Visão geral',plista:S.ficha?'Ficha do professor':'Professores',pcarga:'Carga por módulo',pent:'Entregas · '+S.mod};
+  var barra=S.area==='prof'?'<div id="rel-cab"><h1>Gestão Docente · '+esc(TIT[S.tab]||'')+'</h1><p>Professores formadores e regentes · emitido em '+br(hoje())+'</p></div><div class="acoes-prof" style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:10px"><button class="btn-redondo" type="button" data-oc="novo" aria-label="Incluir disciplina de outra coordenação" title="Incluir disciplina de outra coordenação"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button class="btn-redondo" type="button" data-imprimir="1" aria-label="Gerar relatório em PDF" title="Gerar relatório em PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5"/><path d="M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg></button></div>'+((S.editCoord&&!S.ficha)?htmlFormCoord(''):''):'';
+  $('#view').innerHTML=barra+{geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,pvis:htmlPVis,plista:htmlPLista,pcarga:htmlPCarga,pent:htmlPEnt}[S.tab]();
 }
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
   if(b.hasAttribute('data-area')){S.area=b.dataset.area;S.tab=S.area==='prof'?'pvis':'geral';S.ficha='';try{history.replaceState(null,'',S.area?'#'+S.area:location.pathname)}catch(e){}render();window.scrollTo(0,0)}
   else if(b.dataset.tab){S.tab=b.dataset.tab;render()}
+  else if(b.dataset.imprimir){var t0=document.title;document.title='Gestão Docente - relatório '+br(hoje()).replace(/\//g,'-');window.print();setTimeout(function(){document.title=t0},500)}
   else if(b.dataset.oc){var o=b.dataset.oc;if(o==='novo')S.editCoord='novo';else if(o==='editar')S.editCoord=b.dataset.id;else if(o==='cancelar')S.editCoord='';else if(o==='salvar'){salvarFormCoord(b.dataset.pid);return}else if(o==='excluir'){excluirCoord(b.dataset.id,b);return}render();var f=document.getElementById('oc-curso');if(f)f.focus()}
   else if(b.dataset.ficha!==undefined){S.editCoord='';S.ficha=b.dataset.ficha;if(S.ficha)S.tab='plista';render();window.scrollTo(0,0)}
   else if(b.dataset.fp!==undefined){S.fPapel=b.dataset.fp;render()}
