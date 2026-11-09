@@ -471,7 +471,7 @@ function htmlPVis(){
   ps.forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id);al+=c.total;if(n!==null){ct+=n;if(c.total<n)inc++;if(c.total>n)acima++}venc+=e.vencida;prox+=e.prox});
   var form=ps.filter(function(p){return p.papel==='formador'}).length,reg=ps.length-form;
   var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">'
-   +kpi('Professores',ps.length+' ('+form+' formadores · '+reg+' regentes)','var(--accent)')
+   +kpi('Professores (formadores e regentes)',ps.length,'var(--accent)')
    +kpi('Convidados de outra coordenação',ps.filter(ehConvidado).length,'#5B4BD6')
    +kpi('Aulas alocadas / contratadas',al+' / '+ct,'#1D6FA3')
    +kpi('Com carga incompleta',inc,inc?'var(--warn)':'var(--ok)')
