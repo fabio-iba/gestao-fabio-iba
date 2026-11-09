@@ -425,7 +425,7 @@ function htmlEquipe(){
     var h='<div class="sec-h" style="margin-top:16px"><div><h2>'+tit+' <span class="mut" style="font-size:14px">('+l.length+')</span></h2></div></div>';
     if(!l.length)return h+'<div class="card vazio">Ninguém cadastrado.</div>';
     return h+'<div class="tw"><table><thead><tr><th style="text-align:left">Nome</th><th style="text-align:left">Contato</th>'+(papel==='mediador'?'':'<th>Aulas do contrato</th>')+'<th style="text-align:left">Disciplinas no '+esc(S.mod)+'</th></tr></thead><tbody>'
-     +l.map(function(p){var ds=discs(p);return '<tr><td><b>'+esc(p.nome)+'</b>'+(p.externo?' <span class="pill warn">externo</span>':'')+'</td><td>'+esc(p.email||'—')+'</td>'+(papel==='mediador'?'':'<td style="text-align:center">'+(p.aulasContrato!=null?p.aulasContrato:'—')+'</td>')+'<td>'+(ds.length?esc(ds.join(' · ')):'<span class="mut">—</span>')+'</td></tr>'}).join('')+'</tbody></table></div>';
+     +l.map(function(p){var ds=discs(p);return '<tr><td><b>'+esc(p.nome)+'</b>'+tagConv(p)+'</td><td>'+esc(p.email||'—')+'</td>'+(papel==='mediador'?'':'<td style="text-align:center">'+(p.aulasContrato!=null?p.aulasContrato:'—')+'</td>')+'<td>'+(ds.length?esc(ds.join(' · ')):'<span class="mut">—</span>')+'</td></tr>'}).join('')+'</tbody></table></div>';
   }
   var nota='<p class="mut">Cadastro e alocação ficam na <a href="gestao-docente.html">Gestão das Entregas</a>. Aqui é só consulta.</p>';
   if(S.area==='med')return nota+bloco('Professores mediadores','mediador');
@@ -460,9 +460,11 @@ var ORG={NDE:'NDE',COL:'Colegiado'};
 function vincTxt(m){if(!m||!(m.vinculos||[]).length)return '';return m.vinculos.map(function(v){return String(v.curso||'').toUpperCase().replace('GSMT','SMENT')+' · '+(ORG[v.orgao]||v.orgao)+(v.funcao&&!/membro docente/i.test(v.funcao)?' ('+v.funcao+')':'')}).join('; ')}
 function pctBar(v,max){if(!max)return '';var p=Math.min(100,Math.round(v/max*100)),c=v>max?'var(--bad)':(v===max?'var(--ok)':'var(--warn)');return '<div style="height:7px;background:var(--line);border-radius:9px;overflow:hidden;margin-top:5px"><div style="height:100%;width:'+p+'%;background:'+c+'"></div></div>'}
 function situacaoCarga(p,c){var ct=contratoDe(p);
-  if(ct===null)return '<span class="pill warn">Sem contrato</span>';if(c.total>ct)return '<span class="pill bad">Acima (+'+(c.total-ct)+')</span>';
+  if(ct===null)return ehConvidado(p)?'<span class="pill" style="background:#ECE9FC;color:#5B4BD6">Convidado</span>':'<span class="pill warn">Sem contrato</span>';if(c.total>ct)return '<span class="pill bad">Acima (+'+(c.total-ct)+')</span>';
   if(c.total===ct)return '<span class="pill ok">Completa</span>';return '<span class="pill warn">Faltam '+(ct-c.total)+'</span>'}
-function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||p.papel===S.fPapel)&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
+function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||(S.fPapel==='conv'?ehConvidado(p):p.papel===S.fPapel))&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
+function ehConvidado(p){return !!(p&&p.externo)}
+function tagConv(p){return ehConvidado(p)?' <span class="pill" style="background:#ECE9FC;color:#5B4BD6">convidado · outra coordenação</span>':''}
 function lnkProf(p){return '<button type="button" data-ficha="'+esc(p.id)+'" style="border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-align:left">'+esc(p.nome)+'</button>'}
 function htmlPVis(){
   var ps=profs(),ct=0,al=0,inc=0,acima=0,venc=0,prox=0;
@@ -470,6 +472,7 @@ function htmlPVis(){
   var form=ps.filter(function(p){return p.papel==='formador'}).length,reg=ps.length-form;
   var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">'
    +kpi('Professores',ps.length+' ('+form+' formadores · '+reg+' regentes)','var(--accent)')
+   +kpi('Convidados de outra coordenação',ps.filter(ehConvidado).length,'#5B4BD6')
    +kpi('Aulas alocadas / contratadas',al+' / '+ct,'#1D6FA3')
    +kpi('Com carga incompleta',inc,inc?'var(--warn)':'var(--ok)')
    +kpi('Acima do contrato',acima,acima?'var(--bad)':'var(--ok)')
@@ -477,23 +480,23 @@ function htmlPVis(){
    +kpi('Entregas nos próximos 14 dias',prox,'#5B4BD6')+'</div>';
   var pend=[];
   ps.sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')}).forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id),m=membroReg(p);
-    if(n===null)pend.push([p,'Sem aulas de contrato cadastradas']);else if(c.total<n)pend.push([p,'Faltam '+(n-c.total)+' aulas para completar o contrato ('+c.total+' de '+n+')']);else if(c.total>n)pend.push([p,c.total+' aulas alocadas para '+n+' do contrato']);
+    if(n===null){if(!ehConvidado(p))pend.push([p,'Sem aulas de contrato cadastradas'])}else if(c.total<n)pend.push([p,'Faltam '+(n-c.total)+' aulas para completar o contrato ('+c.total+' de '+n+')']);else if(c.total>n)pend.push([p,c.total+' aulas alocadas para '+n+' do contrato']);
     if(e.vencida)pend.push([p,e.vencida+' '+pl(e.vencida,'entrega vencida','entregas vencidas')]);
     if(!p.email)pend.push([p,'Sem e-mail no cadastro']);
     if(m&&m.vinculos&&m.vinculos.length&&!m.assinatura)pend.push([p,'Membro do NDE/Colegiado sem assinatura cadastrada'])});
   h+='<div class="sec-h"><div><h2>O que precisa da sua atenção</h2><p class="mut">Carga, entregas e cadastro de todos os formadores e regentes, inclusive as aulas em outras coordenações.</p></div></div>';
   if(!pend.length)return h+'<div class="card vazio"><b>Tudo em dia</b>Nenhuma pendência encontrada.</div>';
   return h+'<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th><th style="text-align:left">Pendência</th></tr></thead><tbody>'
-   +pend.map(function(x){return '<tr><td>'+lnkProf(x[0])+' <small class="mut">'+(x[0].papel==='regente'?'regente':'formador')+'</small></td><td>'+esc(x[1])+'</td></tr>'}).join('')+'</tbody></table></div>';
+   +pend.map(function(x){return '<tr><td>'+lnkProf(x[0])+' <small class="mut">'+(x[0].papel==='regente'?'regente':'formador')+'</small>'+tagConv(x[0])+'</td><td>'+esc(x[1])+'</td></tr>'}).join('')+'</tbody></table></div>';
 }
 function htmlPLista(){
   if(S.ficha)return htmlFicha(S.ficha);
   var ps=filtroProfs();
   var h='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><input id="p-busca" placeholder="Buscar professor" value="'+esc(S.fBusca)+'" style="padding:9px 12px;border-radius:10px;border:1px solid var(--line);min-width:240px;font:inherit">'
-   +[['','Todos'],['formador','Formadores'],['regente','Regentes']].map(function(o){return '<button type="button" data-fp="'+o[0]+'" style="border:1px solid var(--line);border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;'+(S.fPapel===o[0]?'background:var(--accent);color:#fff;border-color:var(--accent)':'background:#fff')+'">'+o[1]+'</button>'}).join('')+'</div>';
+   +[['','Todos'],['formador','Formadores'],['regente','Regentes'],['conv','Convidados']].map(function(o){return '<button type="button" data-fp="'+o[0]+'" style="border:1px solid var(--line);border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;'+(S.fPapel===o[0]?'background:var(--accent);color:#fff;border-color:var(--accent)':'background:#fff')+'">'+o[1]+'</button>'}).join('')+'</div>';
   h+='<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th><th>Contrato</th><th>Aulas comigo</th><th>Outras coord.</th><th>Total / contrato</th><th>Situação</th><th>Entregas</th><th>Score</th><th style="text-align:left">NDE / Colegiado</th></tr></thead><tbody>';
   ps.forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id),m=membroReg(p),lm=limiteComigo(p);
-    h+='<tr><td>'+lnkProf(p)+'<br><small class="mut">'+(p.papel==='regente'?'Regente':'Formador')+(p.externo?' · externo':'')+'</small></td>'
+    h+='<tr><td>'+lnkProf(p)+'<br><small class="mut">'+(p.papel==='regente'?'Regente':'Formador')+'</small>'+tagConv(p)+'</td>'
      +'<td style="text-align:center">'+esc(p.contrato||'—')+'</td>'
      +'<td style="text-align:center">'+c.minhas+(lm!==null?'<br><small class="mut">limite '+lm+'</small>':'')+'</td>'
      +'<td style="text-align:center">'+c.outras+'</td>'
@@ -510,7 +513,7 @@ function htmlFicha(pid){
   var p=(S.gd.pessoas||{})[pid];if(!p){S.ficha='';return htmlPLista()}
   var c=cargaDe(pid),n=contratoDe(p),e=resumoEnt(pid),m=membroReg(p),D=S.gd.disciplinas||{},hab=(S.gd.habilitacoes||{})[pid]||{},es0=(S.gd.escolhas||{})[pid];
   var h='<button type="button" data-ficha="" style="border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer">← Lista de professores</button>';
-  h+='<div class="sec-h" style="margin-top:12px"><div><h2>'+esc(p.nome)+'</h2><p class="mut">'+(p.papel==='regente'?'Professor regente':'Professor formador')+(p.contrato?' · '+esc(p.contrato):'')+(p.externo?' · externo':'')+'</p></div></div>';
+  h+='<div class="sec-h" style="margin-top:12px"><div><h2>'+esc(p.nome)+'</h2><p class="mut">'+(p.papel==='regente'?'Professor regente':'Professor formador')+(p.contrato?' · '+esc(p.contrato):'')+'</p>'+(ehConvidado(p)?'<p>'+tagConv(p)+'</p>':'')+'</div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px">';
   h+='<div class="card" style="padding:16px"><b>Cadastro</b>'+linhaInfo('E-mail',esc(p.email||'—'))+linhaInfo('Celular',esc(p.celular||'—'))+linhaInfo('Titulação',esc((m&&m.titulacao)||'—'))+linhaInfo('Formação',esc((m&&m.formacao)||'—'))+linhaInfo('Regime',esc((m&&m.regime)||'—'))
     +linhaInfo('Lattes',m&&m.lattes?'<a href="'+esc(m.lattes)+'" target="_blank" rel="noopener">abrir</a>':'—')+linhaInfo('Assinatura',m&&m.assinatura?'<span class="pill ok">cadastrada</span>':'<span class="pill warn">não cadastrada</span>')
@@ -549,7 +552,7 @@ function htmlPCarga(){
   var ps=filtroProfs(),tot=[0,0,0,0];
   var h='<div class="sec-h"><div><h2>Carga por módulo</h2><p class="mut">Aulas de cada professor em cada módulo (sua coordenação + outras coordenações).</p></div></div>';
   h+='<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th>'+MODS.map(function(m){return '<th>'+m.replace('Módulo ','M')+'</th>'}).join('')+'<th>Total</th><th>Contrato</th><th>Situação</th></tr></thead><tbody>';
-  ps.forEach(function(p){var c=cargaDe(p.id);h+='<tr><td>'+lnkProf(p)+'</td>'
+  ps.forEach(function(p){var c=cargaDe(p.id);h+='<tr><td>'+lnkProf(p)+tagConv(p)+'</td>'
     +MODS.map(function(m,i){var x=cargaDe(p.id,m).total;tot[i]+=x;return '<td style="text-align:center">'+(x||'<span class="mut">—</span>')+'</td>'}).join('')
     +'<td style="text-align:center;font-weight:800">'+c.total+'</td><td style="text-align:center">'+(contratoDe(p)===null?'—':contratoDe(p))+'</td><td style="text-align:center">'+situacaoCarga(p,c)+'</td></tr>'});
   return h+'<tr><td><b>Total</b></td>'+tot.map(function(t){return '<td style="text-align:center;font-weight:800">'+t+'</td>'}).join('')+'<td></td><td></td><td></td></tr></tbody></table></div>';
