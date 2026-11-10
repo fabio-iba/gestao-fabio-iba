@@ -319,7 +319,7 @@ function apagarVarios(col,ids){return ids.reduce(function(p,id){return p.then(fu
 function limparChat(b){if(!S.coord)return;if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Apagar tudo?';b.style.fontSize='12.5px';return}
   if(!travar(b,'Limpando…'))return;var ids=Object.keys(S.chat);
   apagarVarios('chat',ids).then(function(){soltar();S.chat={};marcarLido();toast('Chat limpo.');render()}).catch(function(x){soltar();toast('Não foi possível limpar: '+((x&&x.message)||'erro'),true);carregar(true).then(render)})}
-function excluirProjeto(b){if(!S.coord)return;if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar: excluir projeto, edições, agenda e chat';return}
+function excluirProjeto(b){if(!S.coord)return;if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar: excluir projeto, '+U().p+', agenda e chat';return}
   if(!travar(b,'Excluindo…'))return;
   apagarVarios('chat',Object.keys(S.chat)).then(function(){return apagarVarios('eventos',Object.keys(S.eventos))}).then(function(){return apagarVarios('edicoes',Object.keys(S.edicoes))}).then(function(){return apagar('projetos',PID)})
    .then(function(){try{localStorage.removeItem('gfi_chat_lido_'+PID)}catch(e){}location.href='projetos.html'}).catch(function(x){soltar();toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)})}
@@ -360,7 +360,7 @@ function htmlGeral(){
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+[['spotify','Spotify'],['youtube','YouTube'],['instagram','Instagram'],['site','Site']].filter(function(l){return p.links&&p.links[l[0]]}).map(function(l){return '<a class="btn-s" href="'+esc(p.links[l[0]])+'" target="_blank" rel="noopener">'+l[1]+'</a>'}).join('')+'</div></div>'
    +(S.coord?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn-s" data-acao="links" title="Copia o link pessoal de cada membro para enviar">Copiar links de acesso</button><button type="button" class="btn-s" data-acao="editar-proj">Editar projeto</button></div>':'')+'</div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">'
-   +kpi('Edições',eds.length)+kpi('Publicadas',pub)+kpi('Em andamento',eds.length-pub)+kpi('Próxima publicação',prox[0]?br(prox[0].dataPublicacao):'—')+'</div>';
+   +kpi(U().P,eds.length)+kpi('Publicadas',pub)+kpi('Em andamento',eds.length-pub)+kpi('Próxima publicação',prox[0]?br(prox[0].dataPublicacao):'—')+'</div>';
   h+='<div class="grid2"><div class="card box"><h3>Equipe do projeto</h3>'+(membros().length?membros().map(pessoaHtml).join(''):'<p class="mut">Nenhum membro cadastrado.'+(S.coord?' Use "Editar projeto".':'')+'</p>')+'</div>';
   h+='<div class="card box"><h3>Próximas publicações</h3>'+(prox.length?prox.slice(0,6).map(function(e){return '<div class="pessoa"><span class="av" style="border-radius:12px">#'+esc(e.numero||'')+'</span><div><b>'+esc(e.titulo||'Sem título')+'</b><small>'+br(e.dataPublicacao)+' · '+esc(STATUS_T[e.status]||'')+'</small></div></div>'}).join(''):'<p class="mut">Nenhuma publicação agendada.</p>')+'</div></div>';
   return h;
@@ -368,39 +368,39 @@ function htmlGeral(){
 function kpi(t,v){return '<div class="card" style="padding:14px 16px"><div class="mut" style="font-size:12.5px;font-weight:700">'+esc(t)+'</div><div style="font:800 22px Manrope,sans-serif;margin-top:4px">'+esc(v)+'</div></div>'}
 function htmlEdicoes(){
   var eds=Object.keys(S.edicoes).map(function(k){return S.edicoes[k]}).sort(function(a,b){return (Number(b.numero)||0)-(Number(a.numero)||0)});
-  var h='<div class="sec-h"><div><h2>Edições</h2><p class="mut">Título, tema, equipe e data de publicação de cada edição.</p></div>'+(S.coord&&!S.editEd?'<button type="button" class="btn-p" data-acao="nova-ed">+ Nova edição</button>':'')+'</div>';
+  var h='<div class="sec-h"><div><h2>'+U().P+'</h2><p class="mut">Título, tema, equipe e data de publicação de cada '+U().s+'.</p></div>'+(S.coord&&!S.editEd?'<button type="button" class="btn-p" data-acao="nova-ed">+ '+U().novo+' '+U().s+'</button>':'')+'</div>';
   if(S.editEd)h+=htmlFormEd();
-  if(!eds.length)return h+(S.editEd?'':'<div class="card vazio"><b>Nenhuma edição ainda</b>'+(S.coord?'Clique em "+ Nova edição" para começar.':'')+'</div>');
+  if(!eds.length)return h+(S.editEd?'':'<div class="card vazio"><b>'+U().nenhum+' '+U().s+' ainda</b>'+(S.coord?'Clique em "+ '+U().novo+' '+U().s+'" para começar.':'')+'</div>');
   return h+'<div class="card" style="padding:0">'+eds.map(function(e){
     var eq=(e.equipe||[]).map(function(x){return esc((nomeMembro(x.id)||x.nome||'')+(x.funcao?' ('+x.funcao+')':''))}).join(' · ');
     return '<div class="ed"><span class="num">'+esc(e.numero||'?')+'<small>EDIÇÃO</small></span><div><h4>'+esc(e.titulo||'Sem título')+' <span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span></h4>'
      +'<p><b>Tema:</b> '+esc(e.tema||'—')+(e.convidados?' · <b>Convidado(s):</b> '+esc(e.convidados):'')+'</p>'
-     +'<p><b>Gravação:</b> '+br(e.dataGravacao)+' · <b>Publicação:</b> '+br(e.dataPublicacao)+(e.link?' · <a href="'+esc(e.link)+'" target="_blank" rel="noopener">ouvir</a>':'')+'</p>'
+     +'<p><b>'+U().grav+':</b> '+br(e.dataGravacao)+' · <b>Publicação:</b> '+br(e.dataPublicacao)+(e.link?' · <a href="'+esc(e.link)+'" target="_blank" rel="noopener">ouvir</a>':'')+'</p>'
      +(eq?'<p><b>Equipe:</b> '+eq+'</p>':'')+(e.obs?'<p>'+esc(e.obs)+'</p>':'')+'</div>'
      +'<div class="acts">'+(S.coord?'<button type="button" class="btn-s" data-acao="editar-ed" data-id="'+esc(e.id)+'">Editar</button> <button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(e.id)+'">Excluir</button>':'')+'</div></div>'}).join('')+'</div>';
 }
 function htmlFormEd(){
   var e=S.editEd==='novo'?{numero:proxNumero(),status:'planejada',equipe:[]}:Object.assign({},S.edicoes[S.editEd]||{});
   var eqSel={};(e.equipe||[]).forEach(function(x){eqSel[x.id]=x.funcao||''});
-  return '<div class="card box" style="border:2px solid var(--accent);margin-bottom:14px"><h3>'+(S.editEd==='novo'?'Novo episódio':'Editar episódio')+'</h3><div class="frm">'
+  return '<div class="card box" style="border:2px solid var(--accent);margin-bottom:14px"><h3>'+(S.editEd==='novo'?''+U().novo+' '+U().s+'':'Editar '+U().s+'')+'</h3><div class="frm">'
    +'<label>Número<input id="e-num" type="number" min="1" value="'+esc(e.numero||'')+'"></label>'
    +(S.editEd==='novo'?'<p class="mut full" style="margin:0">Na criação basta o número, a equipe e a primeira reunião. Título, tema, convidados, datas e link você completa depois em <b>Editar</b>, quando já estiverem definidos.</p>':'')
-   +(S.editEd==='novo'?'':'<label class="full">Título<input id="e-tit" value="'+esc(e.titulo||'')+'" placeholder="Título do episódio"></label>'
+   +(S.editEd==='novo'?'':'<label class="full">Título<input id="e-tit" value="'+esc(e.titulo||'')+'" placeholder="Título '+U().d+' '+U().s+'"></label>'
    +'<label class="full">Tema<input id="e-tema" value="'+esc(e.tema||'')+'" placeholder="Assunto tratado"></label>'
    +'<label>Convidado(s)<input id="e-conv" value="'+esc(e.convidados||'')+'" placeholder="Nome(s) do convidado"></label>'
-   +'<label>Data de gravação<input id="e-grav" type="date" value="'+esc(e.dataGravacao||'')+'"></label>'
+   +'<label>Data de '+U().grav.toLowerCase()+'<input id="e-grav" type="date" value="'+esc(e.dataGravacao||'')+'"></label>'
    +'<label>Data de publicação<input id="e-pub" type="date" value="'+esc(e.dataPublicacao||'')+'"></label>'
    +'<label>Situação<select id="e-st">'+STATUS.map(function(s){return '<option value="'+s[0]+'"'+((e.status==='gravada'?'producao':e.status)===s[0]?' selected':'')+'>'+s[1]+'</option>'}).join('')+'</select></label>'
-   +'<label class="full">Link do episódio<input id="e-link" value="'+esc(e.link||'')+'" placeholder="https://"></label>')
-   +'<div class="full"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Equipe desta edição e o que cada um faz</div>'
-   +(membros().length?membros().map(function(m){var on=m.id in eqSel;return '<div class="mem-lin"><label><input type="checkbox" class="e-mem" value="'+esc(m.id)+'"'+(on?' checked':'')+'><span>'+esc(m.nome)+'</span></label><input class="e-fun" data-id="'+esc(m.id)+'" value="'+esc(on?eqSel[m.id]:(m.funcao||''))+'" placeholder="Função nesta edição"></div>'}).join(''):'<p class="mut">Cadastre a equipe em "Editar projeto".</p>')+'</div>'
+   +'<label class="full">Link '+U().d+' '+U().s+'<input id="e-link" value="'+esc(e.link||'')+'" placeholder="https://"></label>')
+   +'<div class="full"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Equipe '+U().dest+' '+U().s+' e o que cada um faz</div>'
+   +(membros().length?membros().map(function(m){var on=m.id in eqSel;return '<div class="mem-lin"><label><input type="checkbox" class="e-mem" value="'+esc(m.id)+'"'+(on?' checked':'')+'><span>'+esc(m.nome)+'</span></label><input class="e-fun" data-id="'+esc(m.id)+'" value="'+esc(on?eqSel[m.id]:(m.funcao||''))+'" placeholder="Função '+U().nest+' '+U().s+'"></div>'}).join(''):'<p class="mut">Cadastre a equipe em "Editar projeto".</p>')+'</div>'
    +'<label class="full">Observações<textarea id="e-obs">'+esc(e.obs||'')+'</textarea></label></div>'
    +(S.editEd==='novo'?'<div style="margin-top:14px;padding:14px;border-radius:14px;background:#F3F1FF;border:1px solid #DCD7FB"><label style="display:flex;flex-direction:row;gap:10px;align-items:center;justify-content:flex-start;font-weight:800;cursor:pointer;font-size:14.5px"><input type="checkbox" id="r-on" checked style="width:18px;height:18px;flex:none;margin:0"> Agendar a primeira reunião</label>'
      +'<div id="r-box" class="frm" style="margin-top:10px"><label class="full">Título da reunião<input id="r-tit" value="Reunião de pauta"></label>'
      +'<div class="full" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px"><label>Data<input id="r-data" type="date" min="'+hoje()+'"></label><label>Início<input id="r-hora" type="time" value="19:00"></label><label>Fim<input id="r-fim" type="time" value="20:00"></label></div>'
      +'<label class="full">Pauta<textarea id="r-pauta" placeholder="O que será tratado (opcional)"></textarea></label>'
      +'<p class="mut full" style="margin:0;font-size:12.5px">Os convidados serão as pessoas marcadas na equipe acima. Ao salvar, o Teams abre com o convite pronto para enviar.</p></div></div>':'')
-   +'<p id="e-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">'+(S.editEd!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(S.editEd)+'" style="margin-right:auto">Excluir edição</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ed">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ed">'+(S.editEd==='novo'?'Salvar e agendar no Teams':'Salvar edição')+'</button></div></div>';
+   +'<p id="e-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">'+(S.editEd!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(S.editEd)+'" style="margin-right:auto">Excluir '+U().s+'</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ed">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ed">'+(S.editEd==='novo'?'Salvar e agendar no Teams':'Salvar '+U().s+'')+'</button></div></div>';
 }
 function proxNumero(){var n=0;Object.keys(S.edicoes).forEach(function(k){n=Math.max(n,Number(S.edicoes[k].numero)||0)});return n+1}
 function salvarEd(){
@@ -419,9 +419,9 @@ function salvarEd(){
     var meu=S.coord?'sponsor':(S.eu&&S.eu.id);if(meu&&ev.participantes.indexOf(meu)<0)ev.participantes.push(meu)}
   var bt=document.querySelector('[data-acao="salvar-ed"]');if(!travar(bt)){if(jan)jan.close();return}
   (S.coord?salvar('edicoes',id,d):api('edicao',{id:id,data:d})).then(function(){S.edicoes[id]=Object.assign({id:id},d);
-    return registrar((novo?'🎙️ Nova edição criada: ':'✏️ Edição atualizada: ')+'#'+d.numero+' '+d.titulo+(d.dataPublicacao?' · publicação '+br(d.dataPublicacao):'')+' · situação: '+(STATUS_T[d.status]||''))})
-   .then(function(){if(!ev)return;return (S.coord?salvar('eventos',evid,ev):api('evento',{id:evid,data:ev})).then(function(){S.eventos[evid]=Object.assign({id:evid},ev);return registrar('📅 Primeira reunião agendada: '+ev.titulo+' · '+quando(ev)+' · edição '+nomeEd(id))})})
-   .then(function(){soltar();S.editEd='';if(novo){S.edSel=id;S.tab='geral'}toast(ev?'Episódio criado e primeira reunião agendada.':'Edição salva.');render();if(ev)convocarEv(evid,jan)}).catch(function(e){soltar(bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+    return registrar((novo?'🆕 '+U().novo+' '+U().s+' '+U().cri+': ':'✏️ '+U().S+' '+U().atu+': ')+'#'+d.numero+' '+d.titulo+(d.dataPublicacao?' · publicação '+br(d.dataPublicacao):'')+' · situação: '+(STATUS_T[d.status]||''))})
+   .then(function(){if(!ev)return;return (S.coord?salvar('eventos',evid,ev):api('evento',{id:evid,data:ev})).then(function(){S.eventos[evid]=Object.assign({id:evid},ev);return registrar('📅 Primeira reunião agendada: '+ev.titulo+' · '+quando(ev)+' · '+U().s+' '+nomeEd(id))})})
+   .then(function(){soltar();S.editEd='';if(novo){S.edSel=id;S.tab='geral'}toast(ev?''+U().S+' '+U().cri+' e primeira reunião agendada.':U().S+' '+U().salvo+'.');render();if(ev)convocarEv(evid,jan)}).catch(function(e){soltar(bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 function htmlFormProj(){
   var p=S.proj,c=p.coordenador||{},eq=(p.equipe||[]).slice(),l=p.links||{};
@@ -429,6 +429,7 @@ function htmlFormProj(){
   return '<div class="card box" style="border:2px solid var(--accent)"><h3>'+(NOVO_PROJ?'Cadastrar novo projeto':'Editar projeto')+'</h3><div class="frm">'
    +'<label class="full">Nome do projeto<input id="p-nome" value="'+esc(NOVO_PROJ&&p.nome==='Novo projeto'?'':(p.nome||''))+'" placeholder="Ex.: Revista Unideias"></label>'
    +'<label class="full">Descrição<textarea id="p-desc">'+esc(p.descricao||'')+'</textarea></label>'
+   +'<label>Cada entrega do projeto se chama<select id="p-uni">'+Object.keys(UNIDADES).map(function(k){return '<option'+(U().S===k?' selected':'')+'>'+k+'</option>'}).join('')+'</select></label>'
    +'<div class="full" style="display:flex;gap:14px;align-items:center">'+logoHtml(p)+'<div><div style="font-weight:700;font-size:13px">Logo do projeto</div><input id="p-logo" type="file" accept="image/*" style="margin-top:6px">'+(p.logo?' <button type="button" class="btn-s perigo" data-acao="tirar-logo">Remover logo</button>':'')+'</div></div>'
    +'<label>Spotify<input id="p-spotify" value="'+esc(l.spotify||'')+'" placeholder="https://"></label><label>YouTube<input id="p-youtube" value="'+esc(l.youtube||'')+'" placeholder="https://"></label><label>Instagram<input id="p-instagram" value="'+esc(l.instagram||'')+'" placeholder="https://"></label><label>Site<input id="p-site" value="'+esc(l.site||'')+'" placeholder="https://"></label></div>'
    +listaPessoas()+'<h3 style="margin-top:16px">Sponsor e tutora (fixos)</h3><p class="mut">Fabio Luiz Iba (fabio.iba@unicesumar.edu.br) é sponsor e a tutora Nayara Emi Shimada (nayara.shimada@unicesumar.edu.br) participa de todos os projetos; os dois entram automaticamente na equipe, nas agendas e nas convocações.</p><h3 style="margin-top:16px">Coordenador(a) do projeto</h3><div class="frm"><label>Nome<input id="c-nome" list="lista-pessoas" placeholder="Escolha ou digite" value="'+esc(c.nome||'')+'"></label><label>E-mail<input id="c-email" value="'+esc(c.email||'')+'"></label><label>O que realiza<input id="c-fun" value="'+esc(c.funcao||'Coordenação geral')+'"></label></div>'
@@ -441,7 +442,7 @@ function salvarProj(){
   var v=function(id){return (($('#'+id)||{}).value||'').trim()},err=$('#p-err');
   if(!v('p-nome')){err.textContent='Informe o nome do projeto.';err.hidden=false;return}
   var eq=[].slice.call(document.querySelectorAll('.eq-lin')).map(function(r){return {id:r.dataset.id||uid('m'),nome:r.querySelector('.q-nome').value.trim(),email:r.querySelector('.q-email').value.trim(),funcao:r.querySelector('.q-fun').value.trim()}}).filter(function(m){return m.nome});
-  var p=Object.assign({},S.proj,{nome:v('p-nome'),descricao:v('p-desc'),links:{spotify:v('p-spotify'),youtube:v('p-youtube'),instagram:v('p-instagram'),site:v('p-site'),teams:v('p-teams')},
+  var p=Object.assign({},S.proj,{unidade:v('p-uni')||U().S,nome:v('p-nome'),descricao:v('p-desc'),links:{spotify:v('p-spotify'),youtube:v('p-youtube'),instagram:v('p-instagram'),site:v('p-site'),teams:v('p-teams')},
     coordenador:{id:(S.proj.coordenador&&S.proj.coordenador.id)||'coord',nome:v('c-nome'),email:v('c-email'),funcao:v('c-fun')},equipe:eq,atualizadoEm:new Date().toISOString()});
   if(LOGO_NOVA)p.logo=LOGO_NOVA;delete p.id;
   var bt=document.querySelector('[data-acao="salvar-proj"]');if(!travar(bt))return;
@@ -475,6 +476,10 @@ function enviar(){
 }
 
 /* ---------- Agenda do projeto: reuniões, gravações e publicações ---------- */
+var UNIDADES={'Episódio':'o','Edição':'a','Etapa':'a','Fase':'a','Ação':'a','Módulo':'o','Encontro':'o','Evento':'o'};
+function U(){var s=(S.proj&&S.proj.unidade)||(/podcast/i.test((S.proj&&(S.proj.tipo+' '+S.proj.nome))||'')?'Episódio':'Edição'),g=UNIDADES[s]||'a',l=s.toLowerCase(),pl=s==='Ação'?'Ações':s==='Edição'?'Edições':s+'s';
+  var o={S:s,s:l,P:pl,p:pl.toLowerCase(),novo:g==='o'?'Novo':'Nova',d:g==='o'?'do':'da',a:g==='o'?'o':'a',um:g==='o'?'um':'uma',est:g==='o'?'este':'esta',dest:g==='o'?'deste':'desta',nest:g==='o'?'neste':'nesta',atu:g==='o'?'atualizado':'atualizada',cri:g==='o'?'criado':'criada',exc:g==='o'?'excluído':'excluída',salvo:g==='o'?'salvo':'salva',todos:g==='o'?'todos os':'todas as',nenhum:g==='o'?'Nenhum':'Nenhuma',grav:s==='Episódio'?'Gravação':'Produção'};
+  TIPOS_EV.gravacao[0]=o.grav;return o}
 var TIPOS_EV={reuniao:['Reunião','#1D6FA3','#E3EFF7'],gravacao:['Gravação','#5B4BD6','#ECE9FC'],publicacao:['Publicação','#0B7A55','#E3FBF2'],outro:['Outro','#B5650D','#FFF4E0']};
 var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 var CAL={feriados:{},modulos:[]};
@@ -486,14 +491,14 @@ function addDia(iso,n){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]+n);re
 function itensAgenda(){
   var r=Object.keys(S.eventos).map(function(k){var e=S.eventos[k];return {id:k,tipo:e.tipo||'reuniao',titulo:e.titulo||TIPOS_EV[e.tipo||'reuniao'][0],data:e.data,hora:e.hora||'',fim:e.fim||'',local:e.local||'',pauta:e.pauta||'',ev:e}});
   Object.keys(S.edicoes).forEach(function(k){var e=S.edicoes[k],n='#'+(e.numero||'')+' '+(e.titulo||'');
-    if(e.dataGravacao)r.push({tipo:'gravacao',titulo:'Gravação '+n,data:e.dataGravacao,hora:e.horaGravacao||'',ed:k});
+    if(e.dataGravacao)r.push({tipo:'gravacao',titulo:U().grav+' '+n,data:e.dataGravacao,hora:e.horaGravacao||'',ed:k});
     if(e.dataPublicacao)r.push({tipo:'publicacao',titulo:'Publicação '+n,data:e.dataPublicacao,ed:k})});
   return r.filter(function(x){return x.data}).sort(function(a,b){return (a.data+a.hora).localeCompare(b.data+b.hora)});
 }
 function htmlAgenda(){
   if(!S.mes)S.mes=hoje().slice(0,7);
   var y=+S.mes.slice(0,4),mo=+S.mes.slice(5,7),its=itensAgenda(),porDia={};its.forEach(function(x){(porDia[x.data]=porDia[x.data]||[]).push(x)});
-  var h='<div class="sec-h"><div><h2>Agenda do projeto</h2><p class="mut">Visão do calendário de todas as edições. Para agendar, abra a edição no Painel do projeto.</p></div>'+'</div>';
+  var h='<div class="sec-h"><div><h2>Agenda do projeto</h2><p class="mut">Visão do calendário de '+U().todos+' '+U().p+'. Para agendar, abra '+U().a+' '+U().s+' no Painel do projeto.</p></div>'+'</div>';
   if(S.editEv)h+=htmlFormEv();
   h+='<div class="card" style="padding:14px 16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap"><div style="display:flex;gap:8px;align-items:center"><button type="button" class="btn-s" data-mes="-1" aria-label="Mês anterior">‹</button><b style="font:800 18px Manrope,sans-serif;min-width:170px;text-align:center">'+MESES[mo-1]+' '+y+'</b><button type="button" class="btn-s" data-mes="1" aria-label="Próximo mês">›</button><button type="button" class="btn-s" data-mes="0">Hoje</button></div>'
    +'<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px">'+Object.keys(TIPOS_EV).map(function(k){return '<span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+TIPOS_EV[k][1]+';margin-right:5px"></span>'+TIPOS_EV[k][0]+'</span>'}).join('')+'<span>⚑ feriado/ponte</span></div></div>';
@@ -519,8 +524,8 @@ function htmlFormEv(){
   var part=e.participantes||[];
   return '<div class="card box" style="border:2px solid var(--accent);margin-bottom:14px"><h3>'+(S.editEv==='novo'?'Novo agendamento':'Editar agendamento')+'</h3><div class="frm">'
    +'<label>Tipo<select id="v-tipo">'+Object.keys(TIPOS_EV).map(function(k){return '<option value="'+k+'"'+(e.tipo===k?' selected':'')+'>'+TIPOS_EV[k][0]+'</option>'}).join('')+'</select></label>'
-   +'<label>Edição<select id="v-ed">'+edsOrd().map(function(x){return '<option value="'+esc(x.id)+'"'+((e.edicaoId||(S.editEv==='novo'?S.edSel:''))===x.id?' selected':'')+'>#'+esc(x.numero||'')+' '+esc(x.titulo||'')+'</option>'}).join('')+'</select></label>'
-   +(function(){var eid0=e.edicaoId||(S.editEv==='novo'?S.edSel:'')||(edsOrd()[0]||{}).id,ed=S.edicoes[eid0]||{},tt=ed.titulo==='Título a definir'?'':(ed.titulo||'');return '<div id="ep-box" class="full" style="'+(jaTemReuniao(eid0)?'':'display:none;')+'padding:12px;border-radius:12px;background:#F3F1FF;border:1px solid #DCD7FB;display:grid;grid-template-columns:1fr 1fr;gap:10px"><div style="grid-column:1/-1;font-weight:800;font-size:13px">Dados do episódio <small class="mut" style="font-weight:600">(ao preencher, atualiza o card do episódio)</small></div><label>Título do episódio<input id="ep-tit" value="'+esc(tt)+'" placeholder="Ex.: ENADE para ingressantes"></label><label>Tema<input id="ep-tema" value="'+esc(ed.tema||'')+'" placeholder="Assunto tratado"></label></div>'})()
+   +'<label>'+U().S+'<select id="v-ed">'+edsOrd().map(function(x){return '<option value="'+esc(x.id)+'"'+((e.edicaoId||(S.editEv==='novo'?S.edSel:''))===x.id?' selected':'')+'>#'+esc(x.numero||'')+' '+esc(x.titulo||'')+'</option>'}).join('')+'</select></label>'
+   +(function(){var eid0=e.edicaoId||(S.editEv==='novo'?S.edSel:'')||(edsOrd()[0]||{}).id,ed=S.edicoes[eid0]||{},tt=ed.titulo==='Título a definir'?'':(ed.titulo||'');return '<div id="ep-box" class="full" data-x="" style="padding:12px;border-radius:12px;background:#F3F1FF;border:1px solid #DCD7FB;display:grid;grid-template-columns:1fr 1fr;gap:10px;'+(jaTemReuniao(eid0)?'':'display:none')+'"><div style="grid-column:1/-1;font-weight:800;font-size:13px">Dados '+U().d+' '+U().s+' <small class="mut" style="font-weight:600">(ao preencher, atualiza o card '+U().d+' '+U().s+')</small></div><label>Título '+U().d+' '+U().s+'<input id="ep-tit" value="'+esc(tt)+'" placeholder="Ex.: ENADE para ingressantes"></label><label>Tema<input id="ep-tema" value="'+esc(ed.tema||'')+'" placeholder="Assunto tratado"></label></div>'})()
    +'<label class="full">Título da reunião<input id="v-tit" value="'+esc(e.titulo||'')+'" placeholder="Ex.: Reunião de pauta da edição 3"></label>'
    +'<div class="full" style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px"><label>Data<input id="v-data" type="date" value="'+esc(e.data||'')+'"></label><label>Início<input id="v-hora" type="time" value="'+esc(e.hora||'')+'"></label><label>Término<input id="v-fim" type="time" value="'+esc(e.fim||'')+'"></label></div>'
    +'<input id="v-local" type="hidden" value="'+esc(e.local||(S.editEv==='novo'?((S.proj.links||{}).teams||''):''))+'">'
@@ -533,7 +538,7 @@ function salvarEv(convocar){
   var v=function(id){return (($('#'+id)||{}).value||'').trim()},err=$('#v-err');
   if(!v('v-data')){if(jan)jan.close();err.textContent='Informe a data.';err.hidden=false;return}
   var novo=S.editEv==='novo',id=novo?uid('ev'):S.editEv,ant=novo?{}:S.eventos[id];
-  if(!v('v-ed')){if(jan)jan.close();err.textContent='Escolha a edição. Toda reunião pertence a um episódio.';err.hidden=false;return}
+  if(!v('v-ed')){if(jan)jan.close();err.textContent='Escolha '+U().a+' '+U().s+'. Toda reunião pertence a '+U().um+' '+U().s+'.';err.hidden=false;return}
   var d=Object.assign({},ant,{projetoId:PID,edicaoId:v('v-ed'),tipo:v('v-tipo'),titulo:v('v-tit')||TIPOS_EV[v('v-tipo')][0],data:v('v-data'),hora:v('v-hora'),fim:v('v-fim'),local:v('v-local'),pauta:v('v-pauta'),
     participantes:[].slice.call(document.querySelectorAll('.v-part:checked')).map(function(c){return c.value}),atualizadoEm:new Date().toISOString()});
   delete d.id;
@@ -541,7 +546,7 @@ function salvarEv(convocar){
   var bxv=$('#ep-box');if(bxv&&bxv.style.display==='none'){nt='';ntema=''}
   if($('#ep-tit')&&nt&&nt!==edA.titulo)edMud.titulo=nt;if($('#ep-tema')&&ntema!==(edA.tema||'')&&ntema)edMud.tema=ntema;
   var bt=document.querySelector('[data-acao="salvar-ev"]'),bt2=document.querySelector('[data-acao="salvar-convocar"]');if(!travar(convocar?bt2:bt)){if(jan)jan.close();return}
-  (Object.keys(edMud).length?(function(){var nd=Object.assign({},edA,edMud,{atualizadoEm:new Date().toISOString()});delete nd.id;return (S.coord?salvar('edicoes',d.edicaoId,nd):api('edicao',{id:d.edicaoId,data:edMud})).then(function(){S.edicoes[d.edicaoId]=Object.assign({id:d.edicaoId},nd);registrar('✏️ Episódio atualizado: #'+(nd.numero||'')+' '+nd.titulo+(edMud.tema?' · tema: '+edMud.tema:''))})})():Promise.resolve()).then(function(){return S.coord?salvar('eventos',id,d):api('evento',{id:id,data:d})}).then(function(){soltar();registrar((novo?'📅 '+(TIPOS_EV[d.tipo]||TIPOS_EV.outro)[0]+' agendada: ':'✏️ Agendamento alterado: ')+d.titulo+' · '+quando(d)+(d.edicaoId?' · edição '+nomeEd(d.edicaoId):''));S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  (Object.keys(edMud).length?(function(){var nd=Object.assign({},edA,edMud,{atualizadoEm:new Date().toISOString()});delete nd.id;return (S.coord?salvar('edicoes',d.edicaoId,nd):api('edicao',{id:d.edicaoId,data:edMud})).then(function(){S.edicoes[d.edicaoId]=Object.assign({id:d.edicaoId},nd);registrar('✏️ '+U().S+' '+U().atu+': #'+(nd.numero||'')+' '+nd.titulo+(edMud.tema?' · tema: '+edMud.tema:''))})})():Promise.resolve()).then(function(){return S.coord?salvar('eventos',id,d):api('evento',{id:id,data:d})}).then(function(){soltar();registrar((novo?'📅 '+(TIPOS_EV[d.tipo]||TIPOS_EV.outro)[0]+' agendada: ':'✏️ Agendamento alterado: ')+d.titulo+' · '+quando(d)+(d.edicaoId?' · '+U().s+' '+nomeEd(d.edicaoId):''));S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 // convocação: abre o e-mail (Outlook) já com todos os participantes, assunto e corpo, e oferece o convite .ics para a agenda
 function convocarEv(id,janela){
@@ -549,7 +554,7 @@ function convocarEv(id,janela){
   if(!ms.length){toast('Nenhum participante com e-mail cadastrado.',true);return}
   var t=TIPOS_EV[e.tipo]||TIPOS_EV.outro,assunto=S.proj.nome+' · '+(e.titulo||t[0])+' · '+br(e.data)+(e.hora?' às '+e.hora:'');
   var corpo='Olá, equipe!\n\nFica convocada a '+t[0].toLowerCase()+' do projeto '+S.proj.nome+':\n\n'+(e.titulo?'• '+e.titulo+'\n':'')+'• Data: '+br(e.data)+'\n'+(e.hora?'• Horário: '+e.hora+(e.fim?' às '+e.fim:'')+'\n':'')+(e.local?'• Local/link: '+e.local+'\n':'')+(e.pauta?'\nPauta:\n'+e.pauta+'\n':'')
-    +'\nAcompanhe o projeto (agenda, edições e chat da equipe) pelo seu link pessoal de acesso:\n'+ms.filter(function(m){return !m.sponsor}).map(function(m){return '• '+m.nome+': '+location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id)}).join('\n')+'\n\nAtenciosamente,\nProf. Fabio Luiz Iba\nSponsor do projeto · Coordenador de Curso EAD\nfabio.iba@unicesumar.edu.br';
+    +'\nAcompanhe o projeto (agenda, '+U().p+' e chat da equipe) pelo seu link pessoal de acesso:\n'+ms.filter(function(m){return !m.sponsor}).map(function(m){return '• '+m.nome+': '+location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id)}).join('\n')+'\n\nAtenciosamente,\nProf. Fabio Luiz Iba\nSponsor do projeto · Coordenador de Curso EAD\nfabio.iba@unicesumar.edu.br';
   var url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(ms.map(function(m){return m.email}).join(';'))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
   var mailto='mailto:'+ms.map(function(m){return m.email}).join(';')+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
   var tm=e.tipo==='reuniao'&&!e.teamsEm&&!/teams\.microsoft/i.test(e.local||'')?linkTeams(e,ms):'',alvo=tm||url;
@@ -619,20 +624,20 @@ function htmlPainel(){
   h+='<div class="ed-sel">'
    +eds.map(function(e){return '<button type="button" data-edsel="'+esc(e.id)+'" class="'+(S.edSel===e.id?'on':'')+'"><b>#'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+'</b><small><span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span> '+(e.dataPublicacao?'pub. '+br(e.dataPublicacao):'')+'</small></button>'}).join('')
    +'</div>';
-  h=h.replace('<div class="ed-sel">','<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px"><div class="ed-sel" style="flex:1;min-width:0;margin-bottom:0;padding-bottom:'+(eds.length?'10px':'0')+'">')+'<button class="btn-redondo" type="button" data-acao="abrir-agenda" aria-label="Agenda" title="Agenda do projeto" style="flex:none;margin:0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/></svg></button>'+((S.coord||S.eu)?'<button class="btn-redondo" type="button" data-acao="nova-ed-painel" aria-label="Nova edição" title="Nova edição" style="flex:none;margin:0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>':'')+'</div>';
+  h=h.replace('<div class="ed-sel">','<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px"><div class="ed-sel" style="flex:1;min-width:0;margin-bottom:0;padding-bottom:'+(eds.length?'10px':'0')+'">')+'<button class="btn-redondo" type="button" data-acao="abrir-agenda" aria-label="Agenda" title="Agenda do projeto" style="flex:none;margin:0"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/></svg></button>'+((S.coord||S.eu)?'<button class="btn-redondo" type="button" data-acao="nova-ed-painel" aria-label="'+U().novo+' '+U().s+'" title="'+U().novo+' '+U().s+'" style="flex:none;margin:0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>':'')+'</div>';
   // coluna da edição + coluna do chat
   var e=S.edSel?S.edicoes[S.edSel]:null,its=itensDaEdicao(S.edSel),hj=hoje(),fut=its.filter(function(x){return x.data>=hj||reuniaoPendente(x)}),pas=its.filter(function(x){return x.data<hj&&!reuniaoPendente(x)}).reverse();
   var col='';
   if(e){var eq=(e.equipe||[]).map(function(x){return esc((nomeMembro(x.id)||x.nome||'')+(x.funcao?' ('+x.funcao+')':''))}).join(' · ');
-    col+='<div class="card box" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0"><span class="mut" style="font-weight:700">Episódio:</span> #'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+' <span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span></h3>'
+    col+='<div class="card box" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0"><span class="mut" style="font-weight:700">'+U().S+':</span> #'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+' <span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span></h3>'
      +'<p style="margin:8px 0 0;font-size:15px"><b>Tema:</b> '+esc(e.tema||'—')+'</p>'+(e.convidados?'<p class="mut" style="margin:4px 0 0"><b>Convidado(s):</b> '+esc(e.convidados)+'</p>':'')+'<p class="mut" style="margin:4px 0 0"><b>Gravação:</b> '+br(e.dataGravacao)+' · <b>Publicação:</b> '+br(e.dataPublicacao)+(e.link?' · <a href="'+esc(e.link)+'" target="_blank" rel="noopener">ouvir</a>':'')+'</p>'+(eq?'<p class="mut" style="margin:4px 0 0"><b>Equipe:</b> '+eq+'</p>':'')+'</div>'
      +(S.coord?'<div style="display:flex;gap:6px"><button type="button" class="btn-s" data-acao="editar-ed" data-id="'+esc(e.id)+'">Editar</button><button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(e.id)+'">Excluir</button></div>':'')+'</div></div>'}
-  col+='<div class="card box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0">'+(e?'Próximas programações do episódio':'Próximas programações de todas as edições')+'</h3>'+((S.coord||S.eu)&&e?'<button type="button" class="btn-p" data-acao="novo-ev-painel">+ Agendar</button>':'')+'</div>'+(!e?'<p class="mut" style="margin:0 0 6px">Selecione uma edição acima para agendar reuniões e ver o histórico do episódio.</p>':'')
+  col+='<div class="card box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0">'+(e?'Próximas programações '+U().d+' '+U().s+'':'Próximas programações de '+U().todos+' '+U().p+'')+'</h3>'+((S.coord||S.eu)&&e?'<button type="button" class="btn-p" data-acao="novo-ev-painel">+ Agendar</button>':'')+'</div>'+(!e?'<p class="mut" style="margin:0 0 6px">Selecione '+U().um+' '+U().s+' acima para agendar reuniões.</p>':'')
    +(S.editEv?htmlFormEv():'')
-   +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para esta edição':'')+'.</p>')
+   +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para '+U().est+' '+U().s+'':'')+'.</p>')
    +'</div>'+((pas.length?'<div class="card box" style="margin-top:14px"><details><summary style="cursor:pointer;font-weight:700">Já realizadas ('+pas.length+')</summary>'+pas.map(linhaItem).join('')+'</details></div>':''));
   if(S.editEd)col=htmlFormEd()+col;
-  if(!e&&!S.editEd)col='<div class="card vazio"><b>Selecione um episódio</b>Clique em uma edição acima para ver as programações e o histórico, ou em + Nova edição.</div>';
+  if(!e&&!S.editEd)col='<div class="card vazio"><b>Selecione '+U().um+' '+U().s+'</b>Clique em '+U().um+' '+U().s+' acima para ver as programações e o histórico, ou em + '+U().novo+' '+U().s+'.</div>';
   h+='<div class="painel-g"><div>'+col+'</div><div>'+htmlChat(true)+'</div></div>';
   return h;
 }
@@ -661,7 +666,7 @@ document.addEventListener('click',function(ev){
   else if(a==='editar-ed'){S.editEd=b.dataset.id;render();window.scrollTo(0,0)}
   else if(a==='cancelar-ed'){S.editEd='';render()}
   else if(a==='salvar-ed')salvarEd();
-  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;if(!travar(b,'Excluindo…'))return;var fim=function(){soltar();registrar('🗑️ Edição excluída: '+nomeEd(eid));delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()};
+  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;if(!travar(b,'Excluindo…'))return;var fim=function(){soltar();registrar('🗑️ '+U().S+' '+U().exc+': '+nomeEd(eid));delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast(U().S+' '+U().exc+'. As reuniões já registradas continuam na agenda do projeto.');render()};
     apagar('edicoes',eid).then(fim).catch(function(x){carregar(false).then(function(){if(!S.edicoes[eid])fim();else{soltar(b);toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)}},function(){soltar(b);toast('Não foi possível excluir agora. Tente de novo.',true)})})}
   else if(a==='enviar')enviar();
   else if(a==='gerar-teams'){var g=function(id){return (($('#'+id)||{}).value||'').trim()};if(!g('v-data')){toast('Informe a data antes.',true);return}
@@ -688,7 +693,7 @@ document.addEventListener('click',function(ev){
   else if(a==='ics'){var e=S.eventos[b.dataset.id];if(e)baixarIcs(e,membros().filter(function(m){return (e.participantes||[]).indexOf(m.id)>=0&&m.email}))}
   else if(a==='apagar-ev'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var id=S.editEv;apagar('eventos',id).then(function(){delete S.eventos[id];S.editEv='';toast('Agendamento excluído.');render()})}
 });
-document.addEventListener('change',function(ev){if(ev.target.id==='p-logo'&&ev.target.files[0])lerLogo(ev.target.files[0]);if(ev.target.id==='v-ed'){var ed=S.edicoes[ev.target.value]||{},a1=$('#ep-tit'),a2=$('#ep-tema'),bx0=$('#ep-box');if(bx0)bx0.style.display=jaTemReuniao(ev.target.value)?'':'none';if(a1)a1.value=ed.titulo==='Título a definir'?'':(ed.titulo||'');if(a2)a2.value=ed.tema||''}if(ev.target.id==='r-on'){var bx=$('#r-box'),sb=document.querySelector('[data-acao="salvar-ed"]');if(bx)bx.style.display=ev.target.checked?'':'none';if(sb)sb.textContent=ev.target.checked?'Salvar e agendar no Teams':'Salvar episódio'}});
+document.addEventListener('change',function(ev){if(ev.target.id==='p-logo'&&ev.target.files[0])lerLogo(ev.target.files[0]);if(ev.target.id==='v-ed'){var ed=S.edicoes[ev.target.value]||{},a1=$('#ep-tit'),a2=$('#ep-tema'),bx0=$('#ep-box');if(bx0)bx0.style.display=jaTemReuniao(ev.target.value)?'':'none';if(a1)a1.value=ed.titulo==='Título a definir'?'':(ed.titulo||'');if(a2)a2.value=ed.tema||''}if(ev.target.id==='r-on'){var bx=$('#r-box'),sb=document.querySelector('[data-acao="salvar-ed"]');if(bx)bx.style.display=ev.target.checked?'':'none';if(sb)sb.textContent=ev.target.checked?'Salvar e agendar no Teams':'Salvar '+U().s+''}});
 // ao escolher o nome na lista, o e-mail cadastrado nos painéis entra sozinho
 document.addEventListener('input',function(ev){var t=ev.target,em=emailDe(t.value);if(!em)return;
   if(t.id==='c-nome'){var c=$('#c-email');if(c)c.value=em}
