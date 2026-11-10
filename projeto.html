@@ -232,6 +232,7 @@ dialog::backdrop{background:rgba(25,21,39,.55)}
 .msg .au{font-size:12px;font-weight:800;margin-bottom:2px}.msg.eu .au{color:#E7F4F4}
 .msg .hr{font-size:11px;opacity:.7;margin-top:3px;text-align:right}
 .msg .tx{white-space:pre-wrap;word-wrap:break-word}
+.msg.reg{align-self:center;max-width:90%;background:#FFF8E6;border:1px solid #F3DFA8;color:#5C4400;border-radius:12px;font-size:13.5px}.msg.reg .au{color:#8A6400}
 .chat-in{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
 .chat-in textarea{flex:1;resize:none;height:46px!important;min-height:46px!important;padding:11px 14px;border-radius:14px;border:1px solid var(--line);font:inherit}
 .dia{align-self:center;font-size:12px;color:var(--muted);background:#EEF2F5;border-radius:99px;padding:3px 12px;margin:4px 0}
@@ -303,6 +304,11 @@ function carregar(soChat){
     if(r.chat){var cs=mapa(r.chat),c={};Object.keys(cs).forEach(function(k){if(cs[k].projetoId===PID)c[k]=cs[k]});var n=Object.keys(c).length,mud=n!==Object.keys(S.chat).length;S.chat=c;return mud}
   });
 }
+// registro das ações no chat: todos acompanham o que acontece no projeto
+function registrar(txt){var msg={projetoId:PID,autorId:S.coord?'sponsor':(S.eu&&S.eu.id),autor:S.coord?SPONSOR.nome:(S.eu&&S.eu.nome)||'',texto:txt,em:new Date().toISOString(),registro:true};
+  var pr=S.coord?salvar('chat',uid('c'),msg):api('chat',{texto:txt,registro:true});return pr.then(function(){return carregar(true)}).then(function(){if(S.tab==='chat'||S.tab==='geral'){var t=$('#msg'),v=t?t.value:'';if(!(S.editEd||S.editEv||S.concluir||S.editProj)){render();var n=$('#msg');if(n)n.value=v}}}).catch(function(){})}
+function quando(e){return br(e.data)+(e.hora?' às '+e.hora:'')}
+function nomeEd(id){var e=S.edicoes[id];return e?'#'+(e.numero||'')+' '+(e.titulo||''):''}
 var OCUPADO=false;
 function travar(btn,txt){if(OCUPADO)return false;OCUPADO=true;if(btn){btn.disabled=true;btn.dataset.txt=btn.textContent;btn.textContent=txt||'Salvando…'}return true}
 function soltar(btn){OCUPADO=false;if(btn&&btn.isConnected){btn.disabled=false;if(btn.dataset.txt)btn.textContent=btn.dataset.txt}}
@@ -322,7 +328,9 @@ function nomeMembro(id){var m=membros().filter(function(x){return x.id===id})[0]
 var TABS=[['geral','Painel do projeto'],['agenda','Agenda'],['edicoes','Edições'],['chat','Chat da equipe']];
 function render(){
   var p=S.proj;
-  var bt=function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>'};
+  var nl=0;try{var lido=localStorage.getItem('gfi_chat_lido_'+PID)||'',me=S.coord?'sponsor':(S.eu&&S.eu.id);nl=Object.keys(S.chat).map(function(k){return S.chat[k]}).filter(function(m){return m.autorId!==me&&String(m.em||'')>lido}).length}catch(e){}
+  document.title=(nl?'('+nl+') ':'')+((S.proj&&S.proj.nome)||'Projeto');
+  var bt=function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+(t[0]==='chat'&&nl&&S.tab!=='chat'&&S.tab!=='geral'?' <span style="display:inline-flex;min-width:18px;height:18px;border-radius:9px;background:#E03131;color:#fff;font-size:11px;align-items:center;justify-content:center;padding:0 5px;margin-left:4px">'+nl+'</span>':'')+'</button>'};
   $('#tabs').innerHTML='<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">'+bt(TABS[0])+'<div class="subtabs">'+TABS.slice(1).map(bt).join('')+'</div></div>';
   $('#btn-voltar').hidden=!S.coord;
   if(!p){$('#view').innerHTML='<div class="card vazio"><b>Projeto não encontrado</b>Confira o link recebido.</div>';return}
@@ -388,7 +396,7 @@ function salvarEd(){
   var d=Object.assign({},ant,{projetoId:PID,numero:Number(v('e-num'))||proxNumero(),titulo:v('e-tit'),tema:v('e-tema'),convidados:v('e-conv'),dataGravacao:v('e-grav'),dataPublicacao:v('e-pub'),status:v('e-st'),link:v('e-link'),obs:v('e-obs'),equipe:eq,atualizadoEm:new Date().toISOString()});
   delete d.id;if(novo)d.criadoEm=d.atualizadoEm;
   var bt=document.querySelector('[data-acao="salvar-ed"]');if(!travar(bt))return;
-  salvar('edicoes',id,d).then(function(){soltar();S.edicoes[id]=Object.assign({id:id},d);S.editEd='';if(novo){S.edSel=id;S.tab='geral'}toast('Edição salva.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  salvar('edicoes',id,d).then(function(){soltar();S.edicoes[id]=Object.assign({id:id},d);registrar((novo?'🎙️ Nova edição criada: ':'✏️ Edição atualizada: ')+'#'+d.numero+' '+d.titulo+(d.dataPublicacao?' · publicação '+br(d.dataPublicacao):'')+' · situação: '+(STATUS_T[d.status]||''));S.editEd='';if(novo){S.edSel=id;S.tab='geral'}toast('Edição salva.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 function htmlFormProj(){
   var p=S.proj,c=p.coordenador||{},eq=(p.equipe||[]).slice(),l=p.links||{};
@@ -412,13 +420,15 @@ function salvarProj(){
     coordenador:{id:(S.proj.coordenador&&S.proj.coordenador.id)||'coord',nome:v('c-nome'),email:v('c-email'),funcao:v('c-fun')},equipe:eq,atualizadoEm:new Date().toISOString()});
   if(LOGO_NOVA)p.logo=LOGO_NOVA;delete p.id;
   var bt=document.querySelector('[data-acao="salvar-proj"]');if(!travar(bt))return;
-  salvar('projetos',PID,p).then(function(){soltar();S.proj=Object.assign({id:PID},p);S.editProj=false;LOGO_NOVA=null;toast('Projeto salvo.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  salvar('projetos',PID,p).then(function(){soltar();S.proj=Object.assign({id:PID},p);registrar('🛠️ Dados do projeto atualizados (equipe, coordenação ou links).');S.editProj=false;LOGO_NOVA=null;toast('Projeto salvo.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
+function marcarLido(){try{var ult=Object.keys(S.chat).map(function(k){return S.chat[k].em||''}).sort().pop()||new Date().toISOString();localStorage.setItem('gfi_chat_lido_'+PID,ult)}catch(e){}}
 function htmlChat(compacto){
+  setTimeout(marcarLido,0);
   var ms=Object.keys(S.chat).map(function(k){return S.chat[k]}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))});
   var meuId=S.coord?'sponsor':(S.eu&&S.eu.id),dia='',h='';
   ms.forEach(function(m){var d=diaLocal(m.em);if(d!==dia){dia=d;h+='<div class="dia">'+br(d)+'</div>'}
-    var eu=m.autorId===meuId;h+='<div class="msg'+(eu?' eu':'')+'">'+(eu?'':'<div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+'</div>')+'<div class="tx">'+esc(m.texto)+'</div><div class="hr">'+(m.pendente?'enviando…':hora(m.em))+'</div></div>'});
+    var eu=m.autorId===meuId;if(m.registro){h+='<div class="msg reg"><div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+' · ação no painel</div><div class="tx">'+esc(m.texto)+'</div><div class="hr">'+hora(m.em)+'</div></div>';return}h+='<div class="msg'+(eu?' eu':'')+'">'+(eu?'':'<div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+'</div>')+'<div class="tx">'+esc(m.texto)+'</div><div class="hr">'+(m.pendente?'enviando…':hora(m.em))+'</div></div>'});
   var quem=S.coord?SPONSOR.nome+' (sponsor)':(S.eu?S.eu.nome:'');
   var ultima={};ms.forEach(function(m){ultima[m.autorId]=m.em});
   var lado='<div class="card chat-mem"><h3>Membros do projeto ('+membros().length+')</h3>'+membros().map(function(m){var u=ultima[m.id]||(m.sponsor?ultima.coord:'');
@@ -497,7 +507,7 @@ function salvarEv(convocar){
     participantes:[].slice.call(document.querySelectorAll('.v-part:checked')).map(function(c){return c.value}),atualizadoEm:new Date().toISOString()});
   delete d.id;
   var bt=document.querySelector('[data-acao="salvar-ev"]'),bt2=document.querySelector('[data-acao="salvar-convocar"]');if(!travar(convocar?bt2:bt)){if(jan)jan.close();return}
-  (S.coord?salvar('eventos',id,d):api('evento',{id:id,data:d})).then(function(){soltar();S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  (S.coord?salvar('eventos',id,d):api('evento',{id:id,data:d})).then(function(){soltar();registrar((novo?'📅 '+(TIPOS_EV[d.tipo]||TIPOS_EV.outro)[0]+' agendada: ':'✏️ Agendamento alterado: ')+d.titulo+' · '+quando(d)+(d.edicaoId?' · edição '+nomeEd(d.edicaoId):''));S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 // convocação: abre o e-mail (Outlook) já com todos os participantes, assunto e corpo, e oferece o convite .ics para a agenda
 function convocarEv(id,janela){
@@ -509,7 +519,7 @@ function convocarEv(id,janela){
   var url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(ms.map(function(m){return m.email}).join(';'))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
   var mailto='mailto:'+ms.map(function(m){return m.email}).join(';')+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
   var tm=e.tipo==='reuniao'&&!e.teamsEm&&!/teams\.microsoft/i.test(e.local||'')?linkTeams(e,ms):'',alvo=tm||url;
-  if(tm){e.teamsEm=new Date().toISOString();var cp=Object.assign({},e);delete cp.id;(S.coord?salvar('eventos',id,cp):api('evento',{id:id,data:cp})).catch(function(){})}
+  if(tm){registrar('🟣 Reunião enviada ao Teams com convite aos participantes: '+(e.titulo||'')+' · '+quando(e));e.teamsEm=new Date().toISOString();var cp=Object.assign({},e);delete cp.id;(S.coord?salvar('eventos',id,cp):api('evento',{id:id,data:cp})).catch(function(){})}
   var w=janela||null;
   if(w&&!w.closed){try{w.location.href=alvo}catch(x){w=null}}else{w=window.open(alvo,'_blank')}
   // se o navegador bloquear a janela, mostra os botões para abrir com um clique
@@ -611,7 +621,7 @@ document.addEventListener('click',function(ev){
   else if(a==='editar-ed'){S.editEd=b.dataset.id;render();window.scrollTo(0,0)}
   else if(a==='cancelar-ed'){S.editEd='';render()}
   else if(a==='salvar-ed')salvarEd();
-  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;if(!travar(b,'Excluindo…'))return;var fim=function(){soltar();delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()};
+  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;if(!travar(b,'Excluindo…'))return;var fim=function(){soltar();registrar('🗑️ Edição excluída: '+nomeEd(eid));delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()};
     apagar('edicoes',eid).then(fim).catch(function(x){carregar(false).then(function(){if(!S.edicoes[eid])fim();else{soltar(b);toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)}},function(){soltar(b);toast('Não foi possível excluir agora. Tente de novo.',true)})})}
   else if(a==='enviar')enviar();
   else if(a==='gerar-teams'){var g=function(id){return (($('#'+id)||{}).value||'').trim()};if(!g('v-data')){toast('Informe a data antes.',true);return}
@@ -619,7 +629,7 @@ document.addEventListener('click',function(ev){
     window.open(linkTeams(ev,membros().filter(function(m){return ids.indexOf(m.id)>=0&&m.email})),'_blank');toast('No Teams, salve a reunião, copie o link e clique em "Colar link".')}
   else if(a==='colar-link'){var inp=$('#v-local');(navigator.clipboard&&navigator.clipboard.readText?navigator.clipboard.readText():Promise.reject()).then(function(t){t=(t||'').trim();if(!t){toast('A área de transferência está vazia.',true);return}inp.value=t;toast(/teams\.microsoft|teams\.live/i.test(t)?'Link do Teams colado.':'Texto colado. Confira se é o link da reunião.')},function(){inp.focus();toast('Cole com Ctrl+V no campo do link.')})}
   else if(a==='excluir-ev'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var vid=b.dataset.id;if(!travar(b,'Excluindo…'))return;
-    var ok=function(){soltar();delete S.eventos[vid];if(S.editEv===vid)S.editEv='';toast('Agendamento excluído.');render()};
+    var ok=function(){soltar();var ev0=S.eventos[vid]||{};registrar('🗑️ Agendamento excluído: '+(ev0.titulo||'')+' · '+quando(ev0));delete S.eventos[vid];if(S.editEv===vid)S.editEv='';toast('Agendamento excluído.');render()};
     apagar('eventos',vid).then(ok).catch(function(x){carregar(false).then(function(){if(!S.eventos[vid])ok();else{soltar(b);toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)}},function(){soltar(b);toast('Não foi possível excluir agora. Tente de novo.',true)})})}
   else if(a==='nova-ed-painel'){S.editEd='novo';render();var f=$('#e-tit');if(f)f.focus()}
   else if(a==='novo-ev-painel'){S.editEv='novo';render();var g=$('#v-tit');if(g)g.focus()}

@@ -116,7 +116,7 @@ function tratarMembro(req) {
     var txt = String(req.texto || '').trim().slice(0, 2000);
     if (!txt) return { ok: false, code: 'invalid_argument', message: 'Mensagem vazia.' };
     var id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'chat', id: id, data: { projetoId: proj, autorId: mid, autor: membro.nome || '', texto: txt, em: new Date().toISOString() } }); return { ok: true, data: { id: id } }; });
+    return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'chat', id: id, data: { projetoId: proj, autorId: mid, autor: membro.nome || '', texto: txt, em: new Date().toISOString(), registro: !!req.registro } }); return { ok: true, data: { id: id } }; });
   }
   if (req.op === 'evento') {
     // membros podem agendar e editar reuniões do próprio projeto (sempre ligadas a uma edição)
