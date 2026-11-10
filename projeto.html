@@ -328,9 +328,9 @@ function nomeMembro(id){var m=membros().filter(function(x){return x.id===id})[0]
 var TABS=[['geral','Painel do projeto'],['agenda','Agenda'],['edicoes','Edições'],['chat','Chat da equipe']];
 function render(){
   var p=S.proj;
-  var nl=0;try{var lido=localStorage.getItem('gfi_chat_lido_'+PID)||'',me=S.coord?'sponsor':(S.eu&&S.eu.id);nl=Object.keys(S.chat).map(function(k){return S.chat[k]}).filter(function(m){return m.autorId!==me&&String(m.em||'')>lido}).length}catch(e){}
+  var nl=novasChat().length;
   document.title=(nl?'('+nl+') ':'')+((S.proj&&S.proj.nome)||'Projeto');
-  var bt=function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+(t[0]==='chat'&&nl&&S.tab!=='chat'&&S.tab!=='geral'?' <span style="display:inline-flex;min-width:18px;height:18px;border-radius:9px;background:#E03131;color:#fff;font-size:11px;align-items:center;justify-content:center;padding:0 5px;margin-left:4px">'+nl+'</span>':'')+'</button>'};
+  var bt=function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+(t[0]==='chat'&&nl&&S.tab!=='chat'?' <span style="display:inline-flex;min-width:18px;height:18px;border-radius:9px;background:#E03131;color:#fff;font-size:11px;align-items:center;justify-content:center;padding:0 5px;margin-left:4px">'+nl+'</span>':'')+'</button>'};
   $('#tabs').innerHTML='<div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start">'+bt(TABS[0])+'<div class="subtabs">'+TABS.slice(1).map(bt).join('')+'</div></div>';
   $('#btn-voltar').hidden=!S.coord;
   if(!p){$('#view').innerHTML='<div class="card vazio"><b>Projeto não encontrado</b>Confira o link recebido.</div>';return}
@@ -422,19 +422,23 @@ function salvarProj(){
   var bt=document.querySelector('[data-acao="salvar-proj"]');if(!travar(bt))return;
   salvar('projetos',PID,p).then(function(){soltar();S.proj=Object.assign({id:PID},p);registrar('🛠️ Dados do projeto atualizados (equipe, coordenação ou links).');S.editProj=false;LOGO_NOVA=null;toast('Projeto salvo.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
+function lidoAte(){try{return localStorage.getItem('gfi_chat_lido_'+PID)||''}catch(e){return ''}}
+function novasChat(){var lido=lidoAte(),me=S.coord?'sponsor':(S.eu&&S.eu.id);return Object.keys(S.chat).map(function(k){return S.chat[k]}).filter(function(m){return m.autorId!==me&&String(m.em||'')>lido})}
+var _tLido=null;
 function marcarLido(){try{var ult=Object.keys(S.chat).map(function(k){return S.chat[k].em||''}).sort().pop()||new Date().toISOString();localStorage.setItem('gfi_chat_lido_'+PID,ult)}catch(e){}}
 function htmlChat(compacto){
-  setTimeout(marcarLido,0);
+  var nov=novasChat(),lidoAnt=lidoAte(),meu0=S.coord?'sponsor':(S.eu&&S.eu.id),divPos=false;
+  clearTimeout(_tLido);if(S.tab==='chat')setTimeout(marcarLido,0);else if(nov.length)_tLido=setTimeout(function(){if(!document.hidden){marcarLido();render()}},12000);
   var ms=Object.keys(S.chat).map(function(k){return S.chat[k]}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))});
   var meuId=S.coord?'sponsor':(S.eu&&S.eu.id),dia='',h='';
-  ms.forEach(function(m){var d=diaLocal(m.em);if(d!==dia){dia=d;h+='<div class="dia">'+br(d)+'</div>'}
+  ms.forEach(function(m){if(!divPos&&nov.length&&m.autorId!==meu0&&String(m.em||'')>lidoAnt){divPos=true;h+='<div class="dia" style="color:#E03131;font-weight:800">● novas mensagens</div>'}var d=diaLocal(m.em);if(d!==dia){dia=d;h+='<div class="dia">'+br(d)+'</div>'}
     var eu=m.autorId===meuId;if(m.registro){h+='<div class="msg reg"><div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+' · ação no painel</div><div class="tx">'+esc(m.texto)+'</div><div class="hr">'+hora(m.em)+'</div></div>';return}h+='<div class="msg'+(eu?' eu':'')+'">'+(eu?'':'<div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+'</div>')+'<div class="tx">'+esc(m.texto)+'</div><div class="hr">'+(m.pendente?'enviando…':hora(m.em))+'</div></div>'});
   var quem=S.coord?SPONSOR.nome+' (sponsor)':(S.eu?S.eu.nome:'');
   var ultima={};ms.forEach(function(m){ultima[m.autorId]=m.em});
   var lado='<div class="card chat-mem"><h3>Membros do projeto ('+membros().length+')</h3>'+membros().map(function(m){var u=ultima[m.id]||(m.sponsor?ultima.coord:'');
     return '<div class="pessoa"><span class="av">'+esc(iniciais(m.nome))+'</span><div><b style="font-size:13.5px">'+esc(m.nome)+(m.id===meuId?' <small class="mut">(você)</small>':'')+'</b><small>'+esc(m.sponsor?'Sponsor':m.tutora?'Tutora':m.coord?'Coordenação':(m.funcao||'Membro'))+'</small>'+(u?'<br><small class="mut">última mensagem '+br(diaLocal(u)).slice(0,5)+' '+hora(u)+'</small>':'')+'</div></div>'}).join('')+'</div>';
   var av='<div style="display:flex;gap:4px;flex-wrap:wrap">'+membros().map(function(m){return '<span class="av" title="'+esc(m.nome+' · '+(m.sponsor?'Sponsor':m.tutora?'Tutora':m.coord?'Coordenação':(m.funcao||'')))+'" style="width:28px;height:28px;font-size:11px">'+esc(iniciais(m.nome))+'</span>'}).join('')+'</div>';
-  return (compacto?'<div>':'<div class="chat-wrap">'+lado)+'<div class="card chat" style="padding:0;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>Chat da equipe · '+esc(S.proj.nome)+'</b>'+(compacto?'<div style="margin-top:6px">'+av+'</div>':'')+'</div><small class="mut">Você está como: '+esc(quem||'—')+' · conversas salvas · tempo real</small></div>'
+  return (compacto?'<div>':'<div class="chat-wrap">'+lado)+'<div class="card chat" style="padding:0;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><b>Chat da equipe · '+esc(S.proj.nome)+'</b>'+(nov.length?' <span style="display:inline-flex;min-width:20px;height:20px;border-radius:10px;background:#E03131;color:#fff;font-size:11.5px;font-weight:800;align-items:center;justify-content:center;padding:0 6px" title="mensagens novas">'+nov.length+'</span>':'')+(compacto?'<div style="margin-top:6px">'+av+'</div>':'')+'</div><small class="mut">Você está como: '+esc(quem||'—')+' · conversas salvas · tempo real</small></div>'
    +'<div class="chat-msgs">'+(h||'<p class="mut" style="margin:auto">Nenhuma mensagem ainda. Comece a conversa.</p>')+'</div>'
    +(S.coord||S.eu?'<div class="chat-in"><textarea id="msg" placeholder="Escreva uma mensagem (Enter envia, Shift+Enter quebra a linha)"></textarea><button type="button" class="btn-p" data-acao="enviar">Enviar</button></div>':'<div class="chat-in"><p class="mut">Para conversar, abra o link de acesso enviado pela coordenação.</p></div>')+'</div></div>';
 }
@@ -580,6 +584,7 @@ function htmlPainel(){
   if(S.edSel&&!S.edicoes[S.edSel])S.edSel='';
   var h='<div class="card box" style="margin-bottom:14px"><div class="pj-hero">'+logoHtml(p)+'<div style="flex:1;min-width:240px"><h2>'+esc(p.nome)+'</h2><p>'+esc(p.descricao||'')+'</p></div>'
    +(S.coord?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn-s" data-acao="links" title="Copia o link pessoal de cada membro para enviar">Copiar links de acesso</button><button type="button" class="btn-s" data-acao="editar-proj">Editar projeto</button></div>':'')+'</div></div>';
+  var nv=novasChat();if(nv.length)h+='<button type="button" data-acao="ver-chat" class="card" style="width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;margin-bottom:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;border:2px solid #E03131;background:#FFF5F5"><span style="min-width:28px;height:28px;border-radius:14px;background:#E03131;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 7px">'+nv.length+'</span><span style="flex:1"><b>'+(nv.length===1?'1 mensagem nova':nv.length+' mensagens novas')+' no chat</b><br><small class="mut">Última: '+esc(nv[nv.length-1].autor||'Membro')+' — '+esc(String(nv[nv.length-1].texto||'').slice(0,90))+'</small></span><b style="color:#E03131">Ver chat →</b></button>';
   // seletor de edições
   h+='<div class="ed-sel">'
    +eds.map(function(e){return '<button type="button" data-edsel="'+esc(e.id)+'" class="'+(S.edSel===e.id?'on':'')+'"><b>#'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+'</b><small><span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span> '+(e.dataPublicacao?'pub. '+br(e.dataPublicacao):'')+'</small></button>'}).join('')
@@ -611,6 +616,7 @@ document.addEventListener('click',function(ev){
   if(b.dataset.ver!==undefined||b.dataset.ed!==undefined){if(b.dataset.ver&&S.coord){S.editEv=b.dataset.ver;render();window.scrollTo(0,0)}else if(b.dataset.ed){S.tab='edicoes';if(S.coord)S.editEd=b.dataset.ed;render()}else{var e=S.eventos[b.dataset.ver];if(e)toast((e.titulo||'')+' · '+br(e.data)+(e.hora?' '+e.hora:'')+(e.local?' · '+e.local:''))}return}
   if(b.dataset.copiar){var l=b.dataset.copiar;(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(function(){toast('Link copiado. Envie para o membro.')},function(){window.prompt('Copie o link:',l)});return}
   var a=b.dataset.acao;if(!a)return;
+  if(a==='ver-chat'){marcarLido();S.tab='chat';render();window.scrollTo(0,0);return}
   if(a==='editar-proj'){S.editProj=true;LOGO_NOVA=null;render()}
   else if(a==='cancelar-proj'){S.editProj=false;render()}
   else if(a==='salvar-proj')salvarProj();
