@@ -221,7 +221,11 @@ dialog::backdrop{background:rgba(25,21,39,.55)}
 .mem-lin{display:grid;grid-template-columns:minmax(220px,300px) 1fr;gap:10px;align-items:center;margin:6px 0}
 .mem-lin label{flex-direction:row!important;align-items:center;justify-content:flex-start;gap:10px;font-weight:600}
 @media (max-width:640px){.mem-lin{grid-template-columns:1fr}}.frm .full{grid-column:1/-1}
-.chat{display:flex;flex-direction:column;height:min(70vh,640px)}
+.chat-wrap{display:grid;grid-template-columns:260px 1fr;gap:14px;align-items:stretch}
+.chat-mem{padding:14px;max-height:min(72vh,660px);overflow:auto}.chat-mem h3{margin:0 0 8px;font:800 15px Manrope,sans-serif}
+.chat-mem .pessoa{padding:8px 0}.chat-mem .av{width:32px;height:32px;font-size:12px}
+@media (max-width:820px){.chat-wrap{grid-template-columns:1fr}.chat-mem{max-height:none}}
+.chat{display:flex;flex-direction:column;height:min(72vh,660px)}
 .chat-msgs{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background:linear-gradient(180deg,#F7FAFB,#fff)}
 .msg{max-width:78%;align-self:flex-start;background:#fff;border:1px solid var(--line);border-radius:16px 16px 16px 4px;padding:9px 13px;box-shadow:0 2px 6px -4px rgba(0,0,0,.2)}
 .msg.eu{align-self:flex-end;background:var(--accent);color:#fff;border-color:var(--accent);border-radius:16px 16px 4px 16px}
@@ -398,16 +402,20 @@ function htmlChat(){
   var ms=Object.keys(S.chat).map(function(k){return S.chat[k]}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))});
   var meuId=S.coord?'sponsor':(S.eu&&S.eu.id),dia='',h='';
   ms.forEach(function(m){var d=diaLocal(m.em);if(d!==dia){dia=d;h+='<div class="dia">'+br(d)+'</div>'}
-    var eu=m.autorId===meuId;h+='<div class="msg'+(eu?' eu':'')+'">'+(eu?'':'<div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+'</div>')+'<div class="tx">'+esc(m.texto)+'</div><div class="hr">'+hora(m.em)+'</div></div>'});
+    var eu=m.autorId===meuId;h+='<div class="msg'+(eu?' eu':'')+'">'+(eu?'':'<div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+'</div>')+'<div class="tx">'+esc(m.texto)+'</div><div class="hr">'+(m.pendente?'enviando…':hora(m.em))+'</div></div>'});
   var quem=S.coord?SPONSOR.nome+' (sponsor)':(S.eu?S.eu.nome:'');
-  return '<div class="card chat" style="padding:0;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>Chat da equipe · '+esc(S.proj.nome)+'</b><small class="mut">Você está como: '+esc(quem||'—')+' · atualiza a cada 5 segundos</small></div>'
+  var ultima={};ms.forEach(function(m){ultima[m.autorId]=m.em});
+  var lado='<div class="card chat-mem"><h3>Membros do projeto ('+membros().length+')</h3>'+membros().map(function(m){var u=ultima[m.id]||(m.sponsor?ultima.coord:'');
+    return '<div class="pessoa"><span class="av">'+esc(iniciais(m.nome))+'</span><div><b style="font-size:13.5px">'+esc(m.nome)+(m.id===meuId?' <small class="mut">(você)</small>':'')+'</b><small>'+esc(m.sponsor?'Sponsor':m.tutora?'Tutora':m.coord?'Coordenação':(m.funcao||'Membro'))+'</small>'+(u?'<br><small class="mut">última mensagem '+br(diaLocal(u)).slice(0,5)+' '+hora(u)+'</small>':'')+'</div></div>'}).join('')+'</div>';
+  return '<div class="chat-wrap">'+lado+'<div class="card chat" style="padding:0;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>Chat da equipe · '+esc(S.proj.nome)+'</b><small class="mut">Você está como: '+esc(quem||'—')+' · conversas salvas · tempo real</small></div>'
    +'<div class="chat-msgs">'+(h||'<p class="mut" style="margin:auto">Nenhuma mensagem ainda. Comece a conversa.</p>')+'</div>'
-   +(S.coord||S.eu?'<div class="chat-in"><textarea id="msg" placeholder="Escreva uma mensagem (Enter envia, Shift+Enter quebra a linha)"></textarea><button type="button" class="btn-p" data-acao="enviar">Enviar</button></div>':'<div class="chat-in"><p class="mut">Para conversar, abra o link de acesso enviado pela coordenação.</p></div>')+'</div>';
+   +(S.coord||S.eu?'<div class="chat-in"><textarea id="msg" placeholder="Escreva uma mensagem (Enter envia, Shift+Enter quebra a linha)"></textarea><button type="button" class="btn-p" data-acao="enviar">Enviar</button></div>':'<div class="chat-in"><p class="mut">Para conversar, abra o link de acesso enviado pela coordenação.</p></div>')+'</div></div>';
 }
 function enviar(){
   var t=$('#msg'),txt=(t&&t.value||'').trim();if(!txt)return;t.value='';
+  var tmp='tmp'+Date.now();S.chat[tmp]={projetoId:PID,autorId:S.coord?'sponsor':(S.eu&&S.eu.id),autor:S.coord?SPONSOR.nome:(S.eu&&S.eu.nome),texto:txt,em:new Date().toISOString(),pendente:true};render();var n0=$('#msg');if(n0)n0.focus();
   var p=S.coord?salvar('chat',uid('c'),{projetoId:PID,autorId:'sponsor',autor:SPONSOR.nome,texto:txt,em:new Date().toISOString()}):api('chat',{texto:txt});
-  p.then(function(){return carregar(true)}).then(function(){render();var n=$('#msg');if(n)n.focus()}).catch(function(e){toast('Mensagem não enviada: '+((e&&e.message)||'erro'),true);if(t)t.value=txt});
+  p.then(function(){return carregar(true)}).then(function(){var cx=$('#msg'),dig=cx?cx.value:'';render();var n=$('#msg');if(n){n.value=dig;n.focus()}}).catch(function(e){delete S.chat[tmp];render();toast('Mensagem não enviada: '+((e&&e.message)||'erro'),true);var n=$('#msg');if(n)n.value=txt});
 }
 
 /* ---------- Agenda do projeto: reuniões, gravações e publicações ---------- */
@@ -535,7 +543,8 @@ function iniciar(){
     return (S.coord?Promise.resolve():api('ping',{}).then(function(r){S.eu=(r&&r.membro)||null})).then(function(){return carregar(false)});
   }).then(function(){
     carregarCalendario();if(S.coord)carregarPessoas();$('#dot').className='dot ok';$('#st').textContent=S.coord?'Fabio Luiz Iba · sponsor · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
-    setInterval(function(){if(document.hidden)return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj&&!S.editEv)render()}).catch(function(){})},5000);
+    setInterval(function(){if(document.hidden||S.tab!=='chat')return;carregar(true).then(function(mud){if(mud){var t=$('#msg'),txt=t?t.value:'',foco=document.activeElement===t;render();var n=$('#msg');if(n){n.value=txt;if(foco)n.focus()}}}).catch(function(){})},3000);
+    setInterval(function(){if(document.hidden||S.tab==='chat')return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj&&!S.editEv)render()}).catch(function(){})},5000);
   }).catch(function(e){$('#dot').className='dot bad';$('#st').textContent=(e&&e.message)||'Não foi possível carregar o projeto.';$('#view').innerHTML='<div class="card vazio"><b>Sem acesso</b>'+esc((e&&e.message)||'')+'</div>'});
 }
 iniciar();
