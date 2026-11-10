@@ -134,7 +134,14 @@ function tratarMembro(req) {
     var de = req.data || {}, edid = String(req.id || '');
     if (!/^[\w-]{3,40}$/.test(edid) || !String(de.titulo || '').trim()) return { ok: false, code: 'invalid_argument', message: 'Informe o título do episódio.' };
     var jaExiste = listMany('proj', ['edicoes']).edicoes.filter(function (x) { return x.id === edid; })[0];
-    if (jaExiste) return { ok: false, code: 'not_granted', message: 'Só o sponsor altera episódios já cadastrados.' };
+    if (jaExiste) {
+      // em episódio existente o membro só completa título e tema (ao agendar reuniões)
+      if (!jaExiste.data || jaExiste.data.projetoId !== proj) return { ok: false, code: 'not_granted', message: 'Episódio de outro projeto.' };
+      var upd = Object.assign({}, jaExiste.data, { atualizadoEm: new Date().toISOString() });
+      if ('titulo' in de) upd.titulo = String(de.titulo).slice(0, 200);
+      if ('tema' in de) upd.tema = String(de.tema).slice(0, 300);
+      return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'edicoes', id: edid, data: upd }); return { ok: true, data: upd }; });
+    }
     var ce = {}; ['numero', 'titulo', 'tema', 'convidados', 'dataGravacao', 'dataPublicacao', 'status', 'link', 'obs', 'equipe'].forEach(function (k) { if (k in de) ce[k] = de[k]; });
     var agora = new Date().toISOString();
     var nova = Object.assign(ce, { projetoId: proj, criadoPor: membro.nome || mid, criadoEm: agora, atualizadoEm: agora });
