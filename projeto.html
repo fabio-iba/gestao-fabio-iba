@@ -597,7 +597,7 @@ function htmlPainel(){
   h+='<div class="ed-sel">'
    +eds.map(function(e){return '<button type="button" data-edsel="'+esc(e.id)+'" class="'+(S.edSel===e.id?'on':'')+'"><b>#'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+'</b><small><span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span> '+(e.dataPublicacao?'pub. '+br(e.dataPublicacao):'')+'</small></button>'}).join('')
    +'</div>';
-  if(S.coord)h=h.replace('<div class="ed-sel">','<div style="display:flex;gap:12px;align-items:flex-start"><div class="ed-sel" style="flex:1;min-width:0">')+'<button class="btn-redondo" type="button" data-acao="nova-ed-painel" aria-label="Nova edição" title="Nova edição" style="flex:none;margin-top:8px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>';
+  if(S.coord)h=h.replace('<div class="ed-sel">','<div style="display:flex;gap:12px;align-items:center;margin-bottom:14px"><div class="ed-sel" style="flex:1;min-width:0;margin-bottom:0;padding-bottom:'+(eds.length?'10px':'0')+'">')+'<button class="btn-redondo" type="button" data-acao="nova-ed-painel" aria-label="Nova edição" title="Nova edição" style="flex:none;margin:0"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>';
   // coluna da edição + coluna do chat
   var e=S.edSel?S.edicoes[S.edSel]:null,its=itensDaEdicao(S.edSel),hj=hoje(),fut=its.filter(function(x){return x.data>=hj||reuniaoPendente(x)}),pas=its.filter(function(x){return x.data<hj&&!reuniaoPendente(x)}).reverse();
   var col='';
