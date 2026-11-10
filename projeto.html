@@ -231,6 +231,14 @@ dialog::backdrop{background:rgba(25,21,39,.55)}
 .chat-in{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line);background:#fff}
 .chat-in textarea{flex:1;resize:none;height:46px!important;min-height:46px!important;padding:11px 14px;border-radius:14px;border:1px solid var(--line);font:inherit}
 .dia{align-self:center;font-size:12px;color:var(--muted);background:#EEF2F5;border-radius:99px;padding:3px 12px;margin:4px 0}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
+.cal-h{font-size:12px;font-weight:800;color:var(--muted);text-align:center;padding:4px 0}
+.cal-d{min-height:96px;border:1px solid var(--line);border-radius:12px;padding:6px;background:#fff;display:flex;flex-direction:column;gap:4px;min-width:0}
+.cal-d.vazio{background:transparent;border-color:transparent}.cal-d.hoje{border:2px solid var(--accent)}.cal-d.fer{background:#FFF7F5}
+.cal-n{font-size:12px;font-weight:800;color:var(--muted)}.cal-d.fer .cal-n span{color:#C0392B}
+.cal-mod{font-size:10.5px;font-weight:800;color:#0F6E7A;background:#DDF1F1;border-radius:6px;padding:1px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-ev{border:0;border-radius:6px;padding:3px 6px;font:inherit;font-size:11.5px;font-weight:700;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+@media (max-width:760px){.cal-d{min-height:64px;padding:4px}.cal-ev{font-size:10px;padding:2px 4px}}
 .linkm{font-size:12px;color:var(--muted);word-break:break-all}
 @media (max-width:640px){.ed{grid-template-columns:56px 1fr}.ed .acts{grid-column:1/-1}}
 </style>
@@ -263,7 +271,7 @@ function codMembro(proj,mid){var s=String(proj)+'|'+String(mid)+'|proj-membro',x
 
 var PID=(new URLSearchParams(location.search).get('p')||'').replace(/[^\w-]/g,'');
 var MEMBRO=(/[#&]m=([\w-]+\.[\w-]+\.[a-z0-9]+)/i.exec(location.hash)||[])[1]||'';
-var S={tab:'geral',coord:false,eu:null,proj:null,edicoes:{},chat:{},editProj:false,editEd:'',ultimoChat:0};
+var S={eventos:{},mes:'',editEv:'',diaNovo:'',tab:'geral',coord:false,eu:null,proj:null,edicoes:{},chat:{},editProj:false,editEd:'',ultimoChat:0};
 var STATUS=[['planejada','Planejada'],['producao','Em produção'],['gravada','Gravada'],['publicada','Publicada']];
 var STATUS_T={};STATUS.forEach(function(x){STATUS_T[x[0]]=x[1]});
 
@@ -271,11 +279,12 @@ var STATUS_T={};STATUS.forEach(function(x){STATUS_T[x[0]]=x[1]});
 function mapa(lista){var m={};(lista||[]).forEach(function(x){m[x.id]=Object.assign({id:x.id},x.data||{})});return m}
 function api(op,dados){dados=Object.assign({app:'proj'},dados||{});if(MEMBRO&&!S.coord)dados.membro=MEMBRO;return GFI.api(op,dados)}
 function carregar(soChat){
-  var cols=soChat?['chat']:['projetos','edicoes','chat'];
+  var cols=soChat?['chat']:['projetos','edicoes','chat','eventos'];
   return api('listMany',{cols:cols}).then(function(r){
     r=r||{};
     if(r.projetos){var ps=mapa(r.projetos);S.proj=ps[PID]||null}
     if(r.edicoes){var es=mapa(r.edicoes),m={};Object.keys(es).forEach(function(k){if(es[k].projetoId===PID)m[k]=es[k]});S.edicoes=m}
+    if(r.eventos){var vs=mapa(r.eventos),ev={};Object.keys(vs).forEach(function(k){if(vs[k].projetoId===PID)ev[k]=vs[k]});S.eventos=ev}
     if(r.chat){var cs=mapa(r.chat),c={};Object.keys(cs).forEach(function(k){if(cs[k].projetoId===PID)c[k]=cs[k]});var n=Object.keys(c).length,mud=n!==Object.keys(S.chat).length;S.chat=c;return mud}
   });
 }
@@ -285,14 +294,14 @@ function membros(){var p=S.proj||{};return (p.coordenador?[Object.assign({coord:
 function nomeMembro(id){var m=membros().filter(function(x){return x.id===id})[0];return m?m.nome:''}
 
 /* ---------- telas ---------- */
-var TABS=[['geral','Visão geral'],['edicoes','Edições'],['chat','Chat da equipe']];
+var TABS=[['geral','Visão geral'],['agenda','Agenda'],['edicoes','Edições'],['chat','Chat da equipe']];
 function render(){
   var p=S.proj;
   $('#tabs').innerHTML=TABS.map(function(t){var n=t[0]==='chat'?'':'';return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('');
   $('#btn-voltar').hidden=!S.coord;
   if(!p){$('#view').innerHTML='<div class="card vazio"><b>Projeto não encontrado</b>Confira o link recebido.</div>';return}
   $('#titulo').textContent=p.nome||'Projeto';document.title=p.nome||'Projeto';
-  var v={geral:htmlGeral,edicoes:htmlEdicoes,chat:htmlChat}[S.tab]();
+  var v={geral:htmlGeral,agenda:htmlAgenda,edicoes:htmlEdicoes,chat:htmlChat}[S.tab]();
   $('#view').innerHTML=v;
   if(S.tab==='chat'){var box=$('.chat-msgs');if(box)box.scrollTop=box.scrollHeight}
 }
@@ -394,10 +403,90 @@ function enviar(){
   p.then(function(){return carregar(true)}).then(function(){render();var n=$('#msg');if(n)n.focus()}).catch(function(e){toast('Mensagem não enviada: '+((e&&e.message)||'erro'),true);if(t)t.value=txt});
 }
 
+/* ---------- Agenda do projeto: reuniões, gravações e publicações ---------- */
+var TIPOS_EV={reuniao:['Reunião','#1D6FA3','#E3EFF7'],gravacao:['Gravação','#5B4BD6','#ECE9FC'],publicacao:['Publicação','#0B7A55','#E3FBF2'],outro:['Outro','#B5650D','#FFF4E0']};
+var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var CAL={feriados:{},modulos:[]};
+function carregarCalendario(){try{fetch('calendario.html',{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){var m=/<script type="application\/json" id="cal-data">([\s\S]*?)<\/script>/.exec(t);if(!m)return;
+  (JSON.parse(m[1]).events||[]).forEach(function(ev){var tt=ev.t||'';if(ev.c==='feriado'||/ponte/i.test(tt)){var d=ev.s;while(d&&d<=(ev.e||ev.s)){CAL.feriados[d]=tt;d=addDia(d,1)}}
+    if(/in[ií]cio/i.test(tt)&&/m[oó]dulo/i.test(tt))CAL.modulos.push({data:ev.s,t:tt})});if(S.tab==='agenda')render()}).catch(function(){})}catch(e){}}
+function addDia(iso,n){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+// todos os itens da agenda: eventos cadastrados + datas de gravação e publicação das edições
+function itensAgenda(){
+  var r=Object.keys(S.eventos).map(function(k){var e=S.eventos[k];return {id:k,tipo:e.tipo||'reuniao',titulo:e.titulo||TIPOS_EV[e.tipo||'reuniao'][0],data:e.data,hora:e.hora||'',fim:e.fim||'',local:e.local||'',pauta:e.pauta||'',ev:e}});
+  Object.keys(S.edicoes).forEach(function(k){var e=S.edicoes[k],n='#'+(e.numero||'')+' '+(e.titulo||'');
+    if(e.dataGravacao)r.push({tipo:'gravacao',titulo:'Gravação '+n,data:e.dataGravacao,hora:e.horaGravacao||'',ed:k});
+    if(e.dataPublicacao)r.push({tipo:'publicacao',titulo:'Publicação '+n,data:e.dataPublicacao,ed:k})});
+  return r.filter(function(x){return x.data}).sort(function(a,b){return (a.data+a.hora).localeCompare(b.data+b.hora)});
+}
+function htmlAgenda(){
+  if(!S.mes)S.mes=hoje().slice(0,7);
+  var y=+S.mes.slice(0,4),mo=+S.mes.slice(5,7),its=itensAgenda(),porDia={};its.forEach(function(x){(porDia[x.data]=porDia[x.data]||[]).push(x)});
+  var h='<div class="sec-h"><div><h2>Agenda do projeto</h2><p class="mut">Reuniões, gravações e publicações. As datas de gravação e publicação vêm das edições.</p></div>'+(S.coord&&!S.editEv?'<button type="button" class="btn-p" data-acao="novo-ev">+ Agendar</button>':'')+'</div>';
+  if(S.editEv)h+=htmlFormEv();
+  h+='<div class="card" style="padding:14px 16px;margin-bottom:14px"><div style="display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap"><div style="display:flex;gap:8px;align-items:center"><button type="button" class="btn-s" data-mes="-1" aria-label="Mês anterior">‹</button><b style="font:800 18px Manrope,sans-serif;min-width:170px;text-align:center">'+MESES[mo-1]+' '+y+'</b><button type="button" class="btn-s" data-mes="1" aria-label="Próximo mês">›</button><button type="button" class="btn-s" data-mes="0">Hoje</button></div>'
+   +'<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12.5px">'+Object.keys(TIPOS_EV).map(function(k){return '<span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:'+TIPOS_EV[k][1]+';margin-right:5px"></span>'+TIPOS_EV[k][0]+'</span>'}).join('')+'<span>⚑ feriado/ponte</span></div></div>';
+  h+='<div class="cal-g">'+['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(function(d){return '<div class="cal-h">'+d+'</div>'}).join('');
+  var pri=new Date(y,mo-1,1),off=(pri.getDay()+6)%7,dias=new Date(y,mo,0).getDate(),hj=hoje();
+  for(var i=0;i<off;i++)h+='<div class="cal-d vazio"></div>';
+  for(var d=1;d<=dias;d++){var iso=y+'-'+pad(mo)+'-'+pad(d),l=porDia[iso]||[],f=CAL.feriados[iso],md=CAL.modulos.filter(function(m){return m.data===iso})[0];
+    h+='<div class="cal-d'+(iso===hj?' hoje':'')+(f?' fer':'')+'"><div class="cal-n">'+d+(f?' <span title="'+esc(f)+'">⚑</span>':'')+'</div>'+(md?'<div class="cal-mod" title="'+esc(md.t)+'">'+esc(md.t.replace(/in[ií]cio d[oa]s? /i,'Início '))+'</div>':'')
+     +l.map(function(x){var t=TIPOS_EV[x.tipo]||TIPOS_EV.outro;return '<button type="button" class="cal-ev" data-ver="'+esc(x.id||'')+'" data-ed="'+esc(x.ed||'')+'" style="background:'+t[2]+';color:'+t[1]+';border-left:3px solid '+t[1]+'" title="'+esc(x.titulo)+'">'+(x.hora?esc(x.hora)+' ':'')+esc(x.titulo)+'</button>'}).join('')+'</div>'}
+  h+='</div></div>';
+  var prox=its.filter(function(x){return x.data>=hj}).slice(0,12);
+  h+='<div class="card box"><h3>Próximos compromissos</h3>'+(prox.length?prox.map(function(x){var t=TIPOS_EV[x.tipo]||TIPOS_EV.outro;
+    return '<div class="pessoa"><span class="av" style="border-radius:12px;background:'+t[2]+';color:'+t[1]+';width:auto;padding:0 10px;min-width:58px;font-size:12px">'+br(x.data).slice(0,5)+'</span><div style="flex:1"><b>'+esc(x.titulo)+'</b><small>'+t[0]+(x.hora?' · '+esc(x.hora)+(x.fim?' às '+esc(x.fim):''):'')+(x.local?' · '+esc(x.local):'')+'</small></div>'
+     +(x.id&&S.coord?'<div style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn-s" data-acao="convocar" data-id="'+esc(x.id)+'">Convocar equipe</button><button type="button" class="btn-s" data-acao="ics" data-id="'+esc(x.id)+'">Convite p/ agenda</button><button type="button" class="btn-s" data-acao="editar-ev" data-id="'+esc(x.id)+'">Editar</button></div>':'')+'</div>'}).join(''):'<p class="mut">Nada agendado.</p>')+'</div>';
+  return h;
+}
+function htmlFormEv(){
+  var e=S.editEv==='novo'?{tipo:'reuniao',data:S.diaNovo||hoje(),participantes:membros().map(function(m){return m.id})}:Object.assign({},S.eventos[S.editEv]||{});
+  var part=e.participantes||[];
+  return '<div class="card box" style="border:2px solid var(--accent);margin-bottom:14px"><h3>'+(S.editEv==='novo'?'Novo agendamento':'Editar agendamento')+'</h3><div class="frm">'
+   +'<label>Tipo<select id="v-tipo">'+Object.keys(TIPOS_EV).map(function(k){return '<option value="'+k+'"'+(e.tipo===k?' selected':'')+'>'+TIPOS_EV[k][0]+'</option>'}).join('')+'</select></label>'
+   +'<label class="full">Título<input id="v-tit" value="'+esc(e.titulo||'')+'" placeholder="Ex.: Reunião de pauta da edição 3"></label>'
+   +'<label>Data<input id="v-data" type="date" value="'+esc(e.data||'')+'"></label><label>Início<input id="v-hora" type="time" value="'+esc(e.hora||'')+'"></label><label>Término<input id="v-fim" type="time" value="'+esc(e.fim||'')+'"></label>'
+   +'<label class="full">Local ou link (Teams)<input id="v-local" value="'+esc(e.local||'')+'" placeholder="Sala, estúdio ou link da reunião"></label>'
+   +'<label class="full">Pauta<textarea id="v-pauta" placeholder="Assuntos da reunião">'+esc(e.pauta||'')+'</textarea></label>'
+   +'<div class="full"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Participantes</div>'+(membros().length?membros().map(function(m){return '<div class="mem-lin" style="grid-template-columns:1fr"><label><input type="checkbox" class="v-part" value="'+esc(m.id)+'"'+(part.indexOf(m.id)>=0?' checked':'')+'><span>'+esc(m.nome)+(m.email?' <small class="mut">'+esc(m.email)+'</small>':' <small style="color:var(--bad)">sem e-mail</small>')+'</span></label></div>'}).join(''):'<p class="mut">Cadastre a equipe em "Editar projeto".</p>')+'</div></div>'
+   +'<p id="v-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">'+(S.editEv!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ev" style="margin-right:auto">Excluir</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ev">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ev">Salvar</button><button type="button" class="btn-p" data-acao="salvar-convocar" style="background:#0B4F5C">Salvar e convocar a equipe</button></div></div>';
+}
+function salvarEv(convocar){
+  var v=function(id){return (($('#'+id)||{}).value||'').trim()},err=$('#v-err');
+  if(!v('v-data')){err.textContent='Informe a data.';err.hidden=false;return}
+  var novo=S.editEv==='novo',id=novo?uid('ev'):S.editEv,ant=novo?{}:S.eventos[id];
+  var d=Object.assign({},ant,{projetoId:PID,tipo:v('v-tipo'),titulo:v('v-tit')||TIPOS_EV[v('v-tipo')][0],data:v('v-data'),hora:v('v-hora'),fim:v('v-fim'),local:v('v-local'),pauta:v('v-pauta'),
+    participantes:[].slice.call(document.querySelectorAll('.v-part:checked')).map(function(c){return c.value}),atualizadoEm:new Date().toISOString()});
+  delete d.id;
+  salvar('eventos',id,d).then(function(){S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);toast('Agendamento salvo.');render();if(convocar)convocarEv(id)}).catch(function(e){err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+}
+// convocação: abre o e-mail (Outlook) já com todos os participantes, assunto e corpo, e oferece o convite .ics para a agenda
+function convocarEv(id){
+  var e=S.eventos[id];if(!e)return;var ms=membros().filter(function(m){return (e.participantes||[]).indexOf(m.id)>=0&&m.email});
+  if(!ms.length){toast('Nenhum participante com e-mail cadastrado.',true);return}
+  var t=TIPOS_EV[e.tipo]||TIPOS_EV.outro,assunto=S.proj.nome+' · '+(e.titulo||t[0])+' · '+br(e.data)+(e.hora?' às '+e.hora:'');
+  var corpo='Olá, equipe!\n\nFica convocada a '+t[0].toLowerCase()+' do projeto '+S.proj.nome+':\n\n'+(e.titulo?'• '+e.titulo+'\n':'')+'• Data: '+br(e.data)+'\n'+(e.hora?'• Horário: '+e.hora+(e.fim?' às '+e.fim:'')+'\n':'')+(e.local?'• Local/link: '+e.local+'\n':'')+(e.pauta?'\nPauta:\n'+e.pauta+'\n':'')
+    +'\nAcompanhe o projeto e converse com a equipe pelo seu link de acesso ao painel.\n\nAtenciosamente,\n'+((S.proj.coordenador&&S.proj.coordenador.nome)||'Coordenação do projeto');
+  var url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(ms.map(function(m){return m.email}).join(';'))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+  window.open(url,'_blank','noopener');
+  toast('E-mail de convocação aberto no Outlook com '+ms.length+' participantes.');
+}
+function baixarIcs(e,ms){try{
+  var dt=function(d,h){return d.replace(/-/g,'')+(h?'T'+h.replace(':','')+'00':'')};
+  var ini=dt(e.data,e.hora),fim=e.hora?dt(e.data,e.fim||(function(){var p=e.hora.split(':'),hh=(+p[0]+1)%24;return pad(hh)+':'+p[1]})()):dt(addDia(e.data,1));
+  var ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Gestao Fabio Iba//Projetos//PT','BEGIN:VEVENT','UID:'+e.id+'@gestao-fabio-iba','DTSTAMP:'+new Date().toISOString().replace(/[-:]/g,'').slice(0,15)+'Z',
+    (e.hora?'DTSTART;TZID=America/Sao_Paulo:':'DTSTART;VALUE=DATE:')+ini,(e.hora?'DTEND;TZID=America/Sao_Paulo:':'DTEND;VALUE=DATE:')+fim,'SUMMARY:'+(S.proj.nome+' - '+(e.titulo||'')).replace(/[,;]/g,' '),
+    'LOCATION:'+String(e.local||'').replace(/[,;]/g,' '),'DESCRIPTION:'+String(e.pauta||'').replace(/\n/g,'\\n').replace(/[,;]/g,' ')].concat(ms.map(function(m){return 'ATTENDEE;CN='+m.nome.replace(/[,;]/g,' ')+':mailto:'+m.email})).concat(['END:VEVENT','END:VCALENDAR']).join('\r\n');
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));a.download=(e.titulo||'reuniao').replace(/[^\w\- ]/g,'').slice(0,40)+'.ics';document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500);
+  toast('Convite baixado. Abra o arquivo para incluir na agenda do Outlook ou anexe ao e-mail.');
+}catch(x){}}
+
 /* ---------- eventos ---------- */
 document.addEventListener('click',function(ev){
   var b=ev.target.closest('button');if(!b)return;
   if(b.dataset.tab){S.tab=b.dataset.tab;render();return}
+  if(b.dataset.mes!==undefined){var n=+b.dataset.mes;if(!n)S.mes=hoje().slice(0,7);else{var y=+S.mes.slice(0,4),m=+S.mes.slice(5,7)+n;if(m<1){m=12;y--}if(m>12){m=1;y++}S.mes=y+'-'+pad(m)}render();return}
+  if(b.dataset.ver!==undefined||b.dataset.ed!==undefined){if(b.dataset.ver&&S.coord){S.editEv=b.dataset.ver;render();window.scrollTo(0,0)}else if(b.dataset.ed){S.tab='edicoes';if(S.coord)S.editEd=b.dataset.ed;render()}else{var e=S.eventos[b.dataset.ver];if(e)toast((e.titulo||'')+' · '+br(e.data)+(e.hora?' '+e.hora:'')+(e.local?' · '+e.local:''))}return}
   if(b.dataset.copiar){var l=b.dataset.copiar;(navigator.clipboard?navigator.clipboard.writeText(l):Promise.reject()).then(function(){toast('Link copiado. Envie para o membro.')},function(){window.prompt('Copie o link:',l)});return}
   var a=b.dataset.acao;if(!a)return;
   if(a==='editar-proj'){S.editProj=true;LOGO_NOVA=null;render()}
@@ -412,6 +501,14 @@ document.addEventListener('click',function(ev){
   else if(a==='salvar-ed')salvarEd();
   else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}apagar('edicoes',b.dataset.id).then(function(){delete S.edicoes[b.dataset.id];toast('Edição excluída.');render()})}
   else if(a==='enviar')enviar();
+  else if(a==='novo-ev'){S.editEv='novo';render();var f=$('#v-tit');if(f)f.focus()}
+  else if(a==='editar-ev'){S.editEv=b.dataset.id;render();window.scrollTo(0,0)}
+  else if(a==='cancelar-ev'){S.editEv='';render()}
+  else if(a==='salvar-ev')salvarEv(false);
+  else if(a==='salvar-convocar')salvarEv(true);
+  else if(a==='convocar')convocarEv(b.dataset.id);
+  else if(a==='ics'){var e=S.eventos[b.dataset.id];if(e)baixarIcs(e,membros().filter(function(m){return (e.participantes||[]).indexOf(m.id)>=0&&m.email}))}
+  else if(a==='apagar-ev'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var id=S.editEv;apagar('eventos',id).then(function(){delete S.eventos[id];S.editEv='';toast('Agendamento excluído.');render()})}
 });
 document.addEventListener('change',function(ev){if(ev.target.id==='p-logo'&&ev.target.files[0])lerLogo(ev.target.files[0])});
 document.addEventListener('keydown',function(ev){if(ev.target.id==='msg'&&ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();enviar()}});
@@ -426,8 +523,8 @@ function iniciar(){
     if(!S.coord&&!MEMBRO)return Promise.reject({message:'Abra o link de acesso enviado pela coordenação do projeto.'});
     return (S.coord?Promise.resolve():api('ping',{}).then(function(r){S.eu=(r&&r.membro)||null})).then(function(){return carregar(false)});
   }).then(function(){
-    $('#dot').className='dot ok';$('#st').textContent=S.coord?'Coordenação · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
-    setInterval(function(){if(document.hidden)return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj)render()}).catch(function(){})},5000);
+    carregarCalendario();$('#dot').className='dot ok';$('#st').textContent=S.coord?'Coordenação · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
+    setInterval(function(){if(document.hidden)return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj&&!S.editEv)render()}).catch(function(){})},5000);
   }).catch(function(e){$('#dot').className='dot bad';$('#st').textContent=(e&&e.message)||'Não foi possível carregar o projeto.';$('#view').innerHTML='<div class="card vazio"><b>Sem acesso</b>'+esc((e&&e.message)||'')+'</div>'});
 }
 iniciar();

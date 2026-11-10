@@ -93,9 +93,10 @@ function tratarMembro(req) {
   if (!membro) return { ok: false, code: 'not_granted', message: 'Este link não pertence mais à equipe do projeto.' };
   if (req.op === 'ping') return { ok: true, data: { membro: membro } };
   if (req.op === 'listMany') {
-    var r = listMany('proj', ['projetos', 'edicoes', 'chat']);
+    var r = listMany('proj', ['projetos', 'edicoes', 'chat', 'eventos']);
     return { ok: true, data: {
       projetos: [p],
+      eventos: r.eventos.filter(function (d) { return d.data && d.data.projetoId === proj; }),
       edicoes: r.edicoes.filter(function (d) { return d.data && d.data.projetoId === proj; }),
       chat: r.chat.filter(function (d) { return d.data && d.data.projetoId === proj; }).slice(-400)
     } };
