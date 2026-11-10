@@ -592,8 +592,9 @@ function baixarIcs(e,ms){try{
 function edsOrd(){return Object.keys(S.edicoes).map(function(k){return S.edicoes[k]}).sort(function(a,b){return (Number(b.numero)||0)-(Number(a.numero)||0)})}
 function itensDaEdicao(eid){return itensAgenda().filter(function(x){return eid?(x.ed===eid||(x.ev&&x.ev.edicaoId===eid)):true})}
 function reuniaoPendente(x){return x.id&&x.tipo==='reuniao'&&x.ev&&x.ev.status!=='concluida'&&(x.data<hoje()||(x.data===hoje()&&x.fim&&x.fim<new Date().toTimeString().slice(0,5)))}
+function ordemReuniao(x){if(!x.id||x.tipo!=='reuniao'||!x.ev)return 0;var eid=x.ev.edicaoId,l=Object.keys(S.eventos).map(function(k){return Object.assign({id:k},S.eventos[k])}).filter(function(e){return e.tipo==='reuniao'&&e.edicaoId===eid}).sort(function(a,b){return (a.data+(a.hora||'')).localeCompare(b.data+(b.hora||''))});for(var i=0;i<l.length;i++)if(l[i].id===x.id)return i+1;return 0}
 function linhaItem(x){var t=TIPOS_EV[x.tipo]||TIPOS_EV.outro,e=x.ev||{},conc=e.status==='concluida',pend=reuniaoPendente(x);
-  var h='<div class="pessoa" style="align-items:flex-start"><span class="av" style="border-radius:12px;background:'+t[2]+';color:'+t[1]+';width:auto;padding:0 10px;min-width:58px;font-size:12px">'+br(x.data).slice(0,5)+'</span><div style="flex:1;min-width:0"><b>'+esc(x.titulo)+'</b>'
+  var h='<div class="pessoa" style="align-items:flex-start"><span class="av" style="border-radius:12px;background:'+t[2]+';color:'+t[1]+';width:auto;padding:0 10px;min-width:58px;font-size:12px">'+br(x.data).slice(0,5)+'</span><div style="flex:1;min-width:0"><b>'+(function(){var n=ordemReuniao(x);if(!n)return esc(x.titulo);var tt=String(x.titulo||'').trim();return n+'ª Reunião'+(tt&&!/^reuni[aã]o$/i.test(tt)?' · '+esc(tt):'')})()+'</b>'
    +(conc?' <span class="pill publicada">concluída</span>':pend?' <span class="pill" style="background:#FFE8E5;color:#C0392B">registrar decisões</span>':'')
    +'<small style="display:block">'+t[0]+(x.hora?' · '+esc(x.hora)+(x.fim?' às '+esc(x.fim):''):'')+(x.local?' · '+esc(x.local):'')+'</small>'
    +(e.pauta&&!conc?'<small style="display:block;white-space:pre-wrap"><b>Pauta:</b> '+esc(e.pauta)+'</small>':'')
