@@ -44,6 +44,7 @@ function tratar(req) {
     var chave = PROPS.getProperty('CHAVE');
     if (!chave) return { ok: false, code: 'not_configured', message: 'Defina a propriedade CHAVE no Apps Script.' };
     if (req.key !== chave) {
+      if (req.op === 'entrarProjeto') return entrarProjeto(req);
       if (req.membro) return tratarMembro(req);
       if (req.portal) return tratarPortal(req);
       return { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
@@ -82,6 +83,16 @@ function codMembro(proj, mid) {
   var s = String(proj) + '|' + String(mid) + '|proj-membro', x = 11;
   for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0;
   return x.toString(36).slice(-6);
+}
+// quem abre o link geral do projeto entra informando o e-mail cadastrado na equipe
+function entrarProjeto(req) {
+  var proj = String(req.proj || ''), em = String(req.email || '').trim().toLowerCase();
+  var p = listMany('proj', ['projetos']).projetos.filter(function (d) { return d.id === proj; })[0];
+  if (!p || !em) return { ok: false, code: 'not_found', message: 'Projeto ou e-mail não encontrado.' };
+  var todos = ((p.data && p.data.equipe) || []).concat(p.data && p.data.coordenador ? [p.data.coordenador] : []).concat([{ id: 'tutora', nome: 'Nayara Emi Shimada', email: 'nayara.shimada@unicesumar.edu.br' }]);
+  var m = todos.filter(function (x) { return x && x.id && String(x.email || '').trim().toLowerCase() === em; })[0];
+  if (!m) return { ok: false, code: 'not_found', message: 'Este e-mail não está na equipe do projeto. Fale com a coordenação.' };
+  return { ok: true, data: { token: proj + '.' + m.id + '.' + codMembro(proj, m.id), nome: m.nome } };
 }
 function tratarMembro(req) {
   var m = /^([\w-]+)\.([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.membro || ''));

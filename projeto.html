@@ -285,6 +285,7 @@ function codMembro(proj,mid){var s=String(proj)+'|'+String(mid)+'|proj-membro',x
 
 var PID=(new URLSearchParams(location.search).get('p')||'').replace(/[^\w-]/g,'');
 var MEMBRO=(/[#&]m=([\w-]+\.[\w-]+\.[a-z0-9]+)/i.exec(location.hash)||[])[1]||'';
+try{if(MEMBRO)localStorage.setItem('gfi_membro_'+PID,MEMBRO);else MEMBRO=localStorage.getItem('gfi_membro_'+PID)||''}catch(e){}
 var S={edSel:'',concluir:'',eventos:{},mes:'',editEv:'',diaNovo:'',tab:'geral',coord:false,eu:null,proj:null,edicoes:{},chat:{},editProj:false,editEd:'',ultimoChat:0};
 var STATUS=[['planejada','Planejada'],['producao','Em produção'],['gravada','Gravada'],['publicada','Publicada']];
 var STATUS_T={};STATUS.forEach(function(x){STATUS_T[x[0]]=x[1]});
@@ -651,13 +652,20 @@ function iniciar(){
   S.coord=GFI.temChave();
   var ini=S.coord?GFI.api('ping',{}).then(function(){return true},function(){return false}):Promise.resolve(false);
   ini.then(function(ok){S.coord=ok;
-    if(!S.coord&&!MEMBRO)return Promise.reject({message:'Abra o link de acesso enviado pela coordenação do projeto.'});
+    if(!S.coord&&!MEMBRO)return Promise.reject({entrar:true,message:'Informe seu e-mail institucional para entrar no projeto.'});
     return (S.coord?Promise.resolve():api('ping',{}).then(function(r){S.eu=(r&&r.membro)||null})).then(function(){return carregar(false)});
   }).then(function(){
     carregarCalendario();if(S.coord)carregarPessoas();$('#dot').className='dot ok';$('#st').textContent=S.coord?'Fabio Luiz Iba · sponsor · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
     setInterval(function(){if(document.hidden||(S.tab!=='chat'&&S.tab!=='geral'))return;carregar(true).then(function(mud){if(mud&&!(S.tab==='geral'&&(S.editEd||S.editEv||S.concluir||S.editProj))){var t=$('#msg'),txt=t?t.value:'',foco=document.activeElement===t;render();var n=$('#msg');if(n){n.value=txt;if(foco)n.focus()}}}).catch(function(){})},4000);
     setInterval(function(){if(document.hidden||S.tab==='chat'||(S.tab==='geral'&&(S.editEd||S.editEv||S.concluir||S.editProj)))return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj&&!S.editEv)render()}).catch(function(){})},5000);
-  }).catch(function(e){$('#dot').className='dot bad';$('#st').textContent=(e&&e.message)||'Não foi possível carregar o projeto.';$('#view').innerHTML='<div class="card vazio"><b>Sem acesso</b>'+esc((e&&e.message)||'')+'</div>'});
+  }).catch(function(e){
+    if(e&&e.code==='not_granted'&&MEMBRO){try{localStorage.removeItem('gfi_membro_'+PID)}catch(x){}MEMBRO='';e={entrar:true}}
+    if(e&&e.entrar){$('#dot').className='dot';$('#st').textContent='Acesso da equipe do projeto';
+      $('#view').innerHTML='<div class="card box" style="max-width:460px;margin:20px auto"><h3>Entrar no projeto</h3><p class="mut">Digite o seu e-mail institucional, o mesmo cadastrado na equipe do projeto.</p><div class="frm" style="grid-template-columns:1fr"><label>E-mail<input id="ent-email" type="email" placeholder="nome@unicesumar.edu.br"></label></div><p id="ent-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;justify-content:flex-end;margin-top:10px"><button type="button" class="btn-p" id="ent-ok">Entrar</button></div></div>';
+      var ir=function(){var em=$('#ent-email').value.trim(),er=$('#ent-err');if(!em){er.textContent='Informe o e-mail.';er.hidden=false;return}$('#ent-ok').disabled=true;
+        GFI.api('entrarProjeto',{proj:PID,email:em}).then(function(r){try{localStorage.setItem('gfi_membro_'+PID,r.token)}catch(x){}location.hash='m='+r.token;location.reload()},function(x){$('#ent-ok').disabled=false;er.textContent=(x&&x.message)||'Não foi possível entrar.';er.hidden=false})};
+      $('#ent-ok').onclick=ir;$('#ent-email').onkeydown=function(ev){if(ev.key==='Enter')ir()};$('#ent-email').focus();return}
+    $('#dot').className='dot bad';$('#st').textContent=(e&&e.message)||'Não foi possível carregar o projeto.';$('#view').innerHTML='<div class="card vazio"><b>Sem acesso</b>'+esc((e&&e.message)||'')+'</div>'});
 }
 iniciar();
 })();
