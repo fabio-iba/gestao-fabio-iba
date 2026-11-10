@@ -585,8 +585,8 @@ function htmlPainel(){
    +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para esta edição':'')+'.</p>')
    +'</div>'+(e?'<div class="card box" style="margin-top:14px"><h3>Histórico do episódio</h3><p class="mut" style="margin:0 0 6px">Reuniões realizadas, tratativas e decisões desta edição.</p>'+(pas.length?pas.map(linhaItem).join(''):'<p class="mut">Nenhuma reunião realizada ainda.</p>')+'</div>':(pas.length?'<div class="card box" style="margin-top:14px"><details><summary style="cursor:pointer;font-weight:700">Já realizadas ('+pas.length+')</summary>'+pas.map(linhaItem).join('')+'</details></div>':''));
   if(S.editEd)col=htmlFormEd()+col;
-  if(!e&&!S.editEd)h+=htmlChat(true);
-  else h+='<div class="painel-g"><div>'+col+'</div><div>'+htmlChat(true)+'</div></div>';
+  if(!e&&!S.editEd)col='<div class="card vazio"><b>Selecione um episódio</b>Clique em uma edição acima para ver as programações e o histórico, ou em + Nova edição.</div>';
+  h+='<div class="painel-g"><div>'+col+'</div><div>'+htmlChat(true)+'</div></div>';
   return h;
 }
 
