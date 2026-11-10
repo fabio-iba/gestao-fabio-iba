@@ -306,7 +306,7 @@ function carregar(soChat){
 }
 // registro das ações no chat: todos acompanham o que acontece no projeto
 function registrar(txt){var msg={projetoId:PID,autorId:S.coord?'sponsor':(S.eu&&S.eu.id),autor:S.coord?SPONSOR.nome:(S.eu&&S.eu.nome)||'',texto:txt,em:new Date().toISOString(),registro:true};
-  var pr=S.coord?salvar('chat',uid('c'),msg):api('chat',{texto:txt,registro:true});return pr.then(function(){return carregar(true)}).then(function(){if(S.tab==='chat'||S.tab==='geral'){var t=$('#msg'),v=t?t.value:'';if(!(S.editEd||S.editEv||S.concluir||S.editProj)){render();var n=$('#msg');if(n)n.value=v}}}).catch(function(){})}
+  var pr=S.coord?salvar('chat',uid('c'),msg):api('chat',{texto:txt,registro:true});return pr.then(function(){return carregar(true)}).then(function(){if(S.tab==='chat'||S.tab==='geral'){var t=$('#msg'),v=t?t.value:'';if(!(S.editEd||S.editEv||S.concluir||S.editProj)){render();var n=$('#msg');if(n)n.value=v}}}).catch(function(x){toast('A ação foi salva, mas não entrou no chat: '+((x&&x.message)||'erro'),true)})}
 function quando(e){return br(e.data)+(e.hora?' às '+e.hora:'')}
 function nomeEd(id){var e=S.edicoes[id];return e?'#'+(e.numero||'')+' '+(e.titulo||''):''}
 var OCUPADO=false;
