@@ -113,7 +113,7 @@ function tratarMembro(req) {
     if (!/^[\w-]{3,40}$/.test(eid) || !d.edicaoId || !d.data) return { ok: false, code: 'invalid_argument', message: 'Agendamento incompleto.' };
     var atual = listMany('proj', ['eventos']).eventos.filter(function (x) { return x.id === eid; })[0];
     if (atual && atual.data && atual.data.projetoId !== proj) return { ok: false, code: 'not_granted', message: 'Agendamento de outro projeto.' };
-    var campos = {}; ['edicaoId', 'tipo', 'titulo', 'data', 'hora', 'fim', 'local', 'pauta', 'participantes'].forEach(function (k) { if (k in d) campos[k] = d[k]; });
+    var campos = {}; ['edicaoId', 'tipo', 'titulo', 'data', 'hora', 'fim', 'local', 'pauta', 'participantes', 'teamsEm'].forEach(function (k) { if (k in d) campos[k] = d[k]; });
     var novo = Object.assign({}, atual ? atual.data : {}, campos, { projetoId: proj, atualizadoEm: new Date().toISOString() });
     if (!atual) { novo.criadoPor = membro.nome || mid; novo.criadoEm = novo.atualizadoEm; }
     return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'eventos', id: eid, data: novo }); return { ok: true, data: novo }; });
