@@ -369,7 +369,7 @@ function htmlFormEd(){
    +'<div class="full"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Equipe desta edição e o que cada um faz</div>'
    +(membros().length?membros().map(function(m){var on=m.id in eqSel;return '<div class="mem-lin"><label><input type="checkbox" class="e-mem" value="'+esc(m.id)+'"'+(on?' checked':'')+'><span>'+esc(m.nome)+'</span></label><input class="e-fun" data-id="'+esc(m.id)+'" value="'+esc(on?eqSel[m.id]:(m.funcao||''))+'" placeholder="Função nesta edição"></div>'}).join(''):'<p class="mut">Cadastre a equipe em "Editar projeto".</p>')+'</div>'
    +'<label class="full">Observações<textarea id="e-obs">'+esc(e.obs||'')+'</textarea></label></div>'
-   +'<p id="e-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px"><button type="button" class="btn-s" data-acao="cancelar-ed">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ed">Salvar edição</button></div></div>';
+   +'<p id="e-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">'+(S.editEd!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(S.editEd)+'" style="margin-right:auto">Excluir edição</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ed">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ed">Salvar edição</button></div></div>';
 }
 function proxNumero(){var n=0;Object.keys(S.edicoes).forEach(function(k){n=Math.max(n,Number(S.edicoes[k].numero)||0)});return n+1}
 function salvarEd(){
@@ -559,7 +559,7 @@ function htmlPainel(){
   if(e){var eq=(e.equipe||[]).map(function(x){return esc((nomeMembro(x.id)||x.nome||'')+(x.funcao?' ('+x.funcao+')':''))}).join(' · ');
     col+='<div class="card box" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0">#'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+' <span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span></h3>'
      +'<p class="mut" style="margin:6px 0 0"><b>Tema:</b> '+esc(e.tema||'—')+(e.convidados?' · <b>Convidado(s):</b> '+esc(e.convidados):'')+'</p><p class="mut" style="margin:4px 0 0"><b>Gravação:</b> '+br(e.dataGravacao)+' · <b>Publicação:</b> '+br(e.dataPublicacao)+(e.link?' · <a href="'+esc(e.link)+'" target="_blank" rel="noopener">ouvir</a>':'')+'</p>'+(eq?'<p class="mut" style="margin:4px 0 0"><b>Equipe:</b> '+eq+'</p>':'')+'</div>'
-     +(S.coord?'<button type="button" class="btn-s" data-acao="editar-ed" data-id="'+esc(e.id)+'">Editar</button>':'')+'</div></div>'}
+     +(S.coord?'<div style="display:flex;gap:6px"><button type="button" class="btn-s" data-acao="editar-ed" data-id="'+esc(e.id)+'">Editar</button><button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(e.id)+'">Excluir</button></div>':'')+'</div></div>'}
   col+='<div class="card box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0">Próximas programações'+(e?' da edição':'')+'</h3>'+(S.coord?'<button type="button" class="btn-p" data-acao="novo-ev-painel">+ Agendar</button>':'')+'</div>'
    +(S.editEv?htmlFormEv():'')
    +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para esta edição':'')+'.</p>')
@@ -588,7 +588,7 @@ document.addEventListener('click',function(ev){
   else if(a==='editar-ed'){S.editEd=b.dataset.id;render();window.scrollTo(0,0)}
   else if(a==='cancelar-ed'){S.editEd='';render()}
   else if(a==='salvar-ed')salvarEd();
-  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}apagar('edicoes',b.dataset.id).then(function(){delete S.edicoes[b.dataset.id];toast('Edição excluída.');render()})}
+  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;apagar('edicoes',eid).then(function(){delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()}).catch(function(x){toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)})}
   else if(a==='enviar')enviar();
   else if(a==='nova-ed-painel'){S.editEd='novo';render();var f=$('#e-tit');if(f)f.focus()}
   else if(a==='novo-ev-painel'){S.editEv='novo';render();var g=$('#v-tit');if(g)g.focus()}
