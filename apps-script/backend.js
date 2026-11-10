@@ -129,6 +129,17 @@ function tratarMembro(req) {
     if (!atual) { novo.criadoPor = membro.nome || mid; novo.criadoEm = novo.atualizadoEm; }
     return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'eventos', id: eid, data: novo }); return { ok: true, data: novo }; });
   }
+  if (req.op === 'edicao') {
+    // membros podem cadastrar um novo episódio do próprio projeto (edição de existentes fica com o sponsor)
+    var de = req.data || {}, edid = String(req.id || '');
+    if (!/^[\w-]{3,40}$/.test(edid) || !String(de.titulo || '').trim()) return { ok: false, code: 'invalid_argument', message: 'Informe o título do episódio.' };
+    var jaExiste = listMany('proj', ['edicoes']).edicoes.filter(function (x) { return x.id === edid; })[0];
+    if (jaExiste) return { ok: false, code: 'not_granted', message: 'Só o sponsor altera episódios já cadastrados.' };
+    var ce = {}; ['numero', 'titulo', 'tema', 'convidados', 'dataGravacao', 'dataPublicacao', 'status', 'link', 'obs', 'equipe'].forEach(function (k) { if (k in de) ce[k] = de[k]; });
+    var agora = new Date().toISOString();
+    var nova = Object.assign(ce, { projetoId: proj, criadoPor: membro.nome || mid, criadoEm: agora, atualizadoEm: agora });
+    return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'edicoes', id: edid, data: nova }); return { ok: true, data: nova }; });
+  }
   return { ok: false, code: 'not_granted', message: 'Operação não permitida pelo link do membro.' };
 }
 
