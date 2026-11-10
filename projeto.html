@@ -623,7 +623,7 @@ function htmlPainel(){
   col+='<div class="card box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0">'+(e?'Próximas programações do episódio':'Próximas programações de todas as edições')+'</h3>'+((S.coord||S.eu)&&e?'<button type="button" class="btn-p" data-acao="novo-ev-painel">+ Agendar</button>':'')+'</div>'+(!e?'<p class="mut" style="margin:0 0 6px">Selecione uma edição acima para agendar reuniões e ver o histórico do episódio.</p>':'')
    +(S.editEv?htmlFormEv():'')
    +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para esta edição':'')+'.</p>')
-   +'</div>'+(e?'<div class="card box" style="margin-top:14px"><h3>Histórico do episódio</h3><p class="mut" style="margin:0 0 6px">Reuniões realizadas, tratativas e decisões desta edição.</p>'+(pas.length?pas.map(linhaItem).join(''):'<p class="mut">Nenhuma reunião realizada ainda.</p>')+'</div>':(pas.length?'<div class="card box" style="margin-top:14px"><details><summary style="cursor:pointer;font-weight:700">Já realizadas ('+pas.length+')</summary>'+pas.map(linhaItem).join('')+'</details></div>':''));
+   +'</div>'+((pas.length?'<div class="card box" style="margin-top:14px"><details><summary style="cursor:pointer;font-weight:700">Já realizadas ('+pas.length+')</summary>'+pas.map(linhaItem).join('')+'</details></div>':''));
   if(S.editEd)col=htmlFormEd()+col;
   if(!e&&!S.editEd)col='<div class="card vazio"><b>Selecione um episódio</b>Clique em uma edição acima para ver as programações e o histórico, ou em + Nova edição.</div>';
   h+='<div class="painel-g"><div>'+col+'</div><div>'+htmlChat(true)+'</div></div>';
