@@ -49,6 +49,8 @@ function tratar(req) {
       if (req.portal) return tratarPortal(req);
       return { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
     }
+    // proteção: nunca gravar a chave de acesso como conteúdo (ex.: nome de projeto preenchido pelo navegador)
+    if (req.op === 'set' && req.data && JSON.stringify(req.data).indexOf(chave) >= 0) return { ok: false, code: 'invalid_argument', message: 'O texto digitado é a chave de acesso. Use outro nome.' };
     var op = req.op;
     if (op === 'ping') return { ok: true };
     // escolhas enviadas pelo link do professor, mesmo quando o navegador já tem a chave da coordenação
