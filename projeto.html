@@ -570,7 +570,7 @@ function htmlPainel(){
   var h='<div class="card box" style="margin-bottom:14px"><div class="pj-hero">'+logoHtml(p)+'<div style="flex:1;min-width:240px"><h2>'+esc(p.nome)+'</h2><p>'+esc(p.descricao||'')+'</p></div>'
    +(S.coord?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn-s" data-acao="links" title="Copia o link pessoal de cada membro para enviar">Copiar links de acesso</button><button type="button" class="btn-s" data-acao="editar-proj">Editar projeto</button></div>':'')+'</div></div>';
   // seletor de edições
-  h+='<div class="ed-sel"><button type="button" data-edsel="" class="'+(!S.edSel?'on':'')+'"><b>Todas</b><small>'+eds.length+' '+(eds.length===1?'edição':'edições')+'</small></button>'
+  h+='<div class="ed-sel">'
    +eds.map(function(e){return '<button type="button" data-edsel="'+esc(e.id)+'" class="'+(S.edSel===e.id?'on':'')+'"><b>#'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+'</b><small><span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span> '+(e.dataPublicacao?'pub. '+br(e.dataPublicacao):'')+'</small></button>'}).join('')
    +(S.coord?'<button type="button" class="novo" data-acao="nova-ed-painel"><b>+ Nova edição</b><small>título, tema, equipe</small></button>':'')+'</div>';
   // coluna da edição + coluna do chat
@@ -585,7 +585,8 @@ function htmlPainel(){
    +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para esta edição':'')+'.</p>')
    +'</div>'+(e?'<div class="card box" style="margin-top:14px"><h3>Histórico do episódio</h3><p class="mut" style="margin:0 0 6px">Reuniões realizadas, tratativas e decisões desta edição.</p>'+(pas.length?pas.map(linhaItem).join(''):'<p class="mut">Nenhuma reunião realizada ainda.</p>')+'</div>':(pas.length?'<div class="card box" style="margin-top:14px"><details><summary style="cursor:pointer;font-weight:700">Já realizadas ('+pas.length+')</summary>'+pas.map(linhaItem).join('')+'</details></div>':''));
   if(S.editEd)col=htmlFormEd()+col;
-  h+='<div class="painel-g"><div>'+col+'</div><div>'+htmlChat(true)+'</div></div>';
+  if(!e&&!S.editEd)h+=htmlChat(true);
+  else h+='<div class="painel-g"><div>'+col+'</div><div>'+htmlChat(true)+'</div></div>';
   return h;
 }
 
