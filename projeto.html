@@ -319,14 +319,14 @@ function render(){
 function logoHtml(p){return '<div class="pj-logo">'+(p.logo?'<img src="'+esc(p.logo)+'" alt="Logo '+esc(p.nome)+'">':esc(iniciais(p.nome)))+'</div>'}
 function pessoaHtml(m){var link=S.coord&&m.id&&!m.coord&&!m.sponsor?location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id):'';
   return '<div class="pessoa"><span class="av">'+esc(iniciais(m.nome))+'</span><div style="flex:1"><b>'+esc(m.nome||'—')+(m.sponsor?' <span class="pill gravada">sponsor</span>':'')+(m.tutora?' <span class="pill producao">tutora</span>':'')+(m.coord?' <span class="pill publicada">coordenador(a)</span>':'')+'</b><small>'+esc(m.funcao||'')+'</small>'+(m.email?'<br><small>'+esc(m.email)+'</small>':'')
-   +(link?'<div style="margin-top:6px"><button type="button" class="btn-s" data-copiar="'+esc(link)+'" style="padding:4px 10px;font-size:12px">Copiar link de acesso</button></div>':'')+'</div></div>'}
+   +'</div></div>'}
 function proximas(){var h=hoje();return Object.keys(S.edicoes).map(function(k){return S.edicoes[k]}).filter(function(e){return e.dataPublicacao&&e.dataPublicacao>=h&&e.status!=='publicada'}).sort(function(a,b){return a.dataPublicacao.localeCompare(b.dataPublicacao)})}
 function htmlGeral(){
   var p=S.proj,eds=Object.keys(S.edicoes).map(function(k){return S.edicoes[k]}),pub=eds.filter(function(e){return e.status==='publicada'}).length,prox=proximas();
   if(S.editProj)return htmlFormProj();
   var h='<div class="card box" style="margin-bottom:16px"><div class="pj-hero">'+logoHtml(p)+'<div style="flex:1;min-width:240px"><h2>'+esc(p.nome)+'</h2><p>'+esc(p.descricao||'')+'</p>'
    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'+[['spotify','Spotify'],['youtube','YouTube'],['instagram','Instagram'],['site','Site']].filter(function(l){return p.links&&p.links[l[0]]}).map(function(l){return '<a class="btn-s" href="'+esc(p.links[l[0]])+'" target="_blank" rel="noopener">'+l[1]+'</a>'}).join('')+'</div></div>'
-   +(S.coord?'<button type="button" class="btn-s" data-acao="editar-proj">Editar projeto</button>':'')+'</div></div>';
+   +(S.coord?'<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="btn-s" data-acao="links" title="Copia o link pessoal de cada membro para enviar">Copiar links de acesso</button><button type="button" class="btn-s" data-acao="editar-proj">Editar projeto</button></div>':'')+'</div></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px">'
    +kpi('Edições',eds.length)+kpi('Publicadas',pub)+kpi('Em andamento',eds.length-pub)+kpi('Próxima publicação',prox[0]?br(prox[0].dataPublicacao):'—')+'</div>';
   h+='<div class="grid2"><div class="card box"><h3>Equipe do projeto</h3>'+(membros().length?membros().map(pessoaHtml).join(''):'<p class="mut">Nenhum membro cadastrado.'+(S.coord?' Use "Editar projeto".':'')+'</p>')+'</div>';
@@ -516,6 +516,9 @@ document.addEventListener('click',function(ev){
   else if(a==='salvar-ed')salvarEd();
   else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}apagar('edicoes',b.dataset.id).then(function(){delete S.edicoes[b.dataset.id];toast('Edição excluída.');render()})}
   else if(a==='enviar')enviar();
+  else if(a==='links'){var ls=membros().filter(function(m){return m.id&&!m.sponsor}).map(function(m){return m.nome+': '+location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id)});
+    if(!ls.length){toast('Cadastre a equipe primeiro.',true);return}var txt='Links de acesso · '+S.proj.nome+'\n\n'+ls.join('\n');
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){toast(ls.length+' links copiados. Envie a cada membro o seu link.')},function(){window.prompt('Copie os links:',txt)})}
   else if(a==='novo-ev'){S.editEv='novo';render();var f=$('#v-tit');if(f)f.focus()}
   else if(a==='editar-ev'){S.editEv=b.dataset.id;render();window.scrollTo(0,0)}
   else if(a==='cancelar-ev'){S.editEv='';render()}
