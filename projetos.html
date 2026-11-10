@@ -253,9 +253,9 @@ function render(){
       +'<div class="pj-go">Abrir projeto<span class="ar">→</span></div></a>'}).join('')+'</div>';
 }
 function carregar(){return GFI.api('listMany',{app:'proj',cols:['projetos','edicoes','chat']}).then(function(r){P=mapa((r||{}).projetos);E=mapa((r||{}).edicoes);C=mapa((r||{}).chat);var tot=Object.keys(P).reduce(function(t,k){return t+naoLidas(k)},0);document.title=(tot?'('+tot+') ':'')+'Projetos dos Cursos';$('#dot').className='dot ok';$('#st').textContent='Dados sincronizados · hoje '+br(hoje());render()})}
-$('#novo').onclick=function(){var n=window.prompt('Nome do novo projeto:');if(!n||!n.trim())return;var id=slug(n);if(P[id])id+='-'+Date.now().toString(36).slice(-3);
-  GFI.api('set',{app:'proj',col:'projetos',id:id,data:{nome:n.trim(),tipo:'Projeto',descricao:'',coordenador:{id:'coord',nome:'',email:'',funcao:'Coordenação geral'},equipe:[],links:{},criadoEm:new Date().toISOString()}})
-   .then(function(){location.href='projeto.html?p='+encodeURIComponent(id)}).catch(function(e){toast('Não foi possível criar: '+((e&&e.message)||'erro'),true)})};
+$('#novo').onclick=function(){var n='Novo projeto',id='proj-'+Date.now().toString(36);this.disabled=true;
+  GFI.api('set',{app:'proj',col:'projetos',id:id,data:{nome:n,tipo:'Projeto',descricao:'',coordenador:{id:'coord',nome:'',email:'',funcao:'Coordenação geral'},equipe:[],links:{},criadoEm:new Date().toISOString()}})
+   .then(function(){location.href='projeto.html?p='+encodeURIComponent(id)+'&novo=1'}).catch(function(e){toast('Não foi possível criar: '+((e&&e.message)||'erro'),true)})};
 carregar().catch(function(e){$('#dot').className='dot bad';$('#st').textContent='Não foi possível ler os projetos: '+((e&&e.message)||'erro')});
 setInterval(function(){if(!document.hidden)carregar().catch(function(){})},30000);
 window.addEventListener('pageshow',function(){carregar().catch(function(){})});
