@@ -550,7 +550,7 @@ function convocarEv(id,janela){
   var w=janela||null;
   if(w&&!w.closed){try{w.location.href=alvo}catch(x){w=null}}else{w=window.open(alvo,'_blank')}
   // se o navegador bloquear a janela, mostra os botões para abrir com um clique
-  if(w&&tm){toast('Teams aberto: confira e clique em Salvar no Teams (uma única vez).');mostrarConvocacao(url,mailto,ms.length,false,'');return}
+  if(w&&tm){toast('Teams aberto: confira e clique em Salvar no Teams (uma única vez).');return}
   mostrarConvocacao(url,mailto,ms.length,!w,tm);
 }
 function linkTeams(e,ms){
