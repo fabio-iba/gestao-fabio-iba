@@ -462,7 +462,7 @@ function pctBar(v,max){if(!max)return '';var p=Math.min(100,Math.round(v/max*100
 function situacaoCarga(p,c){var ct=contratoDe(p);
   if(ct===null)return ehConvidado(p)?'<span class="pill" style="background:#ECE9FC;color:#5B4BD6">Convidado</span>':'<span class="pill warn">Sem contrato</span>';if(c.total>ct)return '<span class="pill bad">Acima (+'+(c.total-ct)+')</span>';
   if(c.total===ct)return '<span class="pill ok">Completa</span>';return '<span class="pill warn">Faltam '+(ct-c.total)+'</span>'}
-function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||(S.fPapel==='conv'?ehConvidado(p):p.papel===S.fPapel))&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
+function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||(S.fPapel==='conv'?ehConvidado(p):p.papel===S.fPapel&&!ehConvidado(p)))&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
 function ehConvidado(p){return !!(p&&p.externo)}
 function tagConv(p){return ehConvidado(p)?' <span class="pill" style="background:#ECE9FC;color:#5B4BD6">convidado · outra coordenação</span>':''}
 function lnkProf(p){return '<button type="button" data-ficha="'+esc(p.id)+'" style="border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-align:left">'+esc(p.nome)+'</button>'}
