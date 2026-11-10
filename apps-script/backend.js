@@ -44,6 +44,7 @@ function tratar(req) {
     var chave = PROPS.getProperty('CHAVE');
     if (!chave) return { ok: false, code: 'not_configured', message: 'Defina a propriedade CHAVE no Apps Script.' };
     if (req.key !== chave) {
+      if (req.membro) return tratarMembro(req);
       if (req.portal) return tratarPortal(req);
       return { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
     }
@@ -76,6 +77,38 @@ function codProf(pid) {
   for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0;
   return x.toString(36).slice(-5);
 }
+// ---------- Projetos: link de cada membro da equipe (ver e conversar no chat do projeto) ----------
+function codMembro(proj, mid) {
+  var s = String(proj) + '|' + String(mid) + '|proj-membro', x = 11;
+  for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0;
+  return x.toString(36).slice(-6);
+}
+function tratarMembro(req) {
+  var m = /^([\w-]+)\.([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.membro || ''));
+  if (!m || codMembro(m[1], m[2]) !== m[3].toLowerCase()) return { ok: false, code: 'not_granted', message: 'Link do membro inválido.' };
+  var proj = m[1], mid = m[2];
+  var p = listMany('proj', ['projetos']).projetos.filter(function (d) { return d.id === proj; })[0];
+  if (!p) return { ok: false, code: 'not_found', message: 'Projeto não encontrado.' };
+  var membro = ((p.data && p.data.equipe) || []).concat(p.data && p.data.coordenador ? [p.data.coordenador] : []).filter(function (x) { return x && x.id === mid; })[0];
+  if (!membro) return { ok: false, code: 'not_granted', message: 'Este link não pertence mais à equipe do projeto.' };
+  if (req.op === 'ping') return { ok: true, data: { membro: membro } };
+  if (req.op === 'listMany') {
+    var r = listMany('proj', ['projetos', 'edicoes', 'chat']);
+    return { ok: true, data: {
+      projetos: [p],
+      edicoes: r.edicoes.filter(function (d) { return d.data && d.data.projetoId === proj; }),
+      chat: r.chat.filter(function (d) { return d.data && d.data.projetoId === proj; }).slice(-400)
+    } };
+  }
+  if (req.op === 'chat') {
+    var txt = String(req.texto || '').trim().slice(0, 2000);
+    if (!txt) return { ok: false, code: 'invalid_argument', message: 'Mensagem vazia.' };
+    var id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'chat', id: id, data: { projetoId: proj, autorId: mid, autor: membro.nome || '', texto: txt, em: new Date().toISOString() } }); return { ok: true, data: { id: id } }; });
+  }
+  return { ok: false, code: 'not_granted', message: 'Operação não permitida pelo link do membro.' };
+}
+
 function tratarPortal(req) {
   var m = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || ''));
   if (!m || codProf(m[1]) !== m[2].toLowerCase() || req.app !== 'gd') return { ok: false, code: 'not_granted', message: 'Código do professor inválido.' };
