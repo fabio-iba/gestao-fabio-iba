@@ -551,7 +551,7 @@ function convocarEv(id,janela){
   if(w&&!w.closed){try{w.location.href=alvo}catch(x){w=null}}else{w=window.open(alvo,'_blank')}
   // se o navegador bloquear a janela, mostra os botões para abrir com um clique
   if(w&&tm){toast('Teams aberto: confira e clique em Salvar no Teams (uma única vez).');return}
-  mostrarConvocacao(url,mailto,ms.length,!w,tm);
+  if(!w)toast('O navegador bloqueou a janela. Permita pop-ups para este site e tente de novo.',true);
 }
 function linkTeams(e,ms){
   var tz=function(d,h){return d+'T'+(h||'09:00')+':00-03:00'};
