@@ -480,7 +480,7 @@ function htmlFormEv(){
    +'<label class="full">Local ou link (Teams)<input id="v-local" value="'+esc(e.local||'')+'" placeholder="Sala, estúdio ou link da reunião"></label>'
    +'<label class="full">Pauta<textarea id="v-pauta" placeholder="Assuntos da reunião">'+esc(e.pauta||'')+'</textarea></label>'
    +'<div class="full"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Participantes</div>'+(membros().length?membros().map(function(m){return '<div class="mem-lin" style="grid-template-columns:1fr"><label><input type="checkbox" class="v-part" value="'+esc(m.id)+'"'+(part.indexOf(m.id)>=0?' checked':'')+'><span>'+esc(m.nome)+(m.email?' <small class="mut">'+esc(m.email)+'</small>':' <small style="color:var(--bad)">sem e-mail</small>')+'</span></label></div>'}).join(''):'<p class="mut">Cadastre a equipe em "Editar projeto".</p>')+'</div></div>'
-   +'<p id="v-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">'+(S.editEv!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ev" style="margin-right:auto">Excluir</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ev">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ev">Salvar</button><button type="button" class="btn-p" data-acao="salvar-convocar" style="background:#0B4F5C">Salvar e convocar a equipe</button></div></div>';
+   +'<p id="v-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">'+(S.editEv!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ev" style="margin-right:auto">Excluir</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ev">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ev">Salvar</button><button type="button" class="btn-p" data-acao="salvar-convocar" style="background:#0B4F5C">Salvar e agendar no Teams</button></div></div>';
 }
 function salvarEv(convocar){
   var jan=convocar?window.open('about:blank','_blank'):null;
@@ -492,7 +492,7 @@ function salvarEv(convocar){
     participantes:[].slice.call(document.querySelectorAll('.v-part:checked')).map(function(c){return c.value}),atualizadoEm:new Date().toISOString()});
   delete d.id;
   var bt=document.querySelector('[data-acao="salvar-ev"]'),bt2=document.querySelector('[data-acao="salvar-convocar"]');if(!travar(convocar?bt2:bt)){if(jan)jan.close();return}
-  salvar('eventos',id,d).then(function(){soltar();S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  (S.coord?salvar('eventos',id,d):api('evento',{id:id,data:d})).then(function(){soltar();S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 // convocação: abre o e-mail (Outlook) já com todos os participantes, assunto e corpo, e oferece o convite .ics para a agenda
 function convocarEv(id,janela){
@@ -503,16 +503,23 @@ function convocarEv(id,janela){
     +'\nAcompanhe o projeto (agenda, edições e chat da equipe) pelo seu link pessoal de acesso:\n'+ms.filter(function(m){return !m.sponsor}).map(function(m){return '• '+m.nome+': '+location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id)}).join('\n')+'\n\nAtenciosamente,\nProf. Fabio Luiz Iba\nSponsor do projeto · Coordenador de Curso EAD\nfabio.iba@unicesumar.edu.br';
   var url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(ms.map(function(m){return m.email}).join(';'))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
   var mailto='mailto:'+ms.map(function(m){return m.email}).join(';')+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+  var tm=e.tipo==='reuniao'&&!/teams\.microsoft/i.test(e.local||'')?linkTeams(e,ms):'',alvo=tm||url;
   var w=janela||null;
-  if(w&&!w.closed){try{w.location.href=url}catch(x){w=null}}else{w=window.open(url,'_blank')}
+  if(w&&!w.closed){try{w.location.href=alvo}catch(x){w=null}}else{w=window.open(alvo,'_blank')}
   // se o navegador bloquear a janela, mostra os botões para abrir com um clique
-  mostrarConvocacao(url,mailto,ms.length,!w);
+  mostrarConvocacao(url,mailto,ms.length,!w,tm);
 }
-function mostrarConvocacao(url,mailto,n,bloq){
+function linkTeams(e,ms){
+  var tz=function(d,h){return d+'T'+(h||'09:00')+':00-03:00'};
+  var fim=e.fim||(function(){var p=(e.hora||'09:00').split(':'),hh=(+p[0]+1)%24;return pad(hh)+':'+p[1]})();
+  var painel=location.origin+location.pathname+'?p='+PID;
+  return 'https://teams.microsoft.com/l/meeting/new?subject='+encodeURIComponent(S.proj.nome+' · '+(e.titulo||'Reunião'))+'&startTime='+encodeURIComponent(tz(e.data,e.hora))+'&endTime='+encodeURIComponent(tz(e.data,fim))
+    +'&attendees='+encodeURIComponent(ms.map(function(m){return m.email}).join(','))+'&content='+encodeURIComponent((e.pauta?'Pauta: '+e.pauta+'\n\n':'')+'Painel do projeto: '+painel)}
+function mostrarConvocacao(url,mailto,n,bloq,teams){
   var d=document.getElementById('dlg-conv');if(d)d.remove();d=document.createElement('div');d.id='dlg-conv';
   d.style.cssText='position:fixed;inset:0;background:rgba(8,16,26,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
   d.innerHTML='<div class="card" style="max-width:460px;width:100%;padding:20px"><h3 style="margin:0 0 6px;font:800 18px Manrope,sans-serif">Convocação da equipe</h3><p class="mut" style="margin:0 0 14px">'+(bloq?'O navegador bloqueou a abertura automática. ':'')+'Escolha onde abrir o e-mail para os '+n+' participantes (com assunto, pauta e links de acesso já preenchidos).</p>'
-   +'<div style="display:flex;flex-direction:column;gap:8px"><a class="btn-p" style="text-align:center;text-decoration:none" href="'+esc(url)+'" target="_blank" rel="noopener">Abrir no Outlook (navegador)</a><a class="btn-s" style="text-align:center;text-decoration:none" href="'+esc(mailto)+'">Abrir no Outlook instalado no computador</a><button type="button" class="btn-s" id="conv-fechar">Fechar</button></div></div>';
+   +'<div style="display:flex;flex-direction:column;gap:8px">'+(teams?'<a class="btn-p" style="text-align:center;text-decoration:none;background:#4B53BC" href="'+esc(teams)+'" target="_blank" rel="noopener">Agendar no Teams (cria o link e envia o convite)</a><p class="mut" style="margin:0;font-size:12.5px">No Teams, confira e clique em Salvar/Enviar. Depois copie o link da reunião e cole em Local ou link, no agendamento.</p>':'')+'<a class="btn-p" style="text-align:center;text-decoration:none" href="'+esc(url)+'" target="_blank" rel="noopener">E-mail no Outlook (navegador)</a><a class="btn-s" style="text-align:center;text-decoration:none" href="'+esc(mailto)+'">Abrir no Outlook instalado no computador</a><button type="button" class="btn-s" id="conv-fechar">Fechar</button></div></div>';
   document.body.appendChild(d);d.addEventListener('click',function(ev){if(ev.target===d||ev.target.id==='conv-fechar'||ev.target.closest('a'))setTimeout(function(){d.remove()},50)});
 }
 function baixarIcs(e,ms){try{
@@ -567,7 +574,7 @@ function htmlPainel(){
     col+='<div class="card box" style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3 style="margin:0">#'+esc(e.numero||'')+' '+esc(e.titulo||'Sem título')+' <span class="pill '+esc(e.status||'')+'">'+esc(STATUS_T[e.status]||'—')+'</span></h3>'
      +'<p class="mut" style="margin:6px 0 0"><b>Tema:</b> '+esc(e.tema||'—')+(e.convidados?' · <b>Convidado(s):</b> '+esc(e.convidados):'')+'</p><p class="mut" style="margin:4px 0 0"><b>Gravação:</b> '+br(e.dataGravacao)+' · <b>Publicação:</b> '+br(e.dataPublicacao)+(e.link?' · <a href="'+esc(e.link)+'" target="_blank" rel="noopener">ouvir</a>':'')+'</p>'+(eq?'<p class="mut" style="margin:4px 0 0"><b>Equipe:</b> '+eq+'</p>':'')+'</div>'
      +(S.coord?'<div style="display:flex;gap:6px"><button type="button" class="btn-s" data-acao="editar-ed" data-id="'+esc(e.id)+'">Editar</button><button type="button" class="btn-s perigo" data-acao="apagar-ed" data-id="'+esc(e.id)+'">Excluir</button></div>':'')+'</div></div>'}
-  col+='<div class="card box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0">'+(e?'Próximas programações do episódio':'Próximas programações de todas as edições')+'</h3>'+(S.coord&&e?'<button type="button" class="btn-p" data-acao="novo-ev-painel">+ Agendar</button>':'')+'</div>'+(!e?'<p class="mut" style="margin:0 0 6px">Selecione uma edição acima para agendar reuniões e ver o histórico do episódio.</p>':'')
+  col+='<div class="card box"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px"><h3 style="margin:0">'+(e?'Próximas programações do episódio':'Próximas programações de todas as edições')+'</h3>'+((S.coord||S.eu)&&e?'<button type="button" class="btn-p" data-acao="novo-ev-painel">+ Agendar</button>':'')+'</div>'+(!e?'<p class="mut" style="margin:0 0 6px">Selecione uma edição acima para agendar reuniões e ver o histórico do episódio.</p>':'')
    +(S.editEv?htmlFormEv():'')
    +(fut.length?fut.map(linhaItem).join(''):'<p class="mut">Nada programado'+(e?' para esta edição':'')+'.</p>')
    +'</div>'+(e?'<div class="card box" style="margin-top:14px"><h3>Histórico do episódio</h3><p class="mut" style="margin:0 0 6px">Reuniões realizadas, tratativas e decisões desta edição.</p>'+(pas.length?pas.map(linhaItem).join(''):'<p class="mut">Nenhuma reunião realizada ainda.</p>')+'</div>':(pas.length?'<div class="card box" style="margin-top:14px"><details><summary style="cursor:pointer;font-weight:700">Já realizadas ('+pas.length+')</summary>'+pas.map(linhaItem).join('')+'</details></div>':''));

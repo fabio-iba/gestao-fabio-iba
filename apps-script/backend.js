@@ -107,6 +107,17 @@ function tratarMembro(req) {
     var id = 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'chat', id: id, data: { projetoId: proj, autorId: mid, autor: membro.nome || '', texto: txt, em: new Date().toISOString() } }); return { ok: true, data: { id: id } }; });
   }
+  if (req.op === 'evento') {
+    // membros podem agendar e editar reuniões do próprio projeto (sempre ligadas a uma edição)
+    var d = req.data || {}, eid = String(req.id || '');
+    if (!/^[\w-]{3,40}$/.test(eid) || !d.edicaoId || !d.data) return { ok: false, code: 'invalid_argument', message: 'Agendamento incompleto.' };
+    var atual = listMany('proj', ['eventos']).eventos.filter(function (x) { return x.id === eid; })[0];
+    if (atual && atual.data && atual.data.projetoId !== proj) return { ok: false, code: 'not_granted', message: 'Agendamento de outro projeto.' };
+    var campos = {}; ['edicaoId', 'tipo', 'titulo', 'data', 'hora', 'fim', 'local', 'pauta', 'participantes'].forEach(function (k) { if (k in d) campos[k] = d[k]; });
+    var novo = Object.assign({}, atual ? atual.data : {}, campos, { projetoId: proj, atualizadoEm: new Date().toISOString() });
+    if (!atual) { novo.criadoPor = membro.nome || mid; novo.criadoEm = novo.atualizadoEm; }
+    return comTrava(function () { gravar({ op: 'set', app: 'proj', col: 'eventos', id: eid, data: novo }); return { ok: true, data: novo }; });
+  }
   return { ok: false, code: 'not_granted', message: 'Operação não permitida pelo link do membro.' };
 }
 
