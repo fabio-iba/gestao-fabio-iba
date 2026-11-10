@@ -479,24 +479,35 @@ function htmlFormEv(){
    +'<p id="v-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:12px">'+(S.editEv!=='novo'?'<button type="button" class="btn-s perigo" data-acao="apagar-ev" style="margin-right:auto">Excluir</button>':'')+'<button type="button" class="btn-s" data-acao="cancelar-ev">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-ev">Salvar</button><button type="button" class="btn-p" data-acao="salvar-convocar" style="background:#0B4F5C">Salvar e convocar a equipe</button></div></div>';
 }
 function salvarEv(convocar){
+  var jan=convocar?window.open('about:blank','_blank'):null;
   var v=function(id){return (($('#'+id)||{}).value||'').trim()},err=$('#v-err');
-  if(!v('v-data')){err.textContent='Informe a data.';err.hidden=false;return}
+  if(!v('v-data')){if(jan)jan.close();err.textContent='Informe a data.';err.hidden=false;return}
   var novo=S.editEv==='novo',id=novo?uid('ev'):S.editEv,ant=novo?{}:S.eventos[id];
   var d=Object.assign({},ant,{projetoId:PID,edicaoId:v('v-ed'),tipo:v('v-tipo'),titulo:v('v-tit')||TIPOS_EV[v('v-tipo')][0],data:v('v-data'),hora:v('v-hora'),fim:v('v-fim'),local:v('v-local'),pauta:v('v-pauta'),
     participantes:[].slice.call(document.querySelectorAll('.v-part:checked')).map(function(c){return c.value}),atualizadoEm:new Date().toISOString()});
   delete d.id;
-  salvar('eventos',id,d).then(function(){S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id)}).catch(function(e){err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  salvar('eventos',id,d).then(function(){S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 // convocação: abre o e-mail (Outlook) já com todos os participantes, assunto e corpo, e oferece o convite .ics para a agenda
-function convocarEv(id){
+function convocarEv(id,janela){
   var e=S.eventos[id];if(!e)return;var ms=membros().filter(function(m){return (e.participantes||[]).indexOf(m.id)>=0&&m.email});
   if(!ms.length){toast('Nenhum participante com e-mail cadastrado.',true);return}
   var t=TIPOS_EV[e.tipo]||TIPOS_EV.outro,assunto=S.proj.nome+' · '+(e.titulo||t[0])+' · '+br(e.data)+(e.hora?' às '+e.hora:'');
   var corpo='Olá, equipe!\n\nFica convocada a '+t[0].toLowerCase()+' do projeto '+S.proj.nome+':\n\n'+(e.titulo?'• '+e.titulo+'\n':'')+'• Data: '+br(e.data)+'\n'+(e.hora?'• Horário: '+e.hora+(e.fim?' às '+e.fim:'')+'\n':'')+(e.local?'• Local/link: '+e.local+'\n':'')+(e.pauta?'\nPauta:\n'+e.pauta+'\n':'')
     +'\nAcompanhe o projeto (agenda, edições e chat da equipe) pelo seu link pessoal de acesso:\n'+ms.filter(function(m){return !m.sponsor}).map(function(m){return '• '+m.nome+': '+location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id)}).join('\n')+'\n\nAtenciosamente,\nProf. Fabio Luiz Iba\nSponsor do projeto · Coordenador de Curso EAD\nfabio.iba@unicesumar.edu.br';
   var url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(ms.map(function(m){return m.email}).join(';'))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
-  window.open(url,'_blank','noopener');
-  toast('E-mail de convocação aberto no Outlook com '+ms.length+' participantes.');
+  var mailto='mailto:'+ms.map(function(m){return m.email}).join(';')+'?subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
+  var w=janela||null;
+  if(w&&!w.closed){try{w.location.href=url}catch(x){w=null}}else{w=window.open(url,'_blank')}
+  // se o navegador bloquear a janela, mostra os botões para abrir com um clique
+  mostrarConvocacao(url,mailto,ms.length,!w);
+}
+function mostrarConvocacao(url,mailto,n,bloq){
+  var d=document.getElementById('dlg-conv');if(d)d.remove();d=document.createElement('div');d.id='dlg-conv';
+  d.style.cssText='position:fixed;inset:0;background:rgba(8,16,26,.45);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px';
+  d.innerHTML='<div class="card" style="max-width:460px;width:100%;padding:20px"><h3 style="margin:0 0 6px;font:800 18px Manrope,sans-serif">Convocação da equipe</h3><p class="mut" style="margin:0 0 14px">'+(bloq?'O navegador bloqueou a abertura automática. ':'')+'Escolha onde abrir o e-mail para os '+n+' participantes (com assunto, pauta e links de acesso já preenchidos).</p>'
+   +'<div style="display:flex;flex-direction:column;gap:8px"><a class="btn-p" style="text-align:center;text-decoration:none" href="'+esc(url)+'" target="_blank" rel="noopener">Abrir no Outlook (navegador)</a><a class="btn-s" style="text-align:center;text-decoration:none" href="'+esc(mailto)+'">Abrir no Outlook instalado no computador</a><button type="button" class="btn-s" id="conv-fechar">Fechar</button></div></div>';
+  document.body.appendChild(d);d.addEventListener('click',function(ev){if(ev.target===d||ev.target.id==='conv-fechar'||ev.target.closest('a'))setTimeout(function(){d.remove()},50)});
 }
 function baixarIcs(e,ms){try{
   var dt=function(d,h){return d.replace(/-/g,'')+(h?'T'+h.replace(':','')+'00':'')};
