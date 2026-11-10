@@ -220,9 +220,14 @@ dialog::backdrop{background:rgba(25,21,39,.55)}
 </div>
 <main class="in" id="main">
   <div class="status-line"><span class="dot" id="dot"></span><span id="st">Carregando projetos…</span><span class="grow"></span>
-    <button class="btn-redondo" type="button" id="novo" aria-label="Novo projeto" title="Novo projeto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
+    <button class="btn-redondo" type="button" id="imprimir" aria-label="Imprimir relatório" title="Relatório dos projetos (imprimir ou salvar em PDF)" style="margin-right:10px"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M6 14h12v7H6z"/></svg></button><button class="btn-redondo" type="button" id="novo" aria-label="Novo projeto" title="Novo projeto"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button></div>
   <div id="view"><div class="card vazio"><b>Carregando</b>Buscando os projetos.</div></div>
 </main>
+<div id="rel" hidden></div>
+<style>
+@media screen{#rel{display:none!important}}#rel{font:13px/1.45 Arial,sans-serif;color:#111}#rel h1{font:800 22px Arial;margin:0 0 4px}#rel .pr{break-inside:avoid;border:1px solid #ccc;border-radius:10px;padding:14px 16px;margin:14px 0}#rel h2{font:800 17px Arial;margin:0 0 6px}#rel table{width:100%;border-collapse:collapse;margin-top:6px}#rel th,#rel td{border:1px solid #ddd;padding:4px 6px;text-align:left;vertical-align:top}#rel th{background:#f2f2f2}#rel .m{color:#555}
+@media print{body.imprimindo>*:not(#rel){display:none!important}body.imprimindo #rel{display:block!important}body.imprimindo{background:#fff!important}@page{margin:14mm}}
+</style>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 (function(){
@@ -235,7 +240,7 @@ function br(iso){if(!iso)return '—';var p=String(iso).slice(0,10).split('-');r
 function iniciais(n){return String(n||'?').trim().split(/\s+/).filter(Boolean).slice(0,2).map(function(x){return x[0].toUpperCase()}).join('')}
 function slug(t){return String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40)||('proj-'+Date.now().toString(36))}
 function toast(m,err){var t=$('#toast');t.textContent=m;t.className='toast on'+(err?' err':'');clearTimeout(t._t);t._t=setTimeout(function(){t.className='toast'},3200)}
-var P={},E={},C={};
+var P={},E={},C={},V={};
 function naoLidas(pid){var lido='';try{lido=localStorage.getItem('gfi_chat_lido_'+pid)||''}catch(e){}return Object.keys(C).map(function(k){return C[k]}).filter(function(m){return m.projetoId===pid&&m.autorId!=='sponsor'&&String(m.em||'')>lido}).length}
 function mapa(l){var m={};(l||[]).forEach(function(x){m[x.id]=Object.assign({id:x.id},x.data||{})});return m}
 function render(){
@@ -252,7 +257,28 @@ function render(){
       +(function(){var ms=Object.keys(C).map(function(k){return C[k]}).filter(function(m){return m.projetoId===p.id}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))}),u=ms[ms.length-1];if(!u)return '<div class="pj-meta"><span>💬 Chat: <b>sem mensagens</b></span></div>';var d=new Date(u.em),hh=('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2);return '<div class="pj-meta" style="'+(nl?'color:#E03131;font-weight:700':'')+'"><span>💬 Chat: <b style="'+(nl?'color:#E03131':'')+'">'+(nl?nl+(nl===1?' nova':' novas'):ms.length+' mensage'+(ms.length===1?'m':'ns'))+'</b> · última de '+esc(String(u.autor||'').split(' ')[0])+' em '+br(new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString())+' '+hh+'</span></div>'})()
       +'<div class="pj-go">Abrir projeto<span class="ar">→</span></div></a>'}).join('')+'</div>';
 }
-function carregar(){return GFI.api('listMany',{app:'proj',cols:['projetos','edicoes','chat']}).then(function(r){P=mapa((r||{}).projetos);E=mapa((r||{}).edicoes);C=mapa((r||{}).chat);var tot=Object.keys(P).reduce(function(t,k){return t+naoLidas(k)},0);document.title=(tot?'('+tot+') ':'')+'Projetos dos Cursos';$('#dot').className='dot ok';$('#st').textContent='Dados sincronizados · hoje '+br(hoje());render()})}
+function carregar(){return GFI.api('listMany',{app:'proj',cols:['projetos','edicoes','chat','eventos']}).then(function(r){P=mapa((r||{}).projetos);E=mapa((r||{}).edicoes);C=mapa((r||{}).chat);V=mapa((r||{}).eventos);var tot=Object.keys(P).reduce(function(t,k){return t+naoLidas(k)},0);document.title=(tot?'('+tot+') ':'')+'Projetos dos Cursos';$('#dot').className='dot ok';$('#st').textContent='Dados sincronizados · hoje '+br(hoje());render()})}
+function unid(p){var u=p.unidade||(/podcast/i.test((p.tipo||'')+' '+(p.nome||''))?'Episódio':'Edição');return {S:u,P:u==='Ação'?'Ações':u==='Edição'?'Edições':u+'s'}}
+var ST={planejada:'Em planejamento',producao:'Em produção',gravada:'Em produção',publicada:'Publicado'};
+function relatorio(){
+  var ps=Object.keys(P).map(function(k){return P[k]}).sort(function(a,b){return String(a.nome).localeCompare(String(b.nome),'pt-BR')}),hj=hoje();
+  var h='<h1>Projetos dos Cursos · Relatório</h1><div class="m">Emitido em '+br(hj)+' · '+ps.length+' projeto(s) · Sponsor: Prof. Fabio Luiz Iba · Tutora: Nayara Emi Shimada</div>';
+  ps.forEach(function(p){var u=unid(p),eds=Object.keys(E).map(function(k){return Object.assign({id:k},E[k])}).filter(function(e){return e.projetoId===p.id}).sort(function(a,b){return (Number(a.numero)||0)-(Number(b.numero)||0)});
+    var evs=Object.keys(V).map(function(k){return V[k]}).filter(function(e){return e.projetoId===p.id});
+    var prox=evs.filter(function(e){return e.data>=hj&&e.status!=='concluida'}).sort(function(a,b){return (a.data+(a.hora||'')).localeCompare(b.data+(b.hora||''))});
+    var conc=evs.filter(function(e){return e.status==='concluida'}).length,cont={};eds.forEach(function(e){var s=ST[e.status]||'—';cont[s]=(cont[s]||0)+1});
+    var nomeEd=function(id){var e=E[id];return e?'#'+(e.numero||'')+' '+(e.titulo||''):''};
+    var msgs=Object.keys(C).map(function(k){return C[k]}).filter(function(m){return m.projetoId===p.id}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))}),ult=msgs[msgs.length-1];
+    h+='<div class="pr"><h2>'+esc(p.nome)+'</h2>'+(p.descricao?'<div class="m">'+esc(p.descricao)+'</div>':'')
+     +'<p><b>Coordenação:</b> '+esc((p.coordenador&&p.coordenador.nome)||'—')+(p.coordenador&&p.coordenador.email?' ('+esc(p.coordenador.email)+')':'')+'<br><b>Equipe:</b> '+((p.equipe||[]).map(function(m){return esc(m.nome)+(m.funcao?' – '+esc(m.funcao):'')}).join('; ')||'—')
+     +'<br><b>'+u.P+':</b> '+eds.length+(eds.length?' ('+Object.keys(cont).map(function(k){return cont[k]+' '+k.toLowerCase()}).join(', ')+')':'')+' · <b>Reuniões:</b> '+evs.filter(function(e){return e.tipo==='reuniao'}).length+' agendadas, '+conc+' concluídas · <b>Chat:</b> '+msgs.length+' mensagens'+(ult?' (última em '+br(String(ult.em).slice(0,10))+')':'')+'</p>'
+     +(eds.length?'<table><thead><tr><th>Nº</th><th>Título</th><th>Tema</th><th>Situação</th><th>Publicação</th></tr></thead><tbody>'+eds.map(function(e){return '<tr><td>'+esc(e.numero||'')+'</td><td>'+esc(e.titulo||'—')+'</td><td>'+esc(e.tema||'—')+'</td><td>'+esc(ST[e.status]||'—')+'</td><td>'+br(e.dataPublicacao)+'</td></tr>'}).join('')+'</tbody></table>':'')
+     +(prox.length?'<p style="margin:8px 0 2px"><b>Próximas programações</b></p><table><thead><tr><th>Data</th><th>Horário</th><th>Programação</th><th>'+u.S+'</th></tr></thead><tbody>'+prox.slice(0,8).map(function(e){return '<tr><td>'+br(e.data)+'</td><td>'+esc((e.hora||'')+(e.fim?' às '+e.fim:''))+'</td><td>'+esc(e.titulo||'Reunião')+'</td><td>'+esc(nomeEd(e.edicaoId))+'</td></tr>'}).join('')+'</tbody></table>':'<p class="m">Sem programações futuras.</p>')
+     +'</div>'});
+  var r=$('#rel');r.innerHTML=h;r.hidden=false;document.body.classList.add('imprimindo');
+  setTimeout(function(){window.print();setTimeout(function(){document.body.classList.remove('imprimindo');r.hidden=true},500)},100);
+}
+$('#imprimir').onclick=function(){var b=this;b.disabled=true;carregar().catch(function(){}).then(function(){b.disabled=false;relatorio()})};
 $('#novo').onclick=function(){var n='Novo projeto',id='proj-'+Date.now().toString(36);this.disabled=true;
   GFI.api('set',{app:'proj',col:'projetos',id:id,data:{nome:n,tipo:'Projeto',descricao:'',coordenador:{id:'coord',nome:'',email:'',funcao:'Coordenação geral'},equipe:[],links:{},criadoEm:new Date().toISOString()}})
    .then(function(){location.href='projeto.html?p='+encodeURIComponent(id)+'&novo=1'}).catch(function(e){toast('Não foi possível criar: '+((e&&e.message)||'erro'),true)})};
