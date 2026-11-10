@@ -299,6 +299,9 @@ function carregar(soChat){
     if(r.chat){var cs=mapa(r.chat),c={};Object.keys(cs).forEach(function(k){if(cs[k].projetoId===PID)c[k]=cs[k]});var n=Object.keys(c).length,mud=n!==Object.keys(S.chat).length;S.chat=c;return mud}
   });
 }
+var OCUPADO=false;
+function travar(btn,txt){if(OCUPADO)return false;OCUPADO=true;if(btn){btn.disabled=true;btn.dataset.txt=btn.textContent;btn.textContent=txt||'Salvando…'}return true}
+function soltar(btn){OCUPADO=false;if(btn&&btn.isConnected){btn.disabled=false;if(btn.dataset.txt)btn.textContent=btn.dataset.txt}}
 function salvar(col,id,data){return GFI.api('set',{app:'proj',col:col,id:id,data:data})}
 function apagar(col,id){return GFI.api('delete',{app:'proj',col:col,id:id})}
 // Fabio Iba é sponsor de todos os projetos: entra sempre na equipe, nas agendas e nas convocações
@@ -379,7 +382,8 @@ function salvarEd(){
   var novo=S.editEd==='novo',id=novo?uid('ed'):S.editEd,ant=novo?{}:S.edicoes[id];
   var d=Object.assign({},ant,{projetoId:PID,numero:Number(v('e-num'))||proxNumero(),titulo:v('e-tit'),tema:v('e-tema'),convidados:v('e-conv'),dataGravacao:v('e-grav'),dataPublicacao:v('e-pub'),status:v('e-st'),link:v('e-link'),obs:v('e-obs'),equipe:eq,atualizadoEm:new Date().toISOString()});
   delete d.id;if(novo)d.criadoEm=d.atualizadoEm;
-  salvar('edicoes',id,d).then(function(){S.edicoes[id]=Object.assign({id:id},d);S.editEd='';toast('Edição salva.');render()}).catch(function(e){err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  var bt=document.querySelector('[data-acao="salvar-ed"]');if(!travar(bt))return;
+  salvar('edicoes',id,d).then(function(){soltar();S.edicoes[id]=Object.assign({id:id},d);S.editEd='';toast('Edição salva.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 function htmlFormProj(){
   var p=S.proj,c=p.coordenador||{},eq=(p.equipe||[]).slice(),l=p.links||{};
@@ -402,8 +406,8 @@ function salvarProj(){
   var p=Object.assign({},S.proj,{nome:v('p-nome'),descricao:v('p-desc'),links:{spotify:v('p-spotify'),youtube:v('p-youtube'),instagram:v('p-instagram'),site:v('p-site')},
     coordenador:{id:(S.proj.coordenador&&S.proj.coordenador.id)||'coord',nome:v('c-nome'),email:v('c-email'),funcao:v('c-fun')},equipe:eq,atualizadoEm:new Date().toISOString()});
   if(LOGO_NOVA)p.logo=LOGO_NOVA;delete p.id;
-  var bt=document.querySelector('[data-acao="salvar-proj"]');bt.disabled=true;bt.textContent='Salvando…';
-  salvar('projetos',PID,p).then(function(){S.proj=Object.assign({id:PID},p);S.editProj=false;LOGO_NOVA=null;toast('Projeto salvo.');render()}).catch(function(e){bt.disabled=false;bt.textContent='Salvar projeto';err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  var bt=document.querySelector('[data-acao="salvar-proj"]');if(!travar(bt))return;
+  salvar('projetos',PID,p).then(function(){soltar();S.proj=Object.assign({id:PID},p);S.editProj=false;LOGO_NOVA=null;toast('Projeto salvo.');render()}).catch(function(e){soltar(bt);err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 function htmlChat(compacto){
   var ms=Object.keys(S.chat).map(function(k){return S.chat[k]}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))});
@@ -486,7 +490,8 @@ function salvarEv(convocar){
   var d=Object.assign({},ant,{projetoId:PID,edicaoId:v('v-ed'),tipo:v('v-tipo'),titulo:v('v-tit')||TIPOS_EV[v('v-tipo')][0],data:v('v-data'),hora:v('v-hora'),fim:v('v-fim'),local:v('v-local'),pauta:v('v-pauta'),
     participantes:[].slice.call(document.querySelectorAll('.v-part:checked')).map(function(c){return c.value}),atualizadoEm:new Date().toISOString()});
   delete d.id;
-  salvar('eventos',id,d).then(function(){S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
+  var bt=document.querySelector('[data-acao="salvar-ev"]'),bt2=document.querySelector('[data-acao="salvar-convocar"]');if(!travar(convocar?bt2:bt)){if(jan)jan.close();return}
+  salvar('eventos',id,d).then(function(){soltar();S.eventos[id]=Object.assign({id:id},d);S.editEv='';S.mes=d.data.slice(0,7);if(!d.status)d.status='agendada';toast('Agendamento salvo.');render();if(convocar)convocarEv(id,jan)}).catch(function(e){soltar(convocar?bt2:bt);if(jan)jan.close();err.textContent='Não foi possível salvar: '+((e&&e.message)||'erro');err.hidden=false});
 }
 // convocação: abre o e-mail (Outlook) já com todos os participantes, assunto e corpo, e oferece o convite .ics para a agenda
 function convocarEv(id,janela){
@@ -534,14 +539,15 @@ function linhaItem(x){var t=TIPOS_EV[x.tipo]||TIPOS_EV.outro,e=x.ev||{},conc=e.s
   if(x.id&&S.coord&&S.concluir!==x.id)h+='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(x.tipo==='reuniao'&&!conc?'<button type="button" class="btn-s" data-acao="concluir" data-id="'+esc(x.id)+'">Concluir</button>':'')+(!conc?'<button type="button" class="btn-s" data-acao="convocar" data-id="'+esc(x.id)+'">Convocar</button>':'')+'</div>';
   return h+'</div>'}
 function concluirReuniao(id){
-  var e=S.eventos[id],t=$('#dec-txt'),dec=(t&&t.value||'').trim(),err=$('#dec-err');
+  var e=S.eventos[id],t=$('#dec-txt'),dec=(t&&t.value||'').trim(),err=$('#dec-err'),bt=document.querySelector('[data-acao="salvar-concluir"]');
   if(dec.length<10){err.textContent='Descreva o que ficou definido. A reunião não pode ser concluída sem as decisões.';err.hidden=false;return}
+  if(!travar(bt))return;
   var d=Object.assign({},e,{status:'concluida',decisoes:dec,concluidaEm:new Date().toISOString(),atualizadoEm:new Date().toISOString()});delete d.id;
   salvar('eventos',id,d).then(function(){S.eventos[id]=Object.assign({id:id},d);S.concluir='';
     // registro no chat: tudo fica no histórico da equipe
     var msg='📌 Reunião concluída: '+(e.titulo||'Reunião')+' ('+br(e.data)+(e.hora?' '+e.hora:'')+')\nDecisões:\n'+dec;
     return salvar('chat',uid('c'),{projetoId:PID,autorId:'sponsor',autor:SPONSOR.nome,texto:msg,em:new Date().toISOString(),registro:true});
-  }).then(function(){return carregar(true)}).then(function(){toast('Reunião concluída e decisões registradas no chat.');render()}).catch(function(x){err.textContent='Não foi possível salvar: '+((x&&x.message)||'erro');err.hidden=false});
+  }).then(function(){return carregar(true)}).then(function(){soltar();toast('Reunião concluída e decisões registradas no chat.');render()}).catch(function(x){soltar(bt);err.textContent='Não foi possível salvar: '+((x&&x.message)||'erro');err.hidden=false});
 }
 function htmlPainel(){
   var p=S.proj,eds=edsOrd();
@@ -588,7 +594,8 @@ document.addEventListener('click',function(ev){
   else if(a==='editar-ed'){S.editEd=b.dataset.id;render();window.scrollTo(0,0)}
   else if(a==='cancelar-ed'){S.editEd='';render()}
   else if(a==='salvar-ed')salvarEd();
-  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;apagar('edicoes',eid).then(function(){delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()}).catch(function(x){toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)})}
+  else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;if(!travar(b,'Excluindo…'))return;var fim=function(){soltar();delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()};
+    apagar('edicoes',eid).then(fim).catch(function(x){carregar(false).then(function(){if(!S.edicoes[eid])fim();else{soltar(b);toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)}},function(){soltar(b);toast('Não foi possível excluir agora. Tente de novo.',true)})})}
   else if(a==='enviar')enviar();
   else if(a==='nova-ed-painel'){S.editEd='novo';render();var f=$('#e-tit');if(f)f.focus()}
   else if(a==='novo-ev-painel'){S.editEv='novo';render();var g=$('#v-tit');if(g)g.focus()}
@@ -625,7 +632,7 @@ function iniciar(){
     return (S.coord?Promise.resolve():api('ping',{}).then(function(r){S.eu=(r&&r.membro)||null})).then(function(){return carregar(false)});
   }).then(function(){
     carregarCalendario();if(S.coord)carregarPessoas();$('#dot').className='dot ok';$('#st').textContent=S.coord?'Fabio Luiz Iba · sponsor · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
-    setInterval(function(){if(document.hidden||(S.tab!=='chat'&&S.tab!=='geral'))return;carregar(true).then(function(mud){if(mud&&!(S.tab==='geral'&&(S.editEd||S.editEv||S.concluir||S.editProj))){var t=$('#msg'),txt=t?t.value:'',foco=document.activeElement===t;render();var n=$('#msg');if(n){n.value=txt;if(foco)n.focus()}}}).catch(function(){})},3000);
+    setInterval(function(){if(document.hidden||(S.tab!=='chat'&&S.tab!=='geral'))return;carregar(true).then(function(mud){if(mud&&!(S.tab==='geral'&&(S.editEd||S.editEv||S.concluir||S.editProj))){var t=$('#msg'),txt=t?t.value:'',foco=document.activeElement===t;render();var n=$('#msg');if(n){n.value=txt;if(foco)n.focus()}}}).catch(function(){})},4000);
     setInterval(function(){if(document.hidden||S.tab==='chat'||(S.tab==='geral'&&(S.editEd||S.editEv||S.concluir||S.editProj)))return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj&&!S.editEv)render()}).catch(function(){})},5000);
   }).catch(function(e){$('#dot').className='dot bad';$('#st').textContent=(e&&e.message)||'Não foi possível carregar o projeto.';$('#view').innerHTML='<div class="card vazio"><b>Sem acesso</b>'+esc((e&&e.message)||'')+'</div>'});
 }
