@@ -536,7 +536,7 @@ function linhaItem(x){var t=TIPOS_EV[x.tipo]||TIPOS_EV.outro,e=x.ev||{},conc=e.s
    +(conc?'<div style="margin-top:6px;padding:8px 10px;border-radius:10px;background:#F1FAF6;border:1px solid #CDEBDD;white-space:pre-wrap;font-size:13px"><b>Decisões:</b> '+esc(e.decisoes||'')+'<br><small class="mut">registrado em '+br(String(e.concluidaEm||'').slice(0,10))+'</small></div>':'')
    +(S.concluir===x.id?'<div style="margin-top:8px"><textarea id="dec-txt" placeholder="O que ficou definido nesta reunião (obrigatório)" style="width:100%;min-height:80px;padding:9px 12px;border-radius:10px;border:1px solid var(--line);font:inherit"></textarea><p id="dec-err" style="color:var(--bad);font-weight:700;margin:4px 0" hidden></p><div style="display:flex;gap:6px;justify-content:flex-end"><button type="button" class="btn-s" data-acao="cancelar-concluir">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-concluir" data-id="'+esc(x.id)+'">Concluir reunião</button></div></div>':'')
    +'</div>';
-  if(x.id&&S.coord&&S.concluir!==x.id)h+='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(x.tipo==='reuniao'&&!conc?'<button type="button" class="btn-s" data-acao="concluir" data-id="'+esc(x.id)+'">Concluir</button>':'')+(!conc?'<button type="button" class="btn-s" data-acao="convocar" data-id="'+esc(x.id)+'">Convocar</button>':'')+'</div>';
+  if(x.id&&S.coord&&S.concluir!==x.id)h+='<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+(x.tipo==='reuniao'&&!conc?'<button type="button" class="btn-s" data-acao="concluir" data-id="'+esc(x.id)+'">Concluir</button>':'')+(!conc?'<button type="button" class="btn-s" data-acao="convocar" data-id="'+esc(x.id)+'">Convocar</button>':'')+'<button type="button" class="btn-s" data-acao="editar-ev" data-id="'+esc(x.id)+'">Editar</button><button type="button" class="btn-s perigo" data-acao="excluir-ev" data-id="'+esc(x.id)+'">Excluir</button></div>';
   return h+'</div>'}
 function concluirReuniao(id){
   var e=S.eventos[id],t=$('#dec-txt'),dec=(t&&t.value||'').trim(),err=$('#dec-err'),bt=document.querySelector('[data-acao="salvar-concluir"]');
@@ -597,6 +597,9 @@ document.addEventListener('click',function(ev){
   else if(a==='apagar-ed'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var eid=b.dataset.id;if(!travar(b,'Excluindo…'))return;var fim=function(){soltar();delete S.edicoes[eid];if(S.edSel===eid)S.edSel='';if(S.editEd===eid)S.editEd='';toast('Edição excluída. As reuniões já registradas continuam na agenda do projeto.');render()};
     apagar('edicoes',eid).then(fim).catch(function(x){carregar(false).then(function(){if(!S.edicoes[eid])fim();else{soltar(b);toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)}},function(){soltar(b);toast('Não foi possível excluir agora. Tente de novo.',true)})})}
   else if(a==='enviar')enviar();
+  else if(a==='excluir-ev'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var vid=b.dataset.id;if(!travar(b,'Excluindo…'))return;
+    var ok=function(){soltar();delete S.eventos[vid];if(S.editEv===vid)S.editEv='';toast('Agendamento excluído.');render()};
+    apagar('eventos',vid).then(ok).catch(function(x){carregar(false).then(function(){if(!S.eventos[vid])ok();else{soltar(b);toast('Não foi possível excluir: '+((x&&x.message)||'erro'),true)}},function(){soltar(b);toast('Não foi possível excluir agora. Tente de novo.',true)})})}
   else if(a==='nova-ed-painel'){S.editEd='novo';render();var f=$('#e-tit');if(f)f.focus()}
   else if(a==='novo-ev-painel'){S.editEv='novo';render();var g=$('#v-tit');if(g)g.focus()}
   else if(a==='concluir'){S.concluir=b.dataset.id;render();var dt=$('#dec-txt');if(dt)dt.focus()}
