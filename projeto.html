@@ -288,8 +288,8 @@ var PID=(new URLSearchParams(location.search).get('p')||'').replace(/[^\w-]/g,''
 var MEMBRO=(/[#&]m=([\w-]+\.[\w-]+\.[a-z0-9]+)/i.exec(location.hash)||[])[1]||'';
 try{if(MEMBRO)localStorage.setItem('gfi_membro_'+PID,MEMBRO);else MEMBRO=localStorage.getItem('gfi_membro_'+PID)||''}catch(e){}
 var S={edSel:'',concluir:'',eventos:{},mes:'',editEv:'',diaNovo:'',tab:'geral',coord:false,eu:null,proj:null,edicoes:{},chat:{},editProj:false,editEd:'',ultimoChat:0};
-var STATUS=[['planejada','Planejada'],['producao','Em produção'],['gravada','Gravada'],['publicada','Publicada']];
-var STATUS_T={};STATUS.forEach(function(x){STATUS_T[x[0]]=x[1]});
+var STATUS=[['planejada','Em planejamento'],['producao','Em produção'],['publicada','Publicado']];
+var STATUS_T={gravada:'Em produção'};STATUS.forEach(function(x){STATUS_T[x[0]]=x[1]});
 
 /* ---------- dados ---------- */
 function mapa(lista){var m={};(lista||[]).forEach(function(x){m[x.id]=Object.assign({id:x.id},x.data||{})});return m}
@@ -388,7 +388,7 @@ function htmlFormEd(){
    +'<label>Convidado(s)<input id="e-conv" value="'+esc(e.convidados||'')+'" placeholder="Nome(s) do convidado"></label>'
    +'<label>Data de gravação<input id="e-grav" type="date" value="'+esc(e.dataGravacao||'')+'"></label>'
    +'<label>Data de publicação<input id="e-pub" type="date" value="'+esc(e.dataPublicacao||'')+'"></label>'
-   +'<label>Situação<select id="e-st">'+STATUS.map(function(s){return '<option value="'+s[0]+'"'+(e.status===s[0]?' selected':'')+'>'+s[1]+'</option>'}).join('')+'</select></label>'
+   +'<label>Situação<select id="e-st">'+STATUS.map(function(s){return '<option value="'+s[0]+'"'+((e.status==='gravada'?'producao':e.status)===s[0]?' selected':'')+'>'+s[1]+'</option>'}).join('')+'</select></label>'
    +'<label class="full">Link do episódio<input id="e-link" value="'+esc(e.link||'')+'" placeholder="https://"></label>'
    +'<div class="full"><div style="font-weight:700;font-size:13px;margin-bottom:6px">Equipe desta edição e o que cada um faz</div>'
    +(membros().length?membros().map(function(m){var on=m.id in eqSel;return '<div class="mem-lin"><label><input type="checkbox" class="e-mem" value="'+esc(m.id)+'"'+(on?' checked':'')+'><span>'+esc(m.nome)+'</span></label><input class="e-fun" data-id="'+esc(m.id)+'" value="'+esc(on?eqSel[m.id]:(m.funcao||''))+'" placeholder="Função nesta edição"></div>'}).join(''):'<p class="mut">Cadastre a equipe em "Editar projeto".</p>')+'</div>'
