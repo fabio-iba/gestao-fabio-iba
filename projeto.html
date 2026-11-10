@@ -290,7 +290,14 @@ function carregar(soChat){
 }
 function salvar(col,id,data){return GFI.api('set',{app:'proj',col:col,id:id,data:data})}
 function apagar(col,id){return GFI.api('delete',{app:'proj',col:col,id:id})}
-function membros(){var p=S.proj||{};return (p.coordenador?[Object.assign({coord:true},p.coordenador)]:[]).concat(p.equipe||[])}
+// Fabio Iba é sponsor de todos os projetos: entra sempre na equipe, nas agendas e nas convocações
+var SPONSOR={id:'sponsor',nome:'Fabio Luiz Iba',email:'fabio.iba@unicesumar.edu.br',funcao:'Sponsor do projeto',sponsor:true};
+var TUTORA={id:'tutora',nome:'Nayara Emi Shimada',email:'nayara.shimada@unicesumar.edu.br',funcao:'Tutora',tutora:true};
+function membros(){var p=S.proj||{};return [SPONSOR,TUTORA].concat(p.coordenador&&p.coordenador.nome?[Object.assign({coord:true},p.coordenador)]:[]).concat(p.equipe||[])}
+var PESSOAS=[];
+function carregarPessoas(){return GFI.api('listMany',{app:'gd',cols:['pessoas']}).then(function(r){PESSOAS=((r&&r.pessoas)||[]).map(function(x){return x.data||{}}).filter(function(p){return /^(formador|regente|mediador)$/.test(p.papel)&&!p.externo&&p.nome}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}).catch(function(){})}
+function emailDe(nome){var n=String(nome||'').trim().toLowerCase(),p=PESSOAS.filter(function(x){return x.nome.toLowerCase()===n})[0];return p?p.email||'':''}
+function listaPessoas(){return '<datalist id="lista-pessoas">'+PESSOAS.map(function(p){return '<option value="'+esc(p.nome)+'">'+esc(p.papel)+'</option>'}).join('')+'</datalist>'}
 function nomeMembro(id){var m=membros().filter(function(x){return x.id===id})[0];return m?m.nome:''}
 
 /* ---------- telas ---------- */
@@ -306,8 +313,8 @@ function render(){
   if(S.tab==='chat'){var box=$('.chat-msgs');if(box)box.scrollTop=box.scrollHeight}
 }
 function logoHtml(p){return '<div class="pj-logo">'+(p.logo?'<img src="'+esc(p.logo)+'" alt="Logo '+esc(p.nome)+'">':esc(iniciais(p.nome)))+'</div>'}
-function pessoaHtml(m){var link=S.coord&&m.id&&!m.coord?location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id):'';
-  return '<div class="pessoa"><span class="av">'+esc(iniciais(m.nome))+'</span><div style="flex:1"><b>'+esc(m.nome||'—')+(m.coord?' <span class="pill publicada">coordenador(a)</span>':'')+'</b><small>'+esc(m.funcao||'')+'</small>'+(m.email?'<br><small>'+esc(m.email)+'</small>':'')
+function pessoaHtml(m){var link=S.coord&&m.id&&!m.coord&&!m.sponsor?location.origin+location.pathname+'?p='+PID+'#m='+PID+'.'+m.id+'.'+codMembro(PID,m.id):'';
+  return '<div class="pessoa"><span class="av">'+esc(iniciais(m.nome))+'</span><div style="flex:1"><b>'+esc(m.nome||'—')+(m.sponsor?' <span class="pill gravada">sponsor</span>':'')+(m.tutora?' <span class="pill producao">tutora</span>':'')+(m.coord?' <span class="pill publicada">coordenador(a)</span>':'')+'</b><small>'+esc(m.funcao||'')+'</small>'+(m.email?'<br><small>'+esc(m.email)+'</small>':'')
    +(link?'<div style="margin-top:6px"><button type="button" class="btn-s" data-copiar="'+esc(link)+'" style="padding:4px 10px;font-size:12px">Copiar link de acesso</button></div>':'')+'</div></div>'}
 function proximas(){var h=hoje();return Object.keys(S.edicoes).map(function(k){return S.edicoes[k]}).filter(function(e){return e.dataPublicacao&&e.dataPublicacao>=h&&e.status!=='publicada'}).sort(function(a,b){return a.dataPublicacao.localeCompare(b.dataPublicacao)})}
 function htmlGeral(){
@@ -365,13 +372,13 @@ function salvarEd(){
 }
 function htmlFormProj(){
   var p=S.proj,c=p.coordenador||{},eq=(p.equipe||[]).slice(),l=p.links||{};
-  var linhaEq=function(m,i){return '<div class="frm eq-lin" data-id="'+esc(m.id||'')+'" style="margin:6px 0;align-items:end"><label>Nome<input class="q-nome" value="'+esc(m.nome||'')+'"></label><label>E-mail<input class="q-email" value="'+esc(m.email||'')+'"></label><label>O que realiza no projeto<input class="q-fun" value="'+esc(m.funcao||'')+'" placeholder="Ex.: roteiro, edição, apresentação"></label><div><button type="button" class="btn-s perigo" data-acao="tirar-membro">Remover</button></div></div>'};
+  var linhaEq=function(m,i){return '<div class="frm eq-lin" data-id="'+esc(m.id||'')+'" style="margin:6px 0;align-items:end"><label>Nome<input class="q-nome" list="lista-pessoas" placeholder="Escolha ou digite" value="'+esc(m.nome||'')+'"></label><label>E-mail<input class="q-email" value="'+esc(m.email||'')+'"></label><label>O que realiza no projeto<input class="q-fun" value="'+esc(m.funcao||'')+'" placeholder="Ex.: roteiro, edição, apresentação"></label><div><button type="button" class="btn-s perigo" data-acao="tirar-membro">Remover</button></div></div>'};
   return '<div class="card box" style="border:2px solid var(--accent)"><h3>Editar projeto</h3><div class="frm">'
    +'<label class="full">Nome do projeto<input id="p-nome" value="'+esc(p.nome||'')+'"></label>'
    +'<label class="full">Descrição<textarea id="p-desc">'+esc(p.descricao||'')+'</textarea></label>'
    +'<div class="full" style="display:flex;gap:14px;align-items:center">'+logoHtml(p)+'<div><div style="font-weight:700;font-size:13px">Logo do projeto</div><input id="p-logo" type="file" accept="image/*" style="margin-top:6px">'+(p.logo?' <button type="button" class="btn-s perigo" data-acao="tirar-logo">Remover logo</button>':'')+'</div></div>'
    +'<label>Spotify<input id="p-spotify" value="'+esc(l.spotify||'')+'" placeholder="https://"></label><label>YouTube<input id="p-youtube" value="'+esc(l.youtube||'')+'" placeholder="https://"></label><label>Instagram<input id="p-instagram" value="'+esc(l.instagram||'')+'" placeholder="https://"></label><label>Site<input id="p-site" value="'+esc(l.site||'')+'" placeholder="https://"></label></div>'
-   +'<h3 style="margin-top:16px">Coordenador(a) do projeto</h3><div class="frm"><label>Nome<input id="c-nome" value="'+esc(c.nome||'')+'"></label><label>E-mail<input id="c-email" value="'+esc(c.email||'')+'"></label><label>O que realiza<input id="c-fun" value="'+esc(c.funcao||'Coordenação geral')+'"></label></div>'
+   +listaPessoas()+'<h3 style="margin-top:16px">Sponsor e tutora (fixos)</h3><p class="mut">Fabio Luiz Iba (fabio.iba@unicesumar.edu.br) é sponsor e a tutora Nayara Emi Shimada (nayara.shimada@unicesumar.edu.br) participa de todos os projetos; os dois entram automaticamente na equipe, nas agendas e nas convocações.</p><h3 style="margin-top:16px">Coordenador(a) do projeto</h3><div class="frm"><label>Nome<input id="c-nome" list="lista-pessoas" placeholder="Escolha ou digite" value="'+esc(c.nome||'')+'"></label><label>E-mail<input id="c-email" value="'+esc(c.email||'')+'"></label><label>O que realiza<input id="c-fun" value="'+esc(c.funcao||'Coordenação geral')+'"></label></div>'
    +'<h3 style="margin-top:16px">Equipe</h3><div id="eq-lista">'+eq.map(linhaEq).join('')+'</div><button type="button" class="btn-s" data-acao="mais-membro">+ Adicionar membro</button>'
    +'<p id="p-err" style="color:var(--bad);font-weight:700" hidden></p><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px"><button type="button" class="btn-s" data-acao="cancelar-proj">Cancelar</button><button type="button" class="btn-p" data-acao="salvar-proj">Salvar projeto</button></div></div>';
 }
@@ -389,17 +396,17 @@ function salvarProj(){
 }
 function htmlChat(){
   var ms=Object.keys(S.chat).map(function(k){return S.chat[k]}).sort(function(a,b){return String(a.em).localeCompare(String(b.em))});
-  var meuId=S.coord?'coord':(S.eu&&S.eu.id),dia='',h='';
+  var meuId=S.coord?'sponsor':(S.eu&&S.eu.id),dia='',h='';
   ms.forEach(function(m){var d=diaLocal(m.em);if(d!==dia){dia=d;h+='<div class="dia">'+br(d)+'</div>'}
     var eu=m.autorId===meuId;h+='<div class="msg'+(eu?' eu':'')+'">'+(eu?'':'<div class="au">'+esc(m.autor||nomeMembro(m.autorId)||'Membro')+'</div>')+'<div class="tx">'+esc(m.texto)+'</div><div class="hr">'+hora(m.em)+'</div></div>'});
-  var quem=S.coord?((S.proj.coordenador&&S.proj.coordenador.nome)||'Coordenação'):(S.eu?S.eu.nome:'');
+  var quem=S.coord?SPONSOR.nome+' (sponsor)':(S.eu?S.eu.nome:'');
   return '<div class="card chat" style="padding:0;overflow:hidden"><div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>Chat da equipe · '+esc(S.proj.nome)+'</b><small class="mut">Você está como: '+esc(quem||'—')+' · atualiza a cada 5 segundos</small></div>'
    +'<div class="chat-msgs">'+(h||'<p class="mut" style="margin:auto">Nenhuma mensagem ainda. Comece a conversa.</p>')+'</div>'
    +(S.coord||S.eu?'<div class="chat-in"><textarea id="msg" placeholder="Escreva uma mensagem (Enter envia, Shift+Enter quebra a linha)"></textarea><button type="button" class="btn-p" data-acao="enviar">Enviar</button></div>':'<div class="chat-in"><p class="mut">Para conversar, abra o link de acesso enviado pela coordenação.</p></div>')+'</div>';
 }
 function enviar(){
   var t=$('#msg'),txt=(t&&t.value||'').trim();if(!txt)return;t.value='';
-  var p=S.coord?salvar('chat',uid('c'),{projetoId:PID,autorId:'coord',autor:(S.proj.coordenador&&S.proj.coordenador.nome)||'Coordenação',texto:txt,em:new Date().toISOString()}):api('chat',{texto:txt});
+  var p=S.coord?salvar('chat',uid('c'),{projetoId:PID,autorId:'sponsor',autor:SPONSOR.nome,texto:txt,em:new Date().toISOString()}):api('chat',{texto:txt});
   p.then(function(){return carregar(true)}).then(function(){render();var n=$('#msg');if(n)n.focus()}).catch(function(e){toast('Mensagem não enviada: '+((e&&e.message)||'erro'),true);if(t)t.value=txt});
 }
 
@@ -466,7 +473,7 @@ function convocarEv(id){
   if(!ms.length){toast('Nenhum participante com e-mail cadastrado.',true);return}
   var t=TIPOS_EV[e.tipo]||TIPOS_EV.outro,assunto=S.proj.nome+' · '+(e.titulo||t[0])+' · '+br(e.data)+(e.hora?' às '+e.hora:'');
   var corpo='Olá, equipe!\n\nFica convocada a '+t[0].toLowerCase()+' do projeto '+S.proj.nome+':\n\n'+(e.titulo?'• '+e.titulo+'\n':'')+'• Data: '+br(e.data)+'\n'+(e.hora?'• Horário: '+e.hora+(e.fim?' às '+e.fim:'')+'\n':'')+(e.local?'• Local/link: '+e.local+'\n':'')+(e.pauta?'\nPauta:\n'+e.pauta+'\n':'')
-    +'\nAcompanhe o projeto e converse com a equipe pelo seu link de acesso ao painel.\n\nAtenciosamente,\n'+((S.proj.coordenador&&S.proj.coordenador.nome)||'Coordenação do projeto');
+    +'\nAcompanhe o projeto e converse com a equipe pelo seu link de acesso ao painel.\n\nAtenciosamente,\nProf. Fabio Luiz Iba\nSponsor do projeto · Coordenador de Curso EAD\nfabio.iba@unicesumar.edu.br';
   var url='https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(ms.map(function(m){return m.email}).join(';'))+'&subject='+encodeURIComponent(assunto)+'&body='+encodeURIComponent(corpo);
   window.open(url,'_blank','noopener');
   toast('E-mail de convocação aberto no Outlook com '+ms.length+' participantes.');
@@ -492,7 +499,7 @@ document.addEventListener('click',function(ev){
   if(a==='editar-proj'){S.editProj=true;LOGO_NOVA=null;render()}
   else if(a==='cancelar-proj'){S.editProj=false;render()}
   else if(a==='salvar-proj')salvarProj();
-  else if(a==='mais-membro'){var d=document.createElement('div');d.innerHTML='<div class="frm eq-lin" data-id="" style="margin:6px 0;align-items:end"><label>Nome<input class="q-nome"></label><label>E-mail<input class="q-email"></label><label>O que realiza no projeto<input class="q-fun" placeholder="Ex.: roteiro, edição, apresentação"></label><div><button type="button" class="btn-s perigo" data-acao="tirar-membro">Remover</button></div></div>';$('#eq-lista').appendChild(d.firstChild);var q=$('#eq-lista').lastChild.querySelector('.q-nome');if(q)q.focus()}
+  else if(a==='mais-membro'){var d=document.createElement('div');d.innerHTML='<div class="frm eq-lin" data-id="" style="margin:6px 0;align-items:end"><label>Nome<input class="q-nome" list="lista-pessoas" placeholder="Escolha ou digite"></label><label>E-mail<input class="q-email"></label><label>O que realiza no projeto<input class="q-fun" placeholder="Ex.: roteiro, edição, apresentação"></label><div><button type="button" class="btn-s perigo" data-acao="tirar-membro">Remover</button></div></div>';$('#eq-lista').appendChild(d.firstChild);var q=$('#eq-lista').lastChild.querySelector('.q-nome');if(q)q.focus()}
   else if(a==='tirar-membro'){b.closest('.eq-lin').remove()}
   else if(a==='tirar-logo'){S.proj.logo='';LOGO_NOVA=null;b.remove();var lg=document.querySelector('.pj-logo');if(lg)lg.textContent=iniciais(S.proj.nome)}
   else if(a==='nova-ed'){S.editEd='novo';render();var f=$('#e-tit');if(f)f.focus()}
@@ -511,6 +518,10 @@ document.addEventListener('click',function(ev){
   else if(a==='apagar-ev'){if(!b.dataset.conf){b.dataset.conf='1';b.textContent='Confirmar exclusão';return}var id=S.editEv;apagar('eventos',id).then(function(){delete S.eventos[id];S.editEv='';toast('Agendamento excluído.');render()})}
 });
 document.addEventListener('change',function(ev){if(ev.target.id==='p-logo'&&ev.target.files[0])lerLogo(ev.target.files[0])});
+// ao escolher o nome na lista, o e-mail cadastrado nos painéis entra sozinho
+document.addEventListener('input',function(ev){var t=ev.target,em=emailDe(t.value);if(!em)return;
+  if(t.id==='c-nome'){var c=$('#c-email');if(c)c.value=em}
+  else if(t.classList&&t.classList.contains('q-nome')){var l=t.closest('.eq-lin'),e=l&&l.querySelector('.q-email');if(e)e.value=em}});
 document.addEventListener('keydown',function(ev){if(ev.target.id==='msg'&&ev.key==='Enter'&&!ev.shiftKey){ev.preventDefault();enviar()}});
 
 /* ---------- início ---------- */
@@ -523,7 +534,7 @@ function iniciar(){
     if(!S.coord&&!MEMBRO)return Promise.reject({message:'Abra o link de acesso enviado pela coordenação do projeto.'});
     return (S.coord?Promise.resolve():api('ping',{}).then(function(r){S.eu=(r&&r.membro)||null})).then(function(){return carregar(false)});
   }).then(function(){
-    carregarCalendario();$('#dot').className='dot ok';$('#st').textContent=S.coord?'Coordenação · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
+    carregarCalendario();if(S.coord)carregarPessoas();$('#dot').className='dot ok';$('#st').textContent=S.coord?'Fabio Luiz Iba · sponsor · você pode editar o projeto':('Olá, '+((S.eu&&S.eu.nome)||'membro')+' · acesso da equipe');render();
     setInterval(function(){if(document.hidden)return;carregar(S.tab!=='geral'&&S.tab!=='edicoes'?true:false).then(function(mud){if(S.tab==='chat'&&mud){var t=$('#msg'),txt=t?t.value:'';render();var n=$('#msg');if(n){n.value=txt;n.focus()}}else if(S.tab!=='chat'&&!S.editEd&&!S.editProj&&!S.editEv)render()}).catch(function(){})},5000);
   }).catch(function(e){$('#dot').className='dot bad';$('#st').textContent=(e&&e.message)||'Não foi possível carregar o projeto.';$('#view').innerHTML='<div class="card vazio"><b>Sem acesso</b>'+esc((e&&e.message)||'')+'</div>'});
 }

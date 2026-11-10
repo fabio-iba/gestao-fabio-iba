@@ -89,7 +89,7 @@ function tratarMembro(req) {
   var proj = m[1], mid = m[2];
   var p = listMany('proj', ['projetos']).projetos.filter(function (d) { return d.id === proj; })[0];
   if (!p) return { ok: false, code: 'not_found', message: 'Projeto não encontrado.' };
-  var membro = ((p.data && p.data.equipe) || []).concat(p.data && p.data.coordenador ? [p.data.coordenador] : []).filter(function (x) { return x && x.id === mid; })[0];
+  var membro = ((p.data && p.data.equipe) || []).concat(p.data && p.data.coordenador ? [p.data.coordenador] : []).concat([{ id: 'tutora', nome: 'Nayara Emi Shimada', email: 'nayara.shimada@unicesumar.edu.br', funcao: 'Tutora' }]).filter(function (x) { return x && x.id === mid; })[0];
   if (!membro) return { ok: false, code: 'not_granted', message: 'Este link não pertence mais à equipe do projeto.' };
   if (req.op === 'ping') return { ok: true, data: { membro: membro } };
   if (req.op === 'listMany') {
