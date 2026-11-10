@@ -462,7 +462,7 @@ function pctBar(v,max){if(!max)return '';var p=Math.min(100,Math.round(v/max*100
 function situacaoCarga(p,c){var ct=contratoDe(p);
   if(ct===null)return ehConvidado(p)?'<span class="pill" style="background:#ECE9FC;color:#5B4BD6">Convidado</span>':'<span class="pill warn">Sem contrato</span>';if(c.total>ct)return '<span class="pill bad">Acima (+'+(c.total-ct)+')</span>';
   if(c.total===ct)return '<span class="pill ok">Completa</span>';return '<span class="pill warn">Faltam '+(ct-c.total)+'</span>'}
-function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||(S.fPapel==='conv'?ehConvidado(p):p.papel===S.fPapel&&!ehConvidado(p)))&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
+function filtroProfs(){var b=norm(S.fBusca);return profs().filter(function(p){return (!S.fPapel||(S.fPapel==='conv'?ehConvidado(p):!ehConvidado(p)))&&(!b||norm(p.nome).indexOf(b)>=0||norm(p.email).indexOf(b)>=0)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')})}
 function ehConvidado(p){return !!(p&&p.externo)}
 function tagConv(p){return ehConvidado(p)?' <span class="pill" style="background:#ECE9FC;color:#5B4BD6">convidado · outra coordenação</span>':''}
 function lnkProf(p){return '<button type="button" data-ficha="'+esc(p.id)+'" style="border:0;background:none;padding:0;font:inherit;font-weight:700;color:var(--accent);cursor:pointer;text-align:left">'+esc(p.nome)+'</button>'}
@@ -493,7 +493,7 @@ function htmlPLista(){
   if(S.ficha)return htmlFicha(S.ficha);
   var ps=filtroProfs();
   var h='<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px"><input id="p-busca" placeholder="Buscar professor" value="'+esc(S.fBusca)+'" style="padding:9px 12px;border-radius:10px;border:1px solid var(--line);min-width:240px;font:inherit">'
-   +[['','Todos'],['formador','Formadores'],['regente','Regentes'],['conv','Convidados']].map(function(o){return '<button type="button" data-fp="'+o[0]+'" style="border:1px solid var(--line);border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;'+(S.fPapel===o[0]?'background:var(--accent);color:#fff;border-color:var(--accent)':'background:#fff')+'">'+o[1]+'</button>'}).join('')+'</div>';
+   +[['','Todos'],['minha','Formadores e regentes'],['conv','Convidados']].map(function(o){return '<button type="button" data-fp="'+o[0]+'" style="border:1px solid var(--line);border-radius:99px;padding:7px 14px;font:inherit;font-weight:700;cursor:pointer;'+(S.fPapel===o[0]?'background:var(--accent);color:#fff;border-color:var(--accent)':'background:#fff')+'">'+o[1]+'</button>'}).join('')+'</div>';
   h+='<div class="tw"><table><thead><tr><th style="text-align:left">Professor</th><th>Contrato</th><th>Aulas comigo</th><th>Outras coord.</th><th>Total / contrato</th><th>Situação</th><th>Entregas</th><th>Score</th><th style="text-align:left">NDE / Colegiado</th></tr></thead><tbody>';
   ps.forEach(function(p){var c=cargaDe(p.id),n=contratoDe(p),e=resumoEnt(p.id),m=membroReg(p),lm=limiteComigo(p);
     h+='<tr><td>'+lnkProf(p)+'<br><small class="mut">'+(p.papel==='regente'?'Regente':'Formador')+'</small>'+tagConv(p)+'</td>'
