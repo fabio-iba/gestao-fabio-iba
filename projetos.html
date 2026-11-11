@@ -283,7 +283,8 @@ $('#novo').onclick=function(){var n='Novo projeto',id='proj-'+Date.now().toStrin
   GFI.api('set',{app:'proj',col:'projetos',id:id,data:{nome:n,tipo:'Projeto',descricao:'',coordenador:{id:'coord',nome:'',email:'',funcao:'Coordenação geral'},equipe:[],links:{},criadoEm:new Date().toISOString()}})
    .then(function(){location.href='projeto.html?p='+encodeURIComponent(id)+'&novo=1'}).catch(function(e){toast('Não foi possível criar: '+((e&&e.message)||'erro'),true)})};
 carregar().catch(function(e){$('#dot').className='dot bad';$('#st').textContent='Não foi possível ler os projetos: '+((e&&e.message)||'erro')});
-setInterval(function(){if(!document.hidden)carregar().catch(function(){})},30000);
+var _ua=Date.now();['mousemove','keydown','click','scroll'].forEach(function(ev){document.addEventListener(ev,function(){_ua=Date.now()},{passive:true})});
+setInterval(function(){if(!document.hidden&&Date.now()-_ua<600000)carregar().catch(function(){})},60000);
 window.addEventListener('pageshow',function(){carregar().catch(function(){})});
 })();
 </script>
