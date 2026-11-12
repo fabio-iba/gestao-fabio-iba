@@ -150,7 +150,9 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
 .cr-nums div{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;padding:12px 14px}
 .cr-nums b{display:block;font-size:22px}.cr-nums span{font-size:12.5px;color:#64748B}
 .cr-ano{margin-top:18px}.cr-ano h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin:0 0 8px}
-.cr-tab{width:100%;border-collapse:collapse;font-size:13.5px}
+.cr-wrap{overflow-x:auto;margin-top:8px}.cr-tab{width:100%;min-width:720px;border-collapse:collapse;font-size:13.5px;table-layout:fixed}.cr-tab td,.cr-tab th{text-align:left;vertical-align:middle!important;overflow-wrap:anywhere}.cr-tab tbody tr:hover{background:#F8FAFC}
+.cr-mods{align-items:center}.cr-mods span{font-size:13px;color:#64748B;font-weight:700;margin-right:4px}
+.cr-top{align-items:center!important}.cr-nums div{display:flex;flex-direction:column;justify-content:center;min-height:76px}
 .cr-tab th{text-align:left;font-size:12px;color:#64748B;font-weight:700;padding:8px 10px;border-bottom:1px solid #E2E8F0}
 .cr-tab td{padding:10px;border-bottom:1px solid #F1F5F9;vertical-align:top}
 .cr-tab td small{display:block;color:#94A3B8}
@@ -481,7 +483,7 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     var box=$('#curso-resumo'),c=cursoDe(sel);
     if(!c){box.innerHTML='<div class="cr-top"><div><h2>'+esc(sel)+'</h2><p>Curso não encontrado na Gestão Docente.</p></div><button class="cr-fechar" data-cr="fechar">Fechar</button></div>';return}
     var ds=Object.keys(G.D).map(function(k){return G.D[k]}).filter(function(d){return d.cursoId===c.id});
-    var mods=ds.map(function(d){return d.modulo}).filter(Boolean).filter(function(x,i,a){return a.indexOf(x)===i}).sort();
+    var mods=Object.keys(G.D).map(function(k){return G.D[k].modulo}).filter(Boolean).filter(function(x,i,a){return a.indexOf(x)===i}).sort();
     if(!mod||mods.indexOf(mod)<0)mod=mods[mods.length-1]||'';
     var dm=ds.filter(function(d){return d.modulo===mod}).sort(function(a,b){return String(a.ano).localeCompare(String(b.ano))||(a.ordem||0)-(b.ordem||0)});
     var al=Object.keys(G.A).map(function(k){return G.A[k]});
@@ -492,12 +494,12 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     var linhas=dm.map(function(d){var as=al.filter(function(a){return d.ids.indexOf(a.disciplinaId)>=0}).filter(function(a,i,arr){return arr.findIndex(function(x){return x.professorId===a.professorId})===i}),pr=as.map(function(a){if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1});var p=G.P[a.professorId]||{};return esc(p.nome||'')+(p.papel?'<small>'+esc(p.papel)+'</small>':'')}).filter(Boolean),
       md=[].concat.apply([],as.map(function(a){return a.mediadorIds||[]})).filter(function(x,i,arr){return arr.indexOf(x)===i}).map(nomeP).filter(Boolean);
       if(!pr.length)semProf++;
-      return {ano:d.ano||'—',h:'<tr><td>'+(d.ordem?d.ordem+'ª':'—')+'</td><td><b>'+esc(d.nome)+'</b>'+(d.ids.length>1?'<small>sinérgica'+(d.anos.length>1?' · '+d.anos.map(esc).join(' e ')+' ano':'')+(d.matrizes.length>1?' · matrizes '+d.matrizes.map(esc).join(', '):'')+'</small>':'')+'</td><td>'+esc(d.hora||'—')+'</td><td>'+(pr.join('<br>')||'<span class="cr-falta">sem professor</span>')+'</td><td>'+(md.map(esc).join(', ')||'—')+'</td></tr>'}});
+      return {ano:d.ano||'—',h:'<tr><td>'+esc(d.anos.join(' e '))+'</td><td>'+(d.ordem?d.ordem+'ª':'—')+'</td><td><b>'+esc(d.nome)+'</b>'+(d.ids.length>1?'<small>sinérgica'+(d.anos.length>1?' · '+d.anos.map(esc).join(' e ')+' ano':'')+(d.matrizes.length>1?' · matrizes '+d.matrizes.map(esc).join(', '):'')+'</small>':'')+'</td><td>'+esc(d.hora||'—')+'</td><td>'+(pr.join('<br>')||'<span class="cr-falta">sem professor</span>')+'</td><td>'+(md.map(esc).join(', ')||'—')+'</td></tr>'}});
     var anos={};linhas.forEach(function(l){(anos[l.ano]=anos[l.ano]||[]).push(l.h)});
     box.innerHTML='<div class="cr-top"><div><h2>'+esc(c.nome)+'</h2><p>Resumo do curso · '+esc(mod||'sem módulo')+'</p></div><button class="cr-fechar" data-cr="fechar">✕ Fechar</button></div>'
-      +(mods.length>1?'<div class="cr-mods">'+mods.map(function(x){return '<button data-cr-mod="'+esc(x)+'" class="'+(x===mod?'on':'')+'">'+esc(x)+'</button>'}).join('')+'</div>':'')
+      +(mods.length?'<div class="cr-mods"><span>Módulo:</span>'+mods.map(function(x){return '<button data-cr-mod="'+esc(x)+'" class="'+(x===mod?'on':'')+'">'+esc(x)+'</button>'}).join('')+'</div>':'')
       +'<div class="cr-nums"><div><b>'+dm.length+'</b><span>disciplinas no módulo</span></div><div><b>'+Object.keys(profs).length+'</b><span>professores</span></div><div><b>'+Object.keys(meds).length+'</b><span>mediadores</span></div><div><b class="'+(semProf?'cr-falta':'')+'">'+semProf+'</b><span>disciplinas sem professor</span></div></div>'
-      +(dm.length?Object.keys(anos).sort().map(function(a){return '<div class="cr-ano"><h3>'+esc(a)+' ano</h3><table class="cr-tab"><thead><tr><th>Ordem</th><th>Disciplina</th><th>Horário</th><th>Professor</th><th>Mediador(es)</th></tr></thead><tbody>'+anos[a].join('')+'</tbody></table></div>'}).join(''):'<p style="color:#64748B">Nenhuma disciplina cadastrada para este módulo.</p>')
+      +(dm.length?'<div class="cr-wrap"><table class="cr-tab"><colgroup><col style="width:9%"><col style="width:8%"><col style="width:33%"><col style="width:10%"><col style="width:20%"><col style="width:20%"></colgroup><thead><tr><th>Ano</th><th>Ordem</th><th>Disciplina</th><th>Horário</th><th>Professor</th><th>Mediador(es)</th></tr></thead><tbody>'+Object.keys(anos).sort().map(function(a){return anos[a].join('')}).join('')+'</tbody></table></div>':'<p style="color:#64748B">Nenhuma disciplina cadastrada para este módulo.</p>')
       +'<p style="margin:16px 0 0;font-size:13px"><a href="gestao-docente.html">Abrir Gestão das Entregas →</a> · <a href="gestao-equipe.html">Abrir Gestão Docente →</a></p>';
   }
   function abrir(nome,li){sel=nome;[].forEach.call(document.querySelectorAll('#lista-cursos li'),function(x){x.classList.toggle('on',x===li)});
