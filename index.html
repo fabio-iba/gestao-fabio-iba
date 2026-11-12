@@ -485,11 +485,14 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     if(!mod||mods.indexOf(mod)<0)mod=mods[mods.length-1]||'';
     var dm=ds.filter(function(d){return d.modulo===mod}).sort(function(a,b){return String(a.ano).localeCompare(String(b.ano))||(a.ordem||0)-(b.ordem||0)});
     var al=Object.keys(G.A).map(function(k){return G.A[k]});
+    // disciplinas sinérgicas (mesmo nome em matrizes/anos diferentes) aparecem uma vez só
+    var grp={},ordemG=[];dm.forEach(function(d){var k=norm(d.nome);if(!grp[k]){grp[k]=Object.assign({},d,{ids:[d.id],anos:[d.ano],matrizes:d.matriz?[d.matriz]:[]});ordemG.push(k)}else{var g=grp[k];g.ids.push(d.id);if(g.anos.indexOf(d.ano)<0)g.anos.push(d.ano);if(d.matriz&&g.matrizes.indexOf(d.matriz)<0)g.matrizes.push(d.matriz)}});
+    dm=ordemG.map(function(k){return grp[k]});
     var profs={},meds={},semProf=0;
-    var linhas=dm.map(function(d){var as=al.filter(function(a){return a.disciplinaId===d.id}),pr=as.map(function(a){if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1});var p=G.P[a.professorId]||{};return esc(p.nome||'')+(p.papel?'<small>'+esc(p.papel)+'</small>':'')}).filter(Boolean),
-      md=[].concat.apply([],as.map(function(a){return a.mediadorIds||[]})).map(nomeP).filter(Boolean);
+    var linhas=dm.map(function(d){var as=al.filter(function(a){return d.ids.indexOf(a.disciplinaId)>=0}).filter(function(a,i,arr){return arr.findIndex(function(x){return x.professorId===a.professorId})===i}),pr=as.map(function(a){if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1});var p=G.P[a.professorId]||{};return esc(p.nome||'')+(p.papel?'<small>'+esc(p.papel)+'</small>':'')}).filter(Boolean),
+      md=[].concat.apply([],as.map(function(a){return a.mediadorIds||[]})).filter(function(x,i,arr){return arr.indexOf(x)===i}).map(nomeP).filter(Boolean);
       if(!pr.length)semProf++;
-      return {ano:d.ano||'—',h:'<tr><td>'+(d.ordem?d.ordem+'ª':'—')+'</td><td><b>'+esc(d.nome)+'</b>'+(d.matriz?'<small>matriz '+esc(d.matriz)+'</small>':'')+'</td><td>'+esc(d.hora||'—')+'</td><td>'+(pr.join('<br>')||'<span class="cr-falta">sem professor</span>')+'</td><td>'+(md.map(esc).join(', ')||'—')+'</td></tr>'}});
+      return {ano:d.ano||'—',h:'<tr><td>'+(d.ordem?d.ordem+'ª':'—')+'</td><td><b>'+esc(d.nome)+'</b>'+(d.ids.length>1?'<small>sinérgica'+(d.anos.length>1?' · '+d.anos.map(esc).join(' e ')+' ano':'')+(d.matrizes.length>1?' · matrizes '+d.matrizes.map(esc).join(', '):'')+'</small>':'')+'</td><td>'+esc(d.hora||'—')+'</td><td>'+(pr.join('<br>')||'<span class="cr-falta">sem professor</span>')+'</td><td>'+(md.map(esc).join(', ')||'—')+'</td></tr>'}});
     var anos={};linhas.forEach(function(l){(anos[l.ano]=anos[l.ano]||[]).push(l.h)});
     box.innerHTML='<div class="cr-top"><div><h2>'+esc(c.nome)+'</h2><p>Resumo do curso · '+esc(mod||'sem módulo')+'</p></div><button class="cr-fechar" data-cr="fechar">✕ Fechar</button></div>'
       +(mods.length>1?'<div class="cr-mods">'+mods.map(function(x){return '<button data-cr-mod="'+esc(x)+'" class="'+(x===mod?'on':'')+'">'+esc(x)+'</button>'}).join('')+'</div>':'')
