@@ -332,3 +332,18 @@
   function sair() { try { localStorage.removeItem(KEY_LS); } catch (e) {} location.reload(); }
   window.GFI = { entrar: entrar, sair: sair, temChave: function () { return !!lsGet(KEY_LS); }, api: api, trocarChave: trocarChave, imgUrl: imgUrl, db: db };
 })();
+
+/* Botão "casa" de todos os painéis leva à página inicial (index.html) */
+(function () {
+  if (/(^|\/)(index\.html)?$/.test(location.pathname)) return;
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('#btnPainel,[data-act="home"],#btnInicio,.btn-home');
+    if (!b) return;
+    if (window.GFI_PUBLICO && !(window.GFI && GFI.temChave && GFI.temChave())) return; // membro de projeto sem chave: mantém o comportamento
+    e.preventDefault(); e.stopImmediatePropagation();
+    location.href = 'index.html';
+  }, true);
+  document.addEventListener('DOMContentLoaded', function () {
+    [].forEach.call(document.querySelectorAll('#btnPainel,[data-act="home"],#btnInicio,.btn-home'), function (b) { b.title = 'Página inicial'; b.setAttribute('aria-label', 'Página inicial'); });
+  });
+})();
