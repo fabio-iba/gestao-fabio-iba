@@ -130,6 +130,16 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
 .topbar .tools a[href*="drive.google"]{display:none}
 .wrap>.main{margin-top:-12px}
 @media (max-width:860px){.page{grid-template-columns:1fr}.side{position:static;height:auto;padding:18px 16px}.side h4,.side ul{display:none}.side .drive{margin-top:12px}.topbar{padding:20px 16px 0}.busca{width:100%}.wrap{padding:20px 16px 32px}}
+
+/* indicadores em círculo */
+.kpis{display:flex!important;flex-wrap:wrap;gap:28px;justify-content:flex-start}
+.kpi{flex-direction:column!important;align-items:center!important;justify-content:center;text-align:center;width:200px;height:200px;border-radius:50%!important;padding:18px!important;gap:6px!important;border-width:2px!important;border-color:var(--kb)!important}
+.kpi.alerta{border-color:#FDA4AF!important}
+.kpi i{width:40px!important;height:40px!important;border-radius:50%!important}
+.kpi b{font-size:21px!important;margin:2px 0!important}
+.kpi small{font-size:12px!important}
+.kpi span{font-size:11.5px!important;line-height:1.35;max-width:150px;display:-webkit-box!important;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media (max-width:560px){.kpis{justify-content:center}.kpi{width:170px;height:170px}}
 </style>
 <div class="page">
   <aside class="side">
@@ -421,9 +431,9 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     var novas={};Object.keys(C).forEach(function(k){var x=C[k],l='';try{l=localStorage.getItem('gfi_chat_lido_'+x.projetoId)||''}catch(e){}if(P[x.projetoId]&&x.autorId!=='sponsor'&&String(x.em||'')>l)novas[x.projetoId]=(novas[x.projetoId]||0)+1});
     var nTot=Object.keys(novas).reduce(function(s,k){return s+novas[k]},0),nP=Object.keys(novas)[0];
     var lk=function(pid){return 'projeto.html?p='+encodeURIComponent(pid)};
-    var h='<a class="kpi k1'+('')+'" href="'+(prox?lk(prox.projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></i><div><small>Próxima reunião</small><b>'+(prox?br(prox.data)+(prox.hora?' · '+esc(prox.hora):''):'Nenhuma')+'</b><span>'+(prox?esc(prox.titulo||'Reunião')+' — '+esc(P[prox.projetoId].nome):'nada agendado nos projetos')+'</span></div></a>'
-     +'<a class="kpi k2'+(nTot?' alerta':'')+'" href="'+(nP?lk(nP):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></i><div><small>Mensagens novas</small><b>'+(nTot||'Nenhuma')+'</b><span>'+(nTot?Object.keys(novas).map(function(k){return esc(P[k].nome)+' ('+novas[k]+')'}).join(' · '):'chats dos projetos em dia')+'</span></div></a>'
-     +'<a class="kpi k3'+(pend.length?' alerta':'')+'" href="'+(pend[0]?lk(pend[0].projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></i><div><small>Decisões a registrar</small><b>'+(pend.length||'Nenhuma')+'</b><span>'+(pend.length?'reunião(ões) realizada(s) sem as decisões registradas':'todas as reuniões com decisões')+'</span></div></a>';
+    var h='<a class="kpi k1'+('')+'" href="'+(prox?lk(prox.projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></i><div><small>Próxima reunião</small><b>'+(prox?br(prox.data)+(prox.hora?' · '+esc(prox.hora):''):'Nenhuma')+'</b><span>'+(prox?esc(prox.titulo||'Reunião')+' — '+esc(P[prox.projetoId].nome):'nada agendado')+'</span></div></a>'
+     +'<a class="kpi k2'+(nTot?' alerta':'')+'" href="'+(nP?lk(nP):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></i><div><small>Mensagens novas</small><b>'+(nTot||'Nenhuma')+'</b><span>'+(nTot?Object.keys(novas).map(function(k){return esc(P[k].nome)+' ('+novas[k]+')'}).join(' · '):'chats em dia')+'</span></div></a>'
+     +'<a class="kpi k3'+(pend.length?' alerta':'')+'" href="'+(pend[0]?lk(pend[0].projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></i><div><small>Decisões a registrar</small><b>'+(pend.length||'Nenhuma')+'</b><span>'+(pend.length?'reuniões sem decisões':'tudo registrado')+'</span></div></a>';
     var s=document.getElementById('resumo');s.innerHTML=h;s.hidden=false;
   }).catch(function(){});
 })();
