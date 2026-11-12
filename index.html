@@ -131,6 +131,31 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
 .wrap>.main{margin-top:-12px}
 @media (max-width:860px){.page{grid-template-columns:1fr}.side{position:static;height:auto;padding:18px 16px}.side h4,.side ul{display:none}.side .drive{margin-top:12px}.topbar{padding:20px 16px 0}.busca{width:100%}.wrap{padding:20px 16px 32px}}
 
+
+/* resumo do curso */
+.curso-aberto #resumo,.curso-aberto .wrap>.sec,.curso-aberto .wrap>.main{display:none!important}
+#curso-resumo a{color:#4F46E5;font-weight:700;text-decoration:none}
+#lista-cursos li{cursor:pointer;transition:background .15s ease,color .15s ease}
+#lista-cursos li:hover{background:rgba(255,255,255,.07);color:#fff}
+#lista-cursos li.on{background:rgba(255,255,255,.12);color:#fff}
+#lista-cursos li.on::before{background:#fff}
+#curso-resumo{background:#fff;border:1px solid #E2E8F0;border-radius:18px;padding:24px}
+.cr-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.cr-top h2{margin:0;font-size:22px;letter-spacing:-.02em}
+.cr-top p{margin:4px 0 0;color:#64748B;font-size:13.5px}
+.cr-fechar{border-radius:12px;padding:8px 14px}
+.cr-mods{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 6px}
+.cr-mods button{padding:6px 12px;font-size:13px}.cr-mods button.on{background:#0F172A;color:#fff;border-color:#0F172A}
+.cr-nums{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.cr-nums div{background:#F8FAFC;border:1px solid #E2E8F0;border-radius:14px;padding:12px 14px}
+.cr-nums b{display:block;font-size:22px}.cr-nums span{font-size:12.5px;color:#64748B}
+.cr-ano{margin-top:18px}.cr-ano h3{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#64748B;margin:0 0 8px}
+.cr-tab{width:100%;border-collapse:collapse;font-size:13.5px}
+.cr-tab th{text-align:left;font-size:12px;color:#64748B;font-weight:700;padding:8px 10px;border-bottom:1px solid #E2E8F0}
+.cr-tab td{padding:10px;border-bottom:1px solid #F1F5F9;vertical-align:top}
+.cr-tab td small{display:block;color:#94A3B8}
+.cr-falta{color:#E11D48;font-weight:700}
+@media (max-width:860px){.side h4,.side ul{display:block}.side ul{display:flex;flex-wrap:wrap}.cr-tab{font-size:12.5px}}
 /* indicadores em círculo */
 .kpis{display:flex!important;flex-wrap:wrap;gap:36px;justify-content:center}
 .kpi{flex-direction:column!important;align-items:center!important;justify-content:center;text-align:center;width:200px;height:200px;border-radius:50%!important;padding:18px!important;gap:6px!important;border-width:2px!important;border-color:var(--kb)!important}
@@ -145,7 +170,7 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
   <aside class="side">
     <div class="perfil"><div class="avatar">FI</div><div><div class="nome">Fábio Iba</div><div class="cargo">Coordenador · Gestão EAD</div></div></div>
     <h4>Cursos</h4>
-    <ul><li>Administração</li><li>Recursos Humanos</li><li>Psicologia Aplicada</li><li>Processos Gerenciais</li><li>Ciências da Felicidade</li><li>Saúde Mental no Trabalho</li><li>Disciplinas Institucionais</li></ul>
+    <ul id="lista-cursos"><li>Administração</li><li>Recursos Humanos</li><li>Psicologia Aplicada</li><li>Processos Gerenciais</li><li>Ciências da Felicidade</li><li>Saúde Mental no Trabalho</li><li>Disciplinas Institucionais</li></ul>
     <nav id="nav" aria-label="Painéis"></nav>
     <a class="drive" id="side-drive" target="_blank" rel="noopener">Pasta no Drive</a>
   </aside>
@@ -161,6 +186,7 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
         <h1><span class="hi" id="saud">Olá</span></h1>
         <div class="courses"><span>Administração</span><span>Recursos Humanos</span><span>Psicologia Aplicada</span><span>Processos Gerenciais</span><span>Ciências da Felicidade</span><span>Saúde Mental no Trabalho</span></div>
       </div>
+      <section id="curso-resumo" hidden></section>
       <section class="kpis" id="resumo" hidden></section>
       <div class="sec"><h2>Painéis</h2><span id="count" hidden></span></div>
       <div class="main">
@@ -436,6 +462,48 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
      +'<a class="kpi k3'+(pend.length?' alerta':'')+'" href="'+(pend[0]?lk(pend[0].projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></i><div><small>Decisões a registrar</small><b>'+(pend.length||'Nenhuma')+'</b><span>'+(pend.length?'reuniões sem decisões':'tudo registrado')+'</span></div></a>';
     var s=document.getElementById('resumo');s.innerHTML=h;s.hidden=false;
   }).catch(function(){});
+})();
+</script>
+
+<script id="cursos-script">
+(function(){
+  var $=function(s){return document.querySelector(s)};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
+  var CHAVES={'administracao':'administra','recursos humanos':'recursos','psicologia aplicada':'psicologia','processos gerenciais':'processos','ciencias da felicidade':'felicidade','saude mental no trabalho':'saude mental','disciplinas institucionais':'institucion'};
+  var G=null,sel=null,mod='';
+  function m(l){var o={};(l||[]).forEach(function(x){o[x.id]=Object.assign({id:x.id},x.data||{})});return o}
+  function carregar(){if(G)return Promise.resolve(G);if(!window.GFI||!GFI.temChave||!GFI.temChave())return Promise.reject(new Error('sem chave'));
+    return GFI.api('listMany',{app:'gd',cols:['cursos','disciplinas','alocacoes','pessoas']}).then(function(r){G={C:m(r.cursos),D:m(r.disciplinas),A:m(r.alocacoes),P:m(r.pessoas)};return G})}
+  function cursoDe(nome){var k=CHAVES[norm(nome)]||norm(nome);return Object.keys(G.C).map(function(i){return G.C[i]}).filter(function(c){return norm(c.nome).indexOf(k)>=0})[0]}
+  function nomeP(id){var p=G.P[id];return p?p.nome:''}
+  function render(){
+    var box=$('#curso-resumo'),c=cursoDe(sel);
+    if(!c){box.innerHTML='<div class="cr-top"><div><h2>'+esc(sel)+'</h2><p>Curso não encontrado na Gestão Docente.</p></div><button class="cr-fechar" data-cr="fechar">Fechar</button></div>';return}
+    var ds=Object.keys(G.D).map(function(k){return G.D[k]}).filter(function(d){return d.cursoId===c.id});
+    var mods=ds.map(function(d){return d.modulo}).filter(Boolean).filter(function(x,i,a){return a.indexOf(x)===i}).sort();
+    if(!mod||mods.indexOf(mod)<0)mod=mods[mods.length-1]||'';
+    var dm=ds.filter(function(d){return d.modulo===mod}).sort(function(a,b){return String(a.ano).localeCompare(String(b.ano))||(a.ordem||0)-(b.ordem||0)});
+    var al=Object.keys(G.A).map(function(k){return G.A[k]});
+    var profs={},meds={},semProf=0;
+    var linhas=dm.map(function(d){var as=al.filter(function(a){return a.disciplinaId===d.id}),pr=as.map(function(a){if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1});var p=G.P[a.professorId]||{};return esc(p.nome||'')+(p.papel?'<small>'+esc(p.papel)+'</small>':'')}).filter(Boolean),
+      md=[].concat.apply([],as.map(function(a){return a.mediadorIds||[]})).map(nomeP).filter(Boolean);
+      if(!pr.length)semProf++;
+      return {ano:d.ano||'—',h:'<tr><td>'+(d.ordem?d.ordem+'ª':'—')+'</td><td><b>'+esc(d.nome)+'</b>'+(d.matriz?'<small>matriz '+esc(d.matriz)+'</small>':'')+'</td><td>'+esc(d.hora||'—')+'</td><td>'+(pr.join('<br>')||'<span class="cr-falta">sem professor</span>')+'</td><td>'+(md.map(esc).join(', ')||'—')+'</td></tr>'}});
+    var anos={};linhas.forEach(function(l){(anos[l.ano]=anos[l.ano]||[]).push(l.h)});
+    box.innerHTML='<div class="cr-top"><div><h2>'+esc(c.nome)+'</h2><p>Resumo do curso · '+esc(mod||'sem módulo')+'</p></div><button class="cr-fechar" data-cr="fechar">✕ Fechar</button></div>'
+      +(mods.length>1?'<div class="cr-mods">'+mods.map(function(x){return '<button data-cr-mod="'+esc(x)+'" class="'+(x===mod?'on':'')+'">'+esc(x)+'</button>'}).join('')+'</div>':'')
+      +'<div class="cr-nums"><div><b>'+dm.length+'</b><span>disciplinas no módulo</span></div><div><b>'+Object.keys(profs).length+'</b><span>professores</span></div><div><b>'+Object.keys(meds).length+'</b><span>mediadores</span></div><div><b class="'+(semProf?'cr-falta':'')+'">'+semProf+'</b><span>disciplinas sem professor</span></div></div>'
+      +(dm.length?Object.keys(anos).sort().map(function(a){return '<div class="cr-ano"><h3>'+esc(a)+' ano</h3><table class="cr-tab"><thead><tr><th>Ordem</th><th>Disciplina</th><th>Horário</th><th>Professor</th><th>Mediador(es)</th></tr></thead><tbody>'+anos[a].join('')+'</tbody></table></div>'}).join(''):'<p style="color:#64748B">Nenhuma disciplina cadastrada para este módulo.</p>')
+      +'<p style="margin:16px 0 0;font-size:13px"><a href="gestao-docente.html">Abrir Gestão das Entregas →</a> · <a href="gestao-equipe.html">Abrir Gestão Docente →</a></p>';
+  }
+  function abrir(nome,li){sel=nome;[].forEach.call(document.querySelectorAll('#lista-cursos li'),function(x){x.classList.toggle('on',x===li)});
+    var box=$('#curso-resumo');box.hidden=false;box.innerHTML='<p style="color:#64748B;margin:0">Carregando '+esc(nome)+'…</p>';
+    document.body.classList.add('curso-aberto');window.scrollTo({top:0,behavior:'smooth'});
+    carregar().then(render).catch(function(e){box.innerHTML='<div class="cr-top"><div><h2>'+esc(nome)+'</h2><p>Não foi possível carregar os dados ('+esc(e&&e.message||'erro')+').</p></div><button class="cr-fechar" data-cr="fechar">Fechar</button></div>'})}
+  function fechar(){sel=null;$('#curso-resumo').hidden=true;[].forEach.call(document.querySelectorAll('#lista-cursos li'),function(x){x.classList.remove('on')});document.body.classList.remove('curso-aberto')}
+  [].forEach.call(document.querySelectorAll('#lista-cursos li'),function(li){li.setAttribute('role','button');li.tabIndex=0;li.onclick=function(){if(li.classList.contains('on'))fechar();else abrir(li.textContent.trim(),li)};li.onkeydown=function(e){if(e.key==='Enter')li.onclick()}});
+  document.addEventListener('click',function(e){var b=e.target.closest('[data-cr],[data-cr-mod]');if(!b)return;if(b.dataset.cr==='fechar')fechar();else{mod=b.dataset.crMod;render()}});
 })();
 </script>
 </body></html>
