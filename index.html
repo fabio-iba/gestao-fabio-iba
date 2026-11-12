@@ -100,10 +100,10 @@ body{background:#E9ECF3}
 .ola h1 .hi{color:inherit;font-weight:700}
 .ola .courses{margin-top:8px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
-.kpi{border-radius:14px;padding:16px 20px;color:#fff;box-shadow:0 12px 24px -14px rgba(40,50,90,.5)}
+.kpi{display:block;text-decoration:none;border-radius:14px;padding:16px 20px;color:#fff;transition:transform .15s ease;box-shadow:0 12px 24px -14px rgba(40,50,90,.5)}
 .kpi small{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.9}
 .kpi b{display:block;font-size:34px;line-height:1.1;margin:8px 0 2px;letter-spacing:-.02em}
-.kpi span{font-size:12px;opacity:.85}
+.kpi span{font-size:12.5px;opacity:.92;display:block}.kpi b{font-size:26px!important}.kpi:hover{transform:translateY(-2px)}
 .k1{background:linear-gradient(135deg,#34C3A8,#6FD6E0)}.k2{background:linear-gradient(135deg,#7B8CC6,#A9B6E0)}.k3{background:linear-gradient(135deg,#B05CD6,#E08BD9)}
 .sec{margin:6px 0 0;border:0;padding:0}
 .card{border-radius:14px;border-color:transparent;box-shadow:0 1px 2px rgba(22,24,29,.05),0 8px 20px -14px rgba(40,50,90,.35);min-height:170px}
@@ -126,20 +126,16 @@ body{background:#E9ECF3}
     </header>
     <div class="wrap">
       <div class="ola">
-        <p class="date" id="today"></p>
+        <p class="date" id="today" hidden></p>
         <h1><span class="hi" id="saud">Olá</span></h1>
         <div class="courses"><span>Administração</span><span>Recursos Humanos</span><span>Psicologia Aplicada</span><span>Processos Gerenciais</span><span>Ciências da Felicidade</span><span>Saúde Mental no Trabalho</span></div>
       </div>
-      <section class="kpis">
-        <div class="kpi k1"><small>Painéis</small><b id="k-pain">—</b><span>ferramentas de gestão</span></div>
-        <div class="kpi k2"><small>Cursos</small><b>6</b><span>sob coordenação</span></div>
-        <div class="kpi k3"><small>Hoje</small><b id="k-hoje">—</b><span id="k-sem"></span></div>
-      </section>
-      <div class="sec"><h2>Painéis</h2><span id="count"></span></div>
+      <section class="kpis" id="resumo" hidden></section>
+      <div class="sec"><h2>Painéis</h2><span id="count" hidden></span></div>
       <div class="main">
         <div id="banner" hidden=""></div>
         <main class="grid" id="grid"></main>
-        <footer><span>Coordenação dos cursos de Gestão · Unicesumar</span><span id="updated"></span></footer>
+        <footer hidden><span id="updated"></span></footer>
       </div>
     </div>
   </div>
@@ -352,13 +348,13 @@ body{background:#E9ECF3}
   var $=function(s){return document.querySelector(s)};
   function nav(){var cards=[].slice.call(document.querySelectorAll('#grid .card'));
     $('#nav').innerHTML=cards.map(function(c){var ico=c.querySelector('.ico'),h=c.querySelector('h3'),href=c.getAttribute('href');return '<a '+(href?'href="'+href+'"'+(c.target?' target="_blank" rel="noopener"':''):'')+'>'+(ico?ico.innerHTML:'')+'<span>'+(h?h.textContent:'')+'</span></a>'}).join('');
-    var k=$('#k-pain');if(k)k.textContent=cards.length;
+    
     var d=document.querySelector('#tools a[href*="drive.google"]');if(d){$('#side-drive').href=d.href;$('#side-drive').innerHTML=d.innerHTML+' Pasta no Drive'}
     filtrar()}
   function norm(s){return (s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')}
   function filtrar(){var q=norm($('#busca').value);[].forEach.call(document.querySelectorAll('#grid .card'),function(c){c.style.display=!q||norm(c.textContent).indexOf(q)>=0?'':'none'})}
   $('#busca').addEventListener('input',filtrar);
-  try{var d=new Date();$('#k-hoje').textContent=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});$('#k-sem').textContent=d.toLocaleDateString('pt-BR',{weekday:'long'})+' · '+d.getFullYear()}catch(e){}
+  
   new MutationObserver(nav).observe($('#grid'),{childList:true});nav();
 })();
 </script>
@@ -387,6 +383,28 @@ body{background:#E9ECF3}
   },true);
   new MutationObserver(function(){marcar()}).observe(document.getElementById('tools'),{childList:true});
   checar();setInterval(function(){if(!document.hidden)checar()},60000);
+})();
+</script>
+
+<script id="resumo-script">
+(function(){
+  if(!window.GFI||!GFI.temChave||!GFI.temChave())return;
+  function pad(n){return (n<10?'0':'')+n}var d=new Date(),hj=d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),agora=pad(d.getHours())+':'+pad(d.getMinutes());
+  function br(s){var p=String(s||'').split('-');return p.length===3?p[2]+'/'+p[1]:'—'}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function m(l){var o={};(l||[]).forEach(function(x){o[x.id]=Object.assign({id:x.id},x.data||{})});return o}
+  GFI.api('listMany',{app:'proj',cols:['projetos','edicoes','chat','eventos']}).then(function(r){
+    var P=m(r.projetos),C=m(r.chat),V=m(r.eventos),ev=Object.keys(V).map(function(k){return V[k]}).filter(function(e){return P[e.projetoId]});
+    var prox=ev.filter(function(e){return e.status!=='concluida'&&(e.data>hj||(e.data===hj&&(e.hora||'')>=agora))}).sort(function(a,b){return (a.data+(a.hora||'')).localeCompare(b.data+(b.hora||''))})[0];
+    var pend=ev.filter(function(e){return e.tipo==='reuniao'&&e.status!=='concluida'&&(e.data<hj||(e.data===hj&&e.fim&&e.fim<agora))});
+    var novas={};Object.keys(C).forEach(function(k){var x=C[k],l='';try{l=localStorage.getItem('gfi_chat_lido_'+x.projetoId)||''}catch(e){}if(P[x.projetoId]&&x.autorId!=='sponsor'&&String(x.em||'')>l)novas[x.projetoId]=(novas[x.projetoId]||0)+1});
+    var nTot=Object.keys(novas).reduce(function(s,k){return s+novas[k]},0),nP=Object.keys(novas)[0];
+    var lk=function(pid){return 'projeto.html?p='+encodeURIComponent(pid)};
+    var h='<a class="kpi k1" href="'+(prox?lk(prox.projetoId):'projetos.html')+'"><small>Próxima reunião</small><b>'+(prox?br(prox.data)+(prox.hora?' · '+esc(prox.hora):''):'Nenhuma')+'</b><span>'+(prox?esc(prox.titulo||'Reunião')+' — '+esc(P[prox.projetoId].nome):'nada agendado nos projetos')+'</span></a>'
+     +'<a class="kpi k2" href="'+(nP?lk(nP):'projetos.html')+'"><small>Mensagens novas</small><b>'+(nTot||'Nenhuma')+'</b><span>'+(nTot?Object.keys(novas).map(function(k){return esc(P[k].nome)+' ('+novas[k]+')'}).join(' · '):'chats dos projetos em dia')+'</span></a>'
+     +'<a class="kpi k3" href="'+(pend[0]?lk(pend[0].projetoId):'projetos.html')+'"><small>Decisões a registrar</small><b>'+(pend.length||'Nenhuma')+'</b><span>'+(pend.length?'reunião(ões) realizada(s) sem as decisões registradas':'todas as reuniões com decisões')+'</span></a>';
+    var s=document.getElementById('resumo');s.innerHTML=h;s.hidden=false;
+  }).catch(function(){});
 })();
 </script>
 </body></html>
