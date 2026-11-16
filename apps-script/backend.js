@@ -415,6 +415,9 @@ var COPIAS = { isis: { modelo: 'reg', cols: ['atas', 'config', 'cursos', 'docs',
 function acessoCopia(req) {
   var app = String(req.app || ''), cfg = COPIAS[app];
   if (!cfg) {
+    // senha/código de uma cópia pedindo algo fora dela: recusa sem 'not_granted' (que apagaria o acesso guardado no navegador)
+    var ehCopia = Object.keys(COPIAS).some(function (a) { return req.key && req.key === tokenCopia(a); });
+    if (ehCopia && !(app === 'isisgd' && req.op === 'listMany')) return { ok: false, code: 'invalid_argument', message: 'Operação fora deste painel.' };
     if (app === 'isisgd' && req.op === 'listMany' && req.key === tokenCopia('isis')) { var vz = {}; (req.cols || []).forEach(function (c) { vz[c] = []; }); return { ok: true, data: vz }; }
     // o painel da cópia também pede dados auxiliares de outros apps: devolve vazio para a senha da cópia
     var k0 = Object.keys(COPIAS).filter(function (a) { var s = PROPS.getProperty('CHAVE_' + a.toUpperCase()); return s && req.key === s; })[0];
