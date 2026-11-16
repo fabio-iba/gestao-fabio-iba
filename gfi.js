@@ -361,6 +361,7 @@
 /* Botão "casa" de todos os painéis leva à página inicial (index.html) */
 (function () {
   if (/(^|\/)(index\.html)?$/.test(location.pathname)) return;
+  if (window.GFI_APP === 'isis') return; // cópia da Ísis: a casa volta à visão geral do próprio painel
   document.addEventListener('click', function (e) {
     var b = e.target.closest && e.target.closest('#btnPainel,[data-act="home"],#btnInicio,.btn-home');
     if (!b) return;

@@ -44,6 +44,8 @@ function tratar(req) {
     var chave = PROPS.getProperty('CHAVE');
     if (!chave) return { ok: false, code: 'not_configured', message: 'Defina a propriedade CHAVE no Apps Script.' };
     if (req.key !== chave) {
+      var copia = acessoCopia(req);
+      if (copia) return copia;
       if (req.op === 'entrarProjeto') return entrarProjeto(req);
       if (req.membro) return tratarMembro(req);
       if (req.portal) return tratarPortal(req);
@@ -59,7 +61,7 @@ function tratar(req) {
       if (!pe || codProf(pe[1]) !== pe[2].toLowerCase()) return { ok: false, code: 'invalid_argument', message: 'Link do professor inválido.' };
       return comTrava(function () { return { ok: true, data: salvarEscolhas(pe[1], req.lista || [], req.obs || '', req.dias || []) }; });
     }
-    if (op === 'listMany') return { ok: true, data: listMany(req.app, req.cols || []) };
+    if (op === 'listMany') { if (COPIAS[req.app]) clonarSeVazio(req.app); return { ok: true, data: listMany(req.app, req.cols || []) }; }
     if (op === 'set' || op === 'update' || op === 'delete') return comTrava(function () { return { ok: true, data: gravar(req) }; });
     if (op === 'batch') return comTrava(function () { (req.ops || []).forEach(gravar); return { ok: true }; });
     if (op === 'upload') return { ok: true, data: upload(req) };
@@ -403,6 +405,53 @@ function driveText(fileId) {
   var copia = Drive.Files.copy({ title: 'tmp_leitura', mimeType: MimeType.GOOGLE_DOCS }, fileId, { ocr: mt === MimeType.PDF });
   try { return DocumentApp.openById(copia.id).getBody().getText(); }
   finally { DriveApp.getFileById(copia.id).setTrashed(true); }
+}
+
+/* ---------- Cópias independentes de painéis (ex.: Gestão Regulatória da Ísis) ----------
+ * Cada cópia tem app próprio na planilha e senha própria na propriedade CHAVE_<APP> (ex.: CHAVE_ISIS).
+ * A senha da cópia só lê e grava o app dela; na primeira leitura os dados do painel modelo são copiados. */
+var COPIAS = { isis: { modelo: 'reg', cols: ['atas', 'config', 'cursos', 'docs', 'indicadores', 'membros', 'assinaturas'] } };
+function acessoCopia(req) {
+  var app = String(req.app || ''), cfg = COPIAS[app];
+  if (!cfg) {
+    // o painel da cópia também pede dados auxiliares de outros apps: devolve vazio para a senha da cópia
+    var k0 = Object.keys(COPIAS).filter(function (a) { var s = PROPS.getProperty('CHAVE_' + a.toUpperCase()); return s && req.key === s; })[0];
+    if (k0 && req.op === 'listMany') { var vaz = {}; (req.cols || []).forEach(function (c) { vaz[c] = []; }); return { ok: true, data: vaz }; }
+    return null;
+  }
+  var senha = PROPS.getProperty('CHAVE_' + app.toUpperCase());
+  if (!senha || req.key !== senha) return null;
+  try {
+    var op = req.op;
+    if (op === 'ping') return { ok: true };
+    if (op === 'listMany') { clonarSeVazio(app); return { ok: true, data: listMany(app, req.cols || []) }; }
+    if (op === 'set' || op === 'update' || op === 'delete') return comTrava(function () { return { ok: true, data: gravar(req) }; });
+    if (op === 'batch') {
+      if ((req.ops || []).some(function (o) { return o.app !== app; })) return { ok: false, code: 'not_granted', message: 'Operação fora deste painel.' };
+      return comTrava(function () { (req.ops || []).forEach(gravar); return { ok: true }; });
+    }
+    if (op === 'upload') return { ok: true, data: upload(req) };
+    if (op === 'arquivo') return { ok: true, data: baixarArquivo(req.id) };
+    if (op === 'ia') return { ok: true, data: ia(req.prompt, req.max) };
+    return { ok: false, code: 'not_granted', message: 'Operação não permitida neste painel.' };
+  } catch (err) { return { ok: false, code: err.code || 'internal', message: String(err.message || err) }; }
+}
+function clonarSeVazio(app) {
+  var cfg = COPIAS[app], marca = 'CLONADO_' + app.toUpperCase();
+  if (!cfg || PROPS.getProperty(marca)) return;
+  comTrava(function () {
+    if (PROPS.getProperty(marca)) return;
+    var dados = listMany(cfg.modelo, cfg.cols);
+    cfg.cols.forEach(function (col) {
+      var sh = aba(app, col, true), lin = [];
+      (dados[col] || []).forEach(function (d) {
+        // guardarJson cria arquivo novo no Drive para documentos grandes: a cópia nunca aponta para os arquivos do modelo
+        lin.push([d.id, guardarJson(app, col, d.id, JSON.stringify(d.data), ''), new Date()]);
+      });
+      if (lin.length) sh.getRange(2, 1, lin.length, 3).setValues(lin);
+    });
+    PROPS.setProperty(marca, new Date().toISOString());
+  });
 }
 
 /* ---------- IA (opcional, API da Anthropic) ---------- */
