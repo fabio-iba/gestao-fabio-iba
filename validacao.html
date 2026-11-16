@@ -348,7 +348,7 @@ body,body *:not(pre):not(code){font-family:Arial,Helvetica,sans-serif!important}
   })[e && e.code] || 'Não foi possível acessar o Google Drive agora. Tente de novo ou cole o texto abaixo.';
   const sampleCopy = e => ({
     not_granted: 'O painel não recebeu permissão para usar o Claude. Recarregue a página e permita quando for perguntado.',
-    sampling_disabled: 'O Claude não está disponível para esta conta.',
+    sampling_disabled: 'A análise automática está desligada no servidor: falta configurar a chave da API da Anthropic (ANTHROPIC_KEY) no Apps Script.',
     rate_limited: 'Limite de uso atingido por agora. Aguarde alguns minutos e tente de novo.',
     invalid_json: 'A resposta veio fora do formato esperado. Clique em analisar de novo.',
     prompt_too_large: 'O material é grande demais para uma análise só. Cole um trecho menor.',
