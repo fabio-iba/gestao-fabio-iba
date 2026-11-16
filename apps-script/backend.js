@@ -55,6 +55,7 @@ function tratar(req) {
     if (req.op === 'set' && req.data && JSON.stringify(req.data).indexOf(chave) >= 0) return { ok: false, code: 'invalid_argument', message: 'O texto digitado é a chave de acesso. Use outro nome.' };
     var op = req.op;
     if (op === 'ping') return { ok: true };
+    if (op === 'linkCopia') { if (!COPIAS[req.copia]) return { ok: false, code: 'invalid_argument', message: 'Cópia desconhecida.' }; return { ok: true, data: tokenCopia(req.copia) }; }
     // escolhas enviadas pelo link do professor, mesmo quando o navegador já tem a chave da coordenação
     if (op === 'escolhas') {
       var pe = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || req.pid || ''));
@@ -414,13 +415,14 @@ var COPIAS = { isis: { modelo: 'reg', cols: ['atas', 'config', 'cursos', 'docs',
 function acessoCopia(req) {
   var app = String(req.app || ''), cfg = COPIAS[app];
   if (!cfg) {
+    if (app === 'isisgd' && req.op === 'listMany' && req.key === tokenCopia('isis')) { var vz = {}; (req.cols || []).forEach(function (c) { vz[c] = []; }); return { ok: true, data: vz }; }
     // o painel da cópia também pede dados auxiliares de outros apps: devolve vazio para a senha da cópia
     var k0 = Object.keys(COPIAS).filter(function (a) { var s = PROPS.getProperty('CHAVE_' + a.toUpperCase()); return s && req.key === s; })[0];
     if (k0 && req.op === 'listMany') { var vaz = {}; (req.cols || []).forEach(function (c) { vaz[c] = []; }); return { ok: true, data: vaz }; }
     return null;
   }
   var senha = PROPS.getProperty('CHAVE_' + app.toUpperCase());
-  if (!senha || req.key !== senha) return null;
+  if (req.key !== tokenCopia(app) && (!senha || req.key !== senha)) return null;
   try {
     var op = req.op;
     if (op === 'ping') return { ok: true };
@@ -435,6 +437,11 @@ function acessoCopia(req) {
     if (op === 'ia') return { ok: true, data: ia(req.prompt, req.max) };
     return { ok: false, code: 'not_granted', message: 'Operação não permitida neste painel.' };
   } catch (err) { return { ok: false, code: err.code || 'internal', message: String(err.message || err) }; }
+}
+// código de acesso embutido no link da cópia: derivado da CHAVE do coordenador (não fica no código-fonte)
+function tokenCopia(app) {
+  var b = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, PROPS.getProperty('CHAVE') + '|copia|' + app, Utilities.Charset.UTF_8);
+  return 'c' + Utilities.base64EncodeWebSafe(b).replace(/[^A-Za-z0-9]/g, '').slice(0, 24);
 }
 function clonarSeVazio(app) {
   var cfg = COPIAS[app], marca = 'CLONADO_' + app.toUpperCase();
