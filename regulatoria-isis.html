@@ -389,7 +389,7 @@ function renderAta(){
   $('#dlg').innerHTML='<div class="dlg"><div class="dlg-h"><div><div class="mut">'+(S.editNova?'Nova ata':'Ata da '+esc(a.numero)+'ª reunião de '+esc(a.ano))+'</div><h3>'+esc(ORGAOS[a.orgao])+' · '+esc(c.sigla)+' · '+esc(a.modulo)+'</h3></div><button class="btn ghost" type="button" data-act="fechar" aria-label="Fechar">✕</button></div>'
   +'<div class="dlg-b">'
   +'<div class="blk"><h4>Dados da reunião</h4><div class="grid">'
-    +'<label class="fld" for="a-curso">Curso<select id="a-curso">'+cs.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===a.curso?' selected':'')+'>'+esc(x.sigla+' · '+x.nome)+'</option>'}).join('')+'</select></label>'
+    +'<label class="fld" for="a-curso">Curso<span style="display:flex;gap:6px;align-items:center"><select id="a-curso" style="flex:1;min-width:0">'+cs.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===a.curso?' selected':'')+'>'+esc(x.sigla+' · '+x.nome)+'</option>'}).join('')+'<option value="__novo">+ Incluir novo curso…</option></select><button class="btn-x" type="button" data-act="curso-excluir-ata" aria-label="Excluir o curso selecionado" title="Excluir o curso selecionado">✕</button></span></label>'
     +'<label class="fld" for="a-orgao">Órgão<select id="a-orgao"><option value="NDE"'+(a.orgao==='NDE'?' selected':'')+'>NDE</option><option value="COL"'+(a.orgao==='COL'?' selected':'')+'>Colegiado</option></select></label>'
     +'<label class="fld" for="a-mod">Módulo<select id="a-mod">'+MODULOS.map(function(m){return '<option'+(m===a.modulo?' selected':'')+'>'+m+'</option>'}).join('')+'</select></label>'
     +'<label class="fld" for="a-num">Reunião do ano (ª)<input id="a-num" type="number" min="1" value="'+esc(a.numero)+'"></label>'
@@ -777,7 +777,9 @@ function htmlMembros(){
   var ms=lista('membros').filter(function(m){return (!f.curso&&!f.orgao)||(m.vinculos||[]).some(function(v){return filtraVinc(v,f)})}).sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'','pt-BR')});
   var pend=ms.filter(function(m){return m.email&&m.email.toLowerCase()!=='fabio.iba@unicesumar.edu.br'&&pendDe(m,funcPrinc(m)).length}),semMail=ms.filter(function(m){return !m.email&&pendDe(m,funcPrinc(m)).length});
   var solicAll=pend.length?rbLink(mailtoSolic(pend.map(function(m){return m.email}),CAMPOS_SOLIC,null),'email','Solicitar dados pendentes a '+pend.length+' membro(s) (abre o Outlook; nada é enviado automaticamente)',pend.length):'';
-  return '<div class="sec-h"><div><h2>Membros do NDE e dos Colegiados</h2><p>A lista de presentes e as assinaturas das atas saem daqui. Use os filtros e gere o relatório em PDF.</p></div><div class="acoes">'+solicAll+''+rb('membros-pdf','imprimir','Relatório em PDF dos membros',S.dl?'':SEM_RT)+rb('membro-add','mais','Adicionar membro')+'</div></div>'
+  var blocoCursos='<div class="sec-h"><div><h2>Cursos</h2><p>Inclua, edite ou exclua os cursos que você coordena.</p></div><div class="acoes"><button class="btn" type="button" data-act="curso-novo">+ Novo curso</button></div></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px">'+(cs.length?cs.map(function(c){return '<span style="display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line,#DDE3EA);border-radius:99px;padding:6px 8px 6px 14px"><b>'+esc(c.sigla||'—')+'</b> '+esc(c.nome||'')+'<button class="btn mini" type="button" data-curso-ed="'+esc(c.id)+'">Editar</button><button class="btn-x" type="button" data-del="cursos|'+esc(c.id)+'" aria-label="Excluir curso" title="Excluir curso">✕</button></span>'}).join(''):'<span class="mut">Nenhum curso cadastrado.</span>')+'</div>';
+  return blocoCursos+'<div class="sec-h"><div><h2>Membros do NDE e dos Colegiados</h2><p>A lista de presentes e as assinaturas das atas saem daqui. Use os filtros e gere o relatório em PDF.</p></div><div class="acoes">'+solicAll+''+rb('membros-pdf','imprimir','Relatório em PDF dos membros',S.dl?'':SEM_RT)+rb('membro-add','mais','Adicionar membro')+'</div></div>'
     +'<div class="filtros"><label for="fm-curso">Curso<select id="fm-curso"><option value="">Todos</option>'+cs.map(function(c){return '<option value="'+esc(c.id)+'"'+(f.curso===c.id?' selected':'')+'>'+esc(c.sigla)+' · '+esc(c.nome)+'</option>'}).join('')+'</select></label>'
     +'<label for="fm-orgao">Órgão<select id="fm-orgao"><option value="">NDE e Colegiado</option><option value="NDE"'+(f.orgao==='NDE'?' selected':'')+'>NDE</option><option value="COL"'+(f.orgao==='COL'?' selected':'')+'>Colegiado</option></select></label></div>'
     +(ms.length?'<div class="tw"><table><thead><tr><th>Nome</th><th>Titulação · regime</th><th>Contato</th><th>Participa de</th><th>Lattes</th><th></th></tr></thead><tbody>'+ms.map(function(m){
@@ -955,6 +957,10 @@ document.addEventListener('click',function(ev){
     case 'pe-pdf':pdfPE();break;
     case 'membros-pdf':pdfMembros();break;
     case 'dir-preencher':var d0=achaDir(($('#m-nome')||{}).value);if(d0)preencheDir(d0,true);break;
+    case 'curso-excluir-ata':var sel=$('#a-curso'),cid=sel&&sel.value,cx=S.d.cursos[cid];if(!cx)break;
+      if(!window.confirm('Excluir o curso '+(cx.sigla||'')+' · '+(cx.nome||'')+'? As atas já cadastradas continuam guardadas.'))break;
+      apaga('cursos',cid).then(function(){delete S.d.cursos[cid];lerAta();var resto=cursos();S.edit.curso=(resto[0]||{}).id||'';abrirAta(S.edit);toast('Curso excluído.')});break;
+    case 'curso-novo':abrirCurso({id:'c'+Date.now().toString(36),sigla:'',nome:'',nomeOficial:'',ordem:cursos().length+1});break;
     case 'curso-salvar':var cc=S.editC;cc.sigla=$('#c-sigla').value.trim()||cc.sigla;cc.nome=$('#c-nome').value.trim()||cc.nome;cc.nomeOficial=$('#c-of').value.trim();grava('cursos',cc.id,cc).then(function(){S.d.cursos[cc.id]=cc;$('#dlg').close();toast('Curso salvo.');render()});break;
     case 'membro-del':if(t.dataset.ok){var mi=S.editM.id;apaga('membros',mi).then(function(){delete S.d.membros[mi];$('#dlg').close();render()})}else{t.dataset.ok='1';t.textContent='Confirmar exclusão'}break;
   }
@@ -964,6 +970,10 @@ document.addEventListener('change',function(ev){var t=ev.target;
   if(t.id==='f-mat'){S.fMat=t.value;render();return}
   if(t.id==='d-disc'){preencheDisc();avisoMatriz(false);return}
   if(t.hasAttribute&&t.hasAttribute('data-dcurso')){var dl=$('#disc-lista');if(dl)dl.innerHTML=optsDisc(cursosMarcados());avisoMatriz(false);return}
+  if(t.id==='a-curso'&&t.value==='__novo'){var sg=window.prompt('Sigla do novo curso (ex.: ADM):');var nm=sg&&window.prompt('Nome do curso:');
+    if(!sg||!nm){t.value=(S.edit&&S.edit.curso)||'';return}
+    var nc={id:'c'+Date.now().toString(36),sigla:sg.trim().toUpperCase(),nome:nm.trim(),nomeOficial:'',ordem:cursos().length+1};
+    grava('cursos',nc.id,nc).then(function(){S.d.cursos[nc.id]=nc;lerAta();S.edit.curso=nc.id;abrirAta(S.edit);toast('Curso '+nc.sigla+' incluído.')});return}
   if(t.id==='m-cel'){t.value=fmtCel(t.value);return}
   if(t.id==='m-nome'){var ex=S.editM&&S.editM._novo&&membroExistente(t.value,S.editM.id);
     if(ex){var cp=JSON.parse(JSON.stringify(ex));abrirMembro(cp);toast(ex.nome+' já está cadastrado(a). Abri o cadastro existente para você incluir o novo curso.');return}
