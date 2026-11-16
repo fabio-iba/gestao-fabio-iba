@@ -363,13 +363,13 @@
   if (/(^|\/)(index\.html)?$/.test(location.pathname)) return;
   if (window.GFI_APP === 'isis') return; // cópia da Ísis: a casa volta à visão geral do próprio painel
   document.addEventListener('click', function (e) {
-    var b = e.target.closest && e.target.closest('#btnPainel,[data-act="home"],#btnInicio,.btn-home');
+    var b = e.target.closest && e.target.closest('#btnPainel,[data-act="home"],#btnInicio,a.btn-home,.btn-home:not([data-act])');
     if (!b) return;
     if (window.GFI_PUBLICO && !(window.GFI && GFI.temChave && GFI.temChave())) return; // membro de projeto sem chave: mantém o comportamento
     e.preventDefault(); e.stopImmediatePropagation();
     location.href = 'index.html';
   }, true);
   document.addEventListener('DOMContentLoaded', function () {
-    [].forEach.call(document.querySelectorAll('#btnPainel,[data-act="home"],#btnInicio,.btn-home'), function (b) { b.title = 'Página inicial'; b.setAttribute('aria-label', 'Página inicial'); });
+    [].forEach.call(document.querySelectorAll('#btnPainel,[data-act="home"],#btnInicio,a.btn-home,.btn-home:not([data-act])'), function (b) { b.title = 'Página inicial'; b.setAttribute('aria-label', 'Página inicial'); });
   });
 })();
