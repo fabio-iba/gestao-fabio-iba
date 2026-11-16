@@ -270,16 +270,41 @@
   };
 
   /* ---------------- IA (opcional: API da Anthropic pelo Apps Script) ---------------- */
+  // escapa quebras de linha/tabs cruas dentro de strings e fecha estruturas abertas (resposta cortada)
+  function consertarJson(s) {
+    var o = '', dentro = false, esc = false, pilha = [];
+    for (var k = 0; k < s.length; k++) {
+      var c = s[k];
+      if (dentro) {
+        if (esc) { o += c; esc = false; continue; }
+        if (c === '\\') { o += c; esc = true; continue; }
+        if (c === '"') { dentro = false; o += c; continue; }
+        if (c === '\n') { o += '\\n'; continue; }
+        if (c === '\r') { continue; }
+        if (c === '\t') { o += '\\t'; continue; }
+        o += c; continue;
+      }
+      if (c === '"') dentro = true;
+      else if (c === '{' || c === '[') pilha.push(c === '{' ? '}' : ']');
+      else if (c === '}' || c === ']') pilha.pop();
+      o += c;
+    }
+    if (dentro) o += '"';
+    o = o.replace(/,\s*$/, '');
+    while (pilha.length) o += pilha.pop();
+    return o;
+  }
   function extrairJson(t) {
     t = String(t || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
     try { return JSON.parse(t); } catch (e) {}
     var i = t.indexOf('{'), j = t.lastIndexOf('}');
     if (i >= 0 && j > i) { try { return JSON.parse(t.slice(i, j + 1)); } catch (e) {} }
+    if (i >= 0) { try { return JSON.parse(consertarJson(t.slice(i, j > i ? j + 1 : undefined))); } catch (e) {} }
     throw erro('invalid_json', 'A resposta da IA veio fora do formato esperado.');
   }
   var sample = {
     text: function (prompt, o) { return api('ia', { prompt: String(prompt), max: o && o.maxTokens }); },
-    json: function (prompt, o) { return api('ia', { prompt: String(prompt) + '\n\nResponda somente com JSON válido, sem texto antes ou depois.', max: o && o.maxTokens }).then(extrairJson); }
+    json: function (prompt, o) { return api('ia', { prompt: String(prompt) + '\n\nResponda somente com JSON válido, sem texto antes ou depois.', max: (o && o.maxTokens) || 16000 }).then(extrairJson); }
   };
 
   /* ---------------- páginas que guardam os próprios dados (início e calendário) ---------------- */

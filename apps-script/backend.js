@@ -413,10 +413,11 @@ function ia(prompt, max) {
   var r = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
     method: 'post', contentType: 'application/json', muteHttpExceptions: true,
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
-    payload: JSON.stringify({ model: PROPS.getProperty('ANTHROPIC_MODEL') || 'claude-sonnet-4-5', max_tokens: max || 8000, messages: [{ role: 'user', content: prompt }] })
+    payload: JSON.stringify({ model: PROPS.getProperty('ANTHROPIC_MODEL') || 'claude-sonnet-4-5', max_tokens: Math.min(max || 16000, 16000), messages: [{ role: 'user', content: prompt }] })
   });
   var j = JSON.parse(r.getContentText());
   if (r.getResponseCode() >= 300) throw { code: r.getResponseCode() === 429 ? 'rate_limited' : 'upstream_error', message: (j.error && j.error.message) || 'Erro na API.' };
+  if (j.stop_reason === 'max_tokens') Logger.log('Resposta da IA cortada no limite de tokens');
   return (j.content || []).filter(function (c) { return c.type === 'text'; }).map(function (c) { return c.text; }).join('');
 }
 
