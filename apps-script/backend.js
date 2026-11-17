@@ -188,6 +188,41 @@ function tratarPortal(req) {
       return { ok: true, data: gravar({ app: 'gd', col: 'horarios', id: pid + '-' + anoH, op: 'set', data: limpo }) };
     });
   }
+  if (op === 'medDados') {
+    // link do mediador: disciplinas em que ele está alocado e os checks da mediação
+    var g = listMany('gd', ['disciplinas', 'alocacoes', 'cursos', 'gradeEntregas', 'pessoas']), minhas = {};
+    g.alocacoes = g.alocacoes.filter(function (a) { return a.data && (a.data.mediadorIds || []).indexOf(pid) >= 0; });
+    g.alocacoes.forEach(function (a) { minhas[a.data.disciplinaId] = 1; });
+    var profs = {}; listMany('gd', ['alocacoes']).alocacoes.forEach(function (a) { if (a.data && minhas[a.data.disciplinaId] && a.data.professorId) profs[a.data.professorId] = 1; });
+    g.pessoas = g.pessoas.filter(function (p) { return p.id === pid || profs[p.id]; }).map(function (p) { return { id: p.id, data: { nome: p.data.nome, papel: p.data.papel } }; });
+    g.alocacoesTodas = listMany('gd', ['alocacoes']).alocacoes.filter(function (a) { return a.data && minhas[a.data.disciplinaId]; });
+    g.checks = listMany('gdoc', ['checks']).checks;
+    return { ok: true, data: g };
+  }
+  if (op === 'medMarcar') {
+    // marca atividades como feitas (definitivo pelo link: não desmarca)
+    var turma = String(req.turma || ''), ks = (req.itens || []).map(String).filter(function (k) { return /^[\w-]{2,40}$/.test(k); }).slice(0, 80);
+    var modulo = String(req.modulo || ''), anoM = /^\d{4}$/.test(String(req.ano)) ? String(req.ano) : '2027';
+    if (!ks.length || !/^Módulo \d+$/.test(modulo)) return { ok: false, code: 'invalid_argument', message: 'Nada para registrar.' };
+    var nrm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
+    var sin = function (d) { return [nrm(d.nome).replace(/[^a-z0-9]/g, ''), d.modulo || '', d.ordem == null ? '' : String(d.ordem), nrm(d.hora || '').replace(/\s/g, '')].join('|'); };
+    var permitido = turma === 'med-' + pid;
+    if (!permitido) {
+      var ds = {}; listMany('gd', ['disciplinas']).disciplinas.forEach(function (d) { ds[d.id] = d.data || {}; });
+      permitido = listMany('gd', ['alocacoes']).alocacoes.some(function (a) { var d = a.data && ds[a.data.disciplinaId]; return d && (a.data.mediadorIds || []).indexOf(pid) >= 0 && d.modulo === modulo && sin(d) === turma; });
+    }
+    if (!permitido) return { ok: false, code: 'not_granted', message: 'Disciplina de outro mediador.' };
+    var did = anoM + '_' + modulo.replace(/\D/g, '') + '_' + turma.replace(/[^a-z0-9]/gi, '').slice(0, 80);
+    return comTrava(function () {
+      var atual = listMany('gdoc', ['checks']).checks.filter(function (d) { return d.id === did; })[0], dd = (atual && atual.data) || { ano: anoM, modulo: modulo, turma: turma, itens: {} };
+      dd.itens = dd.itens || {}; dd.por = dd.por || {};
+      var hojeS = Utilities.formatDate(new Date(), 'America/Sao_Paulo', 'yyyy-MM-dd');
+      ks.forEach(function (k) { if (!dd.itens[k]) { dd.itens[k] = hojeS; dd.por[k] = { mediador: pid, em: new Date().toISOString() }; } });
+      dd.atualizadoEm = new Date().toISOString();
+      gravar({ app: 'gdoc', col: 'checks', id: did, op: 'set', data: dd });
+      return { ok: true, data: { id: did, data: dd } };
+    });
+  }
   if (op === 'escolhas') return comTrava(function () { return { ok: true, data: salvarEscolhas(pid, req.lista || [], req.obs || '', req.dias || []) }; });
   if ((op === 'set' || op === 'delete') && req.col === 'confirmacoes') {
     return comTrava(function () {
