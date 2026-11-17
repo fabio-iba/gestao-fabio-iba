@@ -55,11 +55,11 @@ var cod=(/[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(location.hash+'&'+location.search)||
 if(cod){try{localStorage.setItem('gdPortal',cod)}catch(e){}}
 var PORTAL=cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})();
 var pid=(cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})()).split('.')[0];
-var ANO=String(new Date().getFullYear()),H={ano:ANO,carga:'',dias:{},outros:[],obs:''};
+var ANO='2027',H={ano:ANO,carga:'',dias:{},outros:[],obs:''};
 function horasDia(d){var v=H.dias[d]||{};var t=dur(v.entrada,v.almoco)+dur(v.retorno,v.saida);if(!v.almoco&&!v.retorno)t=dur(v.entrada,v.saida);return t}
 function render(){
   var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{},noite=dur(q.noiteInicio,q.noiteFim);
-  var h='<div class="card"><h2>Carga horária na Unicesumar</h2><p class="mut">Informe a carga semanal do seu contrato.</p><div style="display:flex;gap:14px;flex-wrap:wrap"><label style="max-width:180px">Ano<select id="ano">'+[ANO,String(+ANO+1)].map(function(y){return '<option'+(H.ano===y?' selected':'')+'>'+y+'</option>'}).join('')+'</select></label><label style="max-width:260px">Horas por semana<input id="carga" type="number" min="0" max="60" step="1" value="'+esc(H.carga)+'" placeholder="Ex.: 40"></label></div></div>'
+  var h='<div class="card"><h2>Carga horária na Unicesumar</h2><p class="mut">Informe a carga semanal do seu contrato.</p><div style="display:flex;gap:14px;flex-wrap:wrap"><label style="max-width:260px">Horas por semana<select id="carga"><option value="">Selecione</option>'+['20','40'].map(function(x){return '<option value="'+x+'"'+(String(H.carga)===x?' selected':'')+'>'+x+' horas</option>'}).join('')+'</select></label></div></div>'
    +'<div class="card"><h2>Jornada de segunda a sexta</h2><p class="mut">Entrada, saída para o almoço, retorno e fim do expediente. <b>Na quarta-feira, o horário deve incluir as 4 horas obrigatórias à noite.</b></p><div class="tw"><table><colgroup><col style="width:16%"><col><col><col><col><col style="width:12%"></colgroup><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th><th>Total</th></tr></thead><tbody>'
    +DIAS.map(function(d){var v=H.dias[d[0]]||{},f=function(k){return '<input type="time" data-d="'+d[0]+'" data-k="'+k+'" value="'+esc(v[k]||'')+'">'};
      return '<tr'+(d[0]==='qua'?' class="noite"':'')+'><td><b>'+d[1]+'</b>'+(d[0]==='qua'?'<br><small style="color:var(--warn);font-weight:700">inclui 4h à noite</small>':'')+'</td><td>'+f('entrada')+'</td><td>'+f('almoco')+'</td><td>'+f('retorno')+'</td><td>'+f('saida')+'</td><td class="tot" id="t-'+d[0]+'">'+hm(horasDia(d[0]))+'</td></tr>'
@@ -78,10 +78,10 @@ function fechado(){var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0)
    +((H.outros||[]).length?'<p style="margin:14px 0 4px"><b>Outros locais</b></p>'+H.outros.map(function(o){return '<div>'+esc(o.local)+' · '+(o.dias||[]).join(', ')+' · '+esc(o.inicio)+'–'+esc(o.fim)+'</div>'}).join(''):'')+'</div>'}
 function atualizarTotais(){DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));$('#crg').textContent=H.carga?H.carga+'h':'—'}
 document.addEventListener('input',function(e){var t=e.target;
-  if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.id==='obs'){H.obs=t.value;return}
+  if(t.id==='obs'){H.obs=t.value;return}
   if(t.dataset.d){(H.dias[t.dataset.d]=H.dias[t.dataset.d]||{})[t.dataset.k]=t.value;atualizarTotais();return}
   if(t.dataset.o!=null&&t.dataset.k){H.outros[+t.dataset.o][t.dataset.k]=t.value}});
-document.addEventListener('change',function(e){var t=e.target;if(t.id==='ano'){H.ano=t.value;return}if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1)}});
+document.addEventListener('change',function(e){var t=e.target;if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1)}});
 document.addEventListener('click',function(e){var t=e.target;
   if(t.id==='add'){H.outros.push({local:'',dias:[],inicio:'',fim:''});render();return}
   if(t.dataset.del!=null){H.outros.splice(+t.dataset.del,1);render();return}
@@ -93,9 +93,9 @@ document.addEventListener('click',function(e){var t=e.target;
      .catch(function(x){t.disabled=false;t.textContent='Enviar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
 if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
 GFI.api('listMany',{app:'gd',cols:['pessoas','horarios'],key:'',portal:PORTAL}).then(function(r){
-  var p=((r.pessoas||[]).filter(function(x){return x.id===pid})[0]||{}).data||{},hs=(r.horarios||[]).filter(function(x){return x.id===pid||x.id.indexOf(pid+'-')===0}).map(function(x){return x.data||{}}),h=hs.filter(function(x){return x.ano===ANO})[0]||hs.sort(function(a,b){return String(b.ano||'').localeCompare(String(a.ano||''))})[0];
-  $('#quem').textContent=(p.nome?p.nome+' · ':'')+'informe sua jornada semanal de '+ANO+' (vale para o ano todo)';
-  if(h)H={ano:h.ano||ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||'',enviado:h.enviado,atualizadoEm:h.atualizadoEm};
+  var p=((r.pessoas||[]).filter(function(x){return x.id===pid})[0]||{}).data||{},hs=(r.horarios||[]).filter(function(x){return x.id===pid+'-'+ANO}).map(function(x){return x.data||{}}),h=hs[0];
+  $('#quem').textContent=(p.nome?p.nome+' · ':'')+'jornada de '+ANO;
+  if(h)H={ano:ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||'',enviado:h.enviado,atualizadoEm:h.atualizadoEm};
   if(H.enviado)fechado();else render();
 }).catch(function(x){$('#quem').textContent='Não foi possível abrir: '+((x&&x.message)||'link inválido')});
 })();
