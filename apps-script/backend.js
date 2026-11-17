@@ -166,7 +166,7 @@ function tratarPortal(req) {
     if (r.pessoas) r.pessoas = r.pessoas.filter(function (d) { return d.id === pid; });
     if (r.confirmacoes) r.confirmacoes = r.confirmacoes.filter(function (d) { return d.data && d.data.professorId === pid; });
     if (r.escolhas) r.escolhas = r.escolhas.filter(function (d) { return d.id === pid; });
-    if (r.horarios) r.horarios = r.horarios.filter(function (d) { return d.id === pid; });
+    if (r.horarios) r.horarios = r.horarios.filter(function (d) { return d.id === pid || d.id.indexOf(pid + '-') === 0; });
     // das habilitações, o link só recebe as disciplinas fixas (para travar as de outros professores)
     if (r.habilitacoes) {
       var nomes = {}; listMany('gd', ['pessoas']).pessoas.forEach(function (p) { nomes[p.id] = (p.data && p.data.nome) || p.id; });
@@ -176,12 +176,12 @@ function tratarPortal(req) {
   }
   if (op === 'horario') {
     // mediador informa a própria jornada (só grava no próprio cadastro)
-    var h = req.data || {}, limpo = { carga: String(h.carga || '').slice(0, 10), dias: {}, outros: [], obs: String(h.obs || '').slice(0, 500), atualizadoEm: new Date().toISOString() };
+    var h = req.data || {}, anoH = /^\d{4}$/.test(String(h.ano)) ? String(h.ano) : String(new Date().getFullYear()), limpo = { ano: anoH, carga: String(h.carga || '').slice(0, 10), dias: {}, outros: [], obs: String(h.obs || '').slice(0, 500), atualizadoEm: new Date().toISOString() };
     var HR = function (x) { x = String(x || ''); return /^\d{2}:\d{2}$/.test(x) ? x : ''; };
     ['seg', 'ter', 'qua', 'qui', 'sex'].forEach(function (d) { var v = (h.dias || {})[d] || {}; limpo.dias[d] = { entrada: HR(v.entrada), almoco: HR(v.almoco), retorno: HR(v.retorno), saida: HR(v.saida) };
       if (d === 'qua') { limpo.dias.qua.noiteInicio = HR(v.noiteInicio); limpo.dias.qua.noiteFim = HR(v.noiteFim); } });
     (h.outros || []).slice(0, 6).forEach(function (o) { limpo.outros.push({ local: String(o.local || '').slice(0, 120), dias: (o.dias || []).filter(function (d) { return ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].indexOf(d) >= 0; }), inicio: HR(o.inicio), fim: HR(o.fim) }); });
-    return comTrava(function () { return { ok: true, data: gravar({ app: 'gd', col: 'horarios', id: pid, op: 'set', data: limpo }) }; });
+    return comTrava(function () { return { ok: true, data: gravar({ app: 'gd', col: 'horarios', id: pid + '-' + anoH, op: 'set', data: limpo }) }; });
   }
   if (op === 'escolhas') return comTrava(function () { return { ok: true, data: salvarEscolhas(pid, req.lista || [], req.obs || '', req.dias || []) }; });
   if ((op === 'set' || op === 'delete') && req.col === 'confirmacoes') {

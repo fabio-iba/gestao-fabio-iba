@@ -54,7 +54,7 @@ function hm(m){return Math.floor(m/60)+'h'+(m%60?(m%60<10?'0':'')+(m%60):'')}
 var cod=(/[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(location.hash+'&'+location.search)||[])[1]||'';
 if(cod){try{localStorage.setItem('gdPortal',cod)}catch(e){}}
 var pid=(cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})()).split('.')[0];
-var H={carga:'',dias:{},outros:[],obs:''};
+var ANO=String(new Date().getFullYear()),H={ano:ANO,carga:'',dias:{},outros:[],obs:''};
 function horasDia(d){var v=H.dias[d]||{};var t=dur(v.entrada,v.almoco)+dur(v.retorno,v.saida);if(!v.almoco&&!v.retorno)t=dur(v.entrada,v.saida);if(d==='qua')t+=dur(v.noiteInicio,v.noiteFim);return t}
 function render(){
   var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{},noite=dur(q.noiteInicio,q.noiteFim);
@@ -87,9 +87,9 @@ document.addEventListener('click',function(e){var t=e.target;
      .catch(function(x){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
 if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
 GFI.api('listMany',{app:'gd',cols:['pessoas','horarios']}).then(function(r){
-  var p=((r.pessoas||[])[0]||{}).data||{},h=((r.horarios||[])[0]||{}).data;
-  $('#quem').textContent=(p.nome?p.nome+' · ':'')+'informe sua jornada semanal';
-  if(h)H={carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||''};
+  var p=((r.pessoas||[])[0]||{}).data||{},hs=(r.horarios||[]).map(function(x){return x.data||{}}),h=hs.filter(function(x){return x.ano===ANO})[0]||hs.sort(function(a,b){return String(b.ano||'').localeCompare(String(a.ano||''))})[0];
+  $('#quem').textContent=(p.nome?p.nome+' · ':'')+'informe sua jornada semanal de '+ANO+' (vale para o ano todo)';
+  if(h)H={ano:ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||''};
   render();
 }).catch(function(x){$('#quem').textContent='Não foi possível abrir: '+((x&&x.message)||'link inválido')});
 })();

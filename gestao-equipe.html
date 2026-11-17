@@ -420,9 +420,9 @@ function mailHor(p){var u=linkHor(p.id),c=p.id+'.'+codProfH(p.id),L='━━━�
   var corpo='Olá, '+String(p.nome||'').split(' ')[0]+'!\n\nPeço que informe sua jornada de trabalho na Unicesumar (segunda a sexta: entrada, almoço, retorno e saída), lembrando que toda quarta-feira há 4 horas obrigatórias à noite. Se trabalha em outro local, informe também o local, os dias e o horário.\n\n'+L+'\n▶ LINK PARA INFORMAR O HORÁRIO:\n'+u+'\n\n▶ CÓDIGO DE ACESSO: '+c+'\n'+L+'\n\nAtenciosamente,\nProf. Fabio Iba';
   return 'https://outlook.office.com/mail/deeplink/compose?to='+encodeURIComponent(p.email||'')+'&subject='+encodeURIComponent('Horário de trabalho · equipe de mediação')+'&body='+encodeURIComponent(corpo)}
 function htmlHor(){
-  var meds=L('pessoas').filter(function(p){return p.papel==='mediador'}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')}),H=S.gd.horarios||{};
+  var meds=L('pessoas').filter(function(p){return p.papel==='mediador'&&(!S.med||p.id===S.med)}).sort(function(a,b){return a.nome.localeCompare(b.nome,'pt-BR')}),HA=S.gd.horarios||{},anoH=String(S.ano||new Date().getFullYear()),H={};meds.forEach(function(p){var x=HA[p.id+'-'+anoH];if(x)H[p.id]=x});
   var resp=meds.filter(function(p){return H[p.id]}).length;
-  var h='<div class="sec-h"><div><h2>Horários da equipe</h2><p class="mut">Jornada de cada mediador na Unicesumar (segunda a sexta, com as 4 horas obrigatórias da quarta à noite) e outros locais de trabalho. '+resp+' de '+meds.length+' já informaram.</p></div></div>';
+  var h='<div class="sec-h"><div><h2>Horários da equipe · '+esc(anoH)+'</h2><p class="mut">Jornada anual de cada mediador na Unicesumar (segunda a sexta, com as 4 horas obrigatórias da quarta à noite) e outros locais de trabalho. '+resp+' de '+meds.length+' já informaram.</p></div></div>';
   if(!meds.length)return h+'<div class="card vazio">Nenhum mediador cadastrado.</div>';
   h+='<div class="tw"><table><thead><tr><th style="text-align:left">Mediador</th><th>Carga</th>'+DIAS_H.map(function(d){return '<th>'+d[1]+(d[0]==='qua'?' <small>(+ noite)</small>':'')+'</th>'}).join('')+'<th>Total</th><th style="text-align:left">Outros locais</th><th></th></tr></thead><tbody>';
   h+=meds.map(function(p){var x=H[p.id];
@@ -673,6 +673,7 @@ function render(){
   if(!S.area){$('#view').innerHTML=htmlEscolha();return}
   setTimeout(function(){if(document.getElementById('oc-aulas'))aulasForm()},0);
   var TIT={pvis:'Visão geral',plista:S.ficha?'Ficha do professor':'Professores',pcarga:'Carga por módulo',pent:'Entregas · '+S.mod};
+  var fm=document.querySelector('label[for="f-mod"]');if(fm)fm.style.display=(S.area!=='prof'&&S.tab==='hor')?'none':'';
   var barra=S.area==='prof'?'<div id="rel-cab"><h1>Gestão Docente · '+esc(TIT[S.tab]||'')+'</h1><p>Professores formadores e regentes · emitido em '+br(hoje())+'</p></div><div class="acoes-prof" style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:10px"><button class="btn-redondo" type="button" data-oc="novo" aria-label="Incluir disciplina de outra coordenação" title="Incluir disciplina de outra coordenação"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button><button class="btn-redondo" type="button" data-imprimir="1" aria-label="Gerar relatório em PDF" title="Gerar relatório em PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5"/><path d="M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg></button></div>'+((S.editCoord&&!S.ficha)?htmlFormCoord(''):''):'';
   $('#view').innerHTML=barra+{geral:htmlGeral,plan:htmlPlan,sem:htmlSem,comp:htmlComp,equipe:htmlEquipe,hor:htmlHor,pvis:htmlPVis,plista:htmlPLista,pcarga:htmlPCarga,pent:htmlPEnt}[S.tab]();
 }
