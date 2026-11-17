@@ -68,7 +68,8 @@ function render(){
    +'<div class="card"><h2>Outros locais de trabalho</h2><p class="mut">Se você trabalha em outro lugar, informe o local, os dias e o horário.</p><div id="outros">'
    +(H.outros.length?H.outros.map(function(o,i){return '<div class="outro"><label>Local<input data-o="'+i+'" data-k="local" value="'+esc(o.local)+'" placeholder="Empresa / instituição"></label><div><span style="font-weight:700;font-size:13px">Dias</span><div class="dias">'+TODOS.map(function(d){return '<label><input type="checkbox" data-o="'+i+'" data-dia="'+d[0]+'"'+((o.dias||[]).indexOf(d[0])>=0?' checked':'')+'>'+d[1]+'</label>'}).join('')+'</div></div><label>Início<input type="time" data-o="'+i+'" data-k="inicio" value="'+esc(o.inicio)+'"></label><label>Fim<input type="time" data-o="'+i+'" data-k="fim" value="'+esc(o.fim)+'"></label><button type="button" class="x" data-del="'+i+'">Remover</button></div>'}).join(''):'<p class="mut" style="margin:0 0 10px">Nenhum outro local informado.</p>')
    +'</div><button type="button" id="add">+ Adicionar local</button></div>'
-   +'<div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Enviar meu horário</button></div><p class="msg" id="msg"></p></div>';
+   +'<div id="conf" hidden style="margin-top:16px;border:2px solid var(--bad);background:#FFF1F0;color:var(--bad);border-radius:14px;padding:14px 16px"></div><div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Enviar meu horário</button></div><p class="msg" id="msg"></p></div>';
+  setTimeout(mostrarConflitos,0);
   $('#app').innerHTML=h;
 }
 function fechado(){var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{};
@@ -76,18 +77,25 @@ function fechado(){var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0)
    +'<div class="tw"><table><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th></tr></thead><tbody>'+DIAS.map(function(d){var v=H.dias[d[0]]||{};return '<tr'+(d[0]==='qua'?' class="noite"':'')+'><td><b>'+d[1]+'</b></td><td>'+esc(v.entrada||'—')+'</td><td>'+esc(v.almoco||'—')+'</td><td>'+esc(v.retorno||'—')+'</td><td>'+esc(v.saida||'—')+'</td></tr>'}).join('')+'</tbody></table></div>'
    +'<div class="resumo"><div><b>'+hm(tot)+'</b>total na semana</div><div><b>'+esc(H.carga||'—')+'h</b>contratadas</div></div>'
    +((H.outros||[]).length?'<p style="margin:14px 0 4px"><b>Outros locais</b></p>'+H.outros.map(function(o){return '<div>'+esc(o.local)+' · '+(o.dias||[]).join(', ')+' · '+esc(o.inicio)+'–'+esc(o.fim)+'</div>'}).join(''):'')+'</div>'}
-function atualizarTotais(){DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));$('#crg').textContent=H.carga?H.carga+'h':'—'}
+function intervalos(d){var v=H.dias[d]||{},r=[];if(v.almoco||v.retorno){if(v.entrada&&v.almoco)r.push([v.entrada,v.almoco]);if(v.retorno&&v.saida)r.push([v.retorno,v.saida])}else if(v.entrada&&v.saida)r.push([v.entrada,v.saida]);return r}
+function conflitos(){var out=[],NOME={seg:'segunda',ter:'terça',qua:'quarta',qui:'quinta',sex:'sexta'};
+  (H.outros||[]).forEach(function(o){if(!o.inicio||!o.fim)return;(o.dias||[]).forEach(function(d){if(!NOME[d])return;
+    intervalos(d).forEach(function(iv){var a=min(iv[0]),b=min(iv[1]),c=min(o.inicio),e=min(o.fim);if(a<e&&c<b)out.push('Na '+NOME[d]+', o horário na Unicesumar ('+iv[0]+'–'+iv[1]+') coincide com '+(o.local||'outro local')+' ('+o.inicio+'–'+o.fim+').')})})});
+  return out}
+function mostrarConflitos(){var c=conflitos(),b=$('#conf');if(!b)return c;b.hidden=!c.length;b.innerHTML=c.length?'<b>⚠ Conflito de horário</b><ul style="margin:6px 0 0;padding-left:18px">'+c.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul><div style="margin-top:6px">Ajuste os horários: não é possível estar em dois locais ao mesmo tempo. O envio fica bloqueado até corrigir.</div>':'';return c}
+function atualizarTotais(){mostrarConflitos();DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));$('#crg').textContent=H.carga?H.carga+'h':'—'}
 document.addEventListener('input',function(e){var t=e.target;
   if(t.id==='obs'){H.obs=t.value;return}
   if(t.dataset.d){(H.dias[t.dataset.d]=H.dias[t.dataset.d]||{})[t.dataset.k]=t.value;atualizarTotais();return}
-  if(t.dataset.o!=null&&t.dataset.k){H.outros[+t.dataset.o][t.dataset.k]=t.value}});
-document.addEventListener('change',function(e){var t=e.target;if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1)}});
+  if(t.dataset.o!=null&&t.dataset.k){H.outros[+t.dataset.o][t.dataset.k]=t.value;mostrarConflitos()}});
+document.addEventListener('change',function(e){var t=e.target;if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1);mostrarConflitos()}});
 document.addEventListener('click',function(e){var t=e.target;
   if(t.id==='add'){H.outros.push({local:'',dias:[],inicio:'',fim:''});render();return}
   if(t.dataset.del!=null){H.outros.splice(+t.dataset.del,1);render();return}
   if(t.id==='salvar'){var m=$('#msg'),q=H.dias.qua||{};
     var falta=!H.carga?'Informe a carga horária semanal.':DIAS.some(function(d){var v=H.dias[d[0]]||{};return !v.entrada||!v.saida})?'Informe a entrada e a saída de todos os dias.':H.outros.some(function(o){return !o.local||!o.inicio||!o.fim||!(o.dias||[]).length})?'Complete local, dias e horário de cada outro local de trabalho (ou remova).':'';
-    if(falta){m.className='msg bad';m.textContent=falta;return}
+    if(!falta&&mostrarConflitos().length)falta='Há conflito de horário com outro local de trabalho. Corrija antes de enviar.';
+    if(falta){m.className='msg bad';m.textContent=falta;var cf=$('#conf');if(cf&&!cf.hidden)cf.scrollIntoView({behavior:'smooth',block:'center'});return}
     if(!window.confirm('Depois de enviar, o horário de '+H.ano+' não poderá mais ser alterado por aqui. Enviar agora?'))return;t.disabled=true;t.textContent='Enviando…';
     GFI.api('horario',{data:H,key:'',portal:PORTAL}).then(function(){H.enviado=true;H.atualizadoEm=new Date().toISOString();fechado()})
      .catch(function(x){t.disabled=false;t.textContent='Enviar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
