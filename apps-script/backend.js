@@ -181,7 +181,12 @@ function tratarPortal(req) {
     ['seg', 'ter', 'qua', 'qui', 'sex'].forEach(function (d) { var v = (h.dias || {})[d] || {}; limpo.dias[d] = { entrada: HR(v.entrada), almoco: HR(v.almoco), retorno: HR(v.retorno), saida: HR(v.saida) };
       if (d === 'qua') { limpo.dias.qua.noiteInicio = HR(v.noiteInicio); limpo.dias.qua.noiteFim = HR(v.noiteFim); } });
     (h.outros || []).slice(0, 6).forEach(function (o) { limpo.outros.push({ local: String(o.local || '').slice(0, 120), dias: (o.dias || []).filter(function (d) { return ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'].indexOf(d) >= 0; }), inicio: HR(o.inicio), fim: HR(o.fim) }); });
-    return comTrava(function () { return { ok: true, data: gravar({ app: 'gd', col: 'horarios', id: pid + '-' + anoH, op: 'set', data: limpo }) }; });
+    limpo.enviado = true;
+    return comTrava(function () {
+      var ja = listMany('gd', ['horarios']).horarios.filter(function (d) { return d.id === pid + '-' + anoH; })[0];
+      if (ja && ja.data && ja.data.enviado) return { ok: false, code: 'invalid_argument', message: 'O horário de ' + anoH + ' já foi enviado. Para alterar, fale com a coordenação.' };
+      return { ok: true, data: gravar({ app: 'gd', col: 'horarios', id: pid + '-' + anoH, op: 'set', data: limpo }) };
+    });
   }
   if (op === 'escolhas') return comTrava(function () { return { ok: true, data: salvarEscolhas(pid, req.lista || [], req.obs || '', req.dias || []) }; });
   if ((op === 'set' || op === 'delete') && req.col === 'confirmacoes') {

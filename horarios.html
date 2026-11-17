@@ -68,9 +68,14 @@ function render(){
    +'<div class="card"><h2>Outros locais de trabalho</h2><p class="mut">Se você trabalha em outro lugar, informe o local, os dias e o horário.</p><div id="outros">'
    +(H.outros.length?H.outros.map(function(o,i){return '<div class="outro"><label>Local<input data-o="'+i+'" data-k="local" value="'+esc(o.local)+'" placeholder="Empresa / instituição"></label><div><span style="font-weight:700;font-size:13px">Dias</span><div class="dias">'+TODOS.map(function(d){return '<label><input type="checkbox" data-o="'+i+'" data-dia="'+d[0]+'"'+((o.dias||[]).indexOf(d[0])>=0?' checked':'')+'>'+d[1]+'</label>'}).join('')+'</div></div><label>Início<input type="time" data-o="'+i+'" data-k="inicio" value="'+esc(o.inicio)+'"></label><label>Fim<input type="time" data-o="'+i+'" data-k="fim" value="'+esc(o.fim)+'"></label><button type="button" class="x" data-del="'+i+'">Remover</button></div>'}).join(''):'<p class="mut" style="margin:0 0 10px">Nenhum outro local informado.</p>')
    +'</div><button type="button" id="add">+ Adicionar local</button></div>'
-   +'<div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Salvar meu horário</button></div><p class="msg" id="msg"></p></div>';
+   +'<div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Enviar meu horário</button></div><p class="msg" id="msg"></p></div>';
   $('#app').innerHTML=h;
 }
+function fechado(){var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{};
+  $('#app').innerHTML='<div class="card" style="border-color:var(--ok)"><h2 style="color:var(--ok)">✓ Horário de '+esc(H.ano)+' enviado</h2><p class="mut">Enviado em '+esc(String(H.atualizadoEm||'').slice(0,10).split('-').reverse().join('/'))+'. A coordenação já recebeu. Para alterar, fale com a coordenação.</p>'
+   +'<div class="tw"><table><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th></tr></thead><tbody>'+DIAS.map(function(d){var v=H.dias[d[0]]||{};return '<tr><td><b>'+d[1]+'</b></td><td>'+esc(v.entrada||'—')+'</td><td>'+esc(v.almoco||'—')+'</td><td>'+esc(v.retorno||'—')+'</td><td>'+esc(v.saida||'—')+'</td></tr>'+(d[0]==='qua'?'<tr class="noite"><td><b>Quarta à noite</b></td><td>'+esc(q.noiteInicio||'—')+'</td><td colspan="2"></td><td>'+esc(q.noiteFim||'—')+'</td></tr>':'')}).join('')+'</tbody></table></div>'
+   +'<div class="resumo"><div><b>'+hm(tot)+'</b>total na semana</div><div><b>'+esc(H.carga||'—')+'h</b>contratadas</div></div>'
+   +((H.outros||[]).length?'<p style="margin:14px 0 4px"><b>Outros locais</b></p>'+H.outros.map(function(o){return '<div>'+esc(o.local)+' · '+(o.dias||[]).join(', ')+' · '+esc(o.inicio)+'–'+esc(o.fim)+'</div>'}).join(''):'')+'</div>'}
 function atualizarTotais(){DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};var n=$('#t-noite');if(n)n.textContent=hm(dur(q.noiteInicio,q.noiteFim));$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));$('#crg').textContent=H.carga?H.carga+'h':'—'}
 document.addEventListener('input',function(e){var t=e.target;
   if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.id==='obs'){H.obs=t.value;return}
@@ -83,15 +88,15 @@ document.addEventListener('click',function(e){var t=e.target;
   if(t.id==='salvar'){var m=$('#msg'),q=H.dias.qua||{};
     var falta=!H.carga?'Informe a carga horária semanal.':DIAS.some(function(d){var v=H.dias[d[0]]||{};return !v.entrada||!v.saida})?'Informe a entrada e a saída de todos os dias.':(!q.noiteInicio||!q.noiteFim)?'Informe o horário da quarta-feira à noite (obrigatório).':dur(q.noiteInicio,q.noiteFim)<240?'A quarta-feira à noite precisa ter 4 horas.':H.outros.some(function(o){return !o.local||!o.inicio||!o.fim||!(o.dias||[]).length})?'Complete local, dias e horário de cada outro local de trabalho (ou remova).':'';
     if(falta){m.className='msg bad';m.textContent=falta;return}
-    t.disabled=true;t.textContent='Salvando…';
-    GFI.api('horario',{data:H,key:'',portal:PORTAL}).then(function(){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg ok';m.textContent='Horário salvo. A coordenação já recebeu as informações.'})
-     .catch(function(x){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
+    if(!window.confirm('Depois de enviar, o horário de '+H.ano+' não poderá mais ser alterado por aqui. Enviar agora?'))return;t.disabled=true;t.textContent='Enviando…';
+    GFI.api('horario',{data:H,key:'',portal:PORTAL}).then(function(){H.enviado=true;H.atualizadoEm=new Date().toISOString();fechado()})
+     .catch(function(x){t.disabled=false;t.textContent='Enviar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
 if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
 GFI.api('listMany',{app:'gd',cols:['pessoas','horarios'],key:'',portal:PORTAL}).then(function(r){
   var p=((r.pessoas||[]).filter(function(x){return x.id===pid})[0]||{}).data||{},hs=(r.horarios||[]).filter(function(x){return x.id===pid||x.id.indexOf(pid+'-')===0}).map(function(x){return x.data||{}}),h=hs.filter(function(x){return x.ano===ANO})[0]||hs.sort(function(a,b){return String(b.ano||'').localeCompare(String(a.ano||''))})[0];
   $('#quem').textContent=(p.nome?p.nome+' · ':'')+'informe sua jornada semanal de '+ANO+' (vale para o ano todo)';
-  if(h)H={ano:ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||''};
-  render();
+  if(h)H={ano:h.ano||ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||'',enviado:h.enviado,atualizadoEm:h.atualizadoEm};
+  if(H.enviado)fechado();else render();
 }).catch(function(x){$('#quem').textContent='Não foi possível abrir: '+((x&&x.message)||'link inválido')});
 })();
 </script>
