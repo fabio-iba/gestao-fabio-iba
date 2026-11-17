@@ -53,6 +53,7 @@ function dur(a,b){var x=min(a),y=min(b);return x==null||y==null||y<=x?0:y-x}
 function hm(m){return Math.floor(m/60)+'h'+(m%60?(m%60<10?'0':'')+(m%60):'')}
 var cod=(/[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(location.hash+'&'+location.search)||[])[1]||'';
 if(cod){try{localStorage.setItem('gdPortal',cod)}catch(e){}}
+var PORTAL=cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})();
 var pid=(cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})()).split('.')[0];
 var ANO=String(new Date().getFullYear()),H={ano:ANO,carga:'',dias:{},outros:[],obs:''};
 function horasDia(d){var v=H.dias[d]||{};var t=dur(v.entrada,v.almoco)+dur(v.retorno,v.saida);if(!v.almoco&&!v.retorno)t=dur(v.entrada,v.saida);if(d==='qua')t+=dur(v.noiteInicio,v.noiteFim);return t}
@@ -83,11 +84,11 @@ document.addEventListener('click',function(e){var t=e.target;
     var falta=!H.carga?'Informe a carga horária semanal.':DIAS.some(function(d){var v=H.dias[d[0]]||{};return !v.entrada||!v.saida})?'Informe a entrada e a saída de todos os dias.':(!q.noiteInicio||!q.noiteFim)?'Informe o horário da quarta-feira à noite (obrigatório).':dur(q.noiteInicio,q.noiteFim)<240?'A quarta-feira à noite precisa ter 4 horas.':H.outros.some(function(o){return !o.local||!o.inicio||!o.fim||!(o.dias||[]).length})?'Complete local, dias e horário de cada outro local de trabalho (ou remova).':'';
     if(falta){m.className='msg bad';m.textContent=falta;return}
     t.disabled=true;t.textContent='Salvando…';
-    GFI.api('horario',{data:H}).then(function(){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg ok';m.textContent='Horário salvo. A coordenação já recebeu as informações.'})
+    GFI.api('horario',{data:H,key:'',portal:PORTAL}).then(function(){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg ok';m.textContent='Horário salvo. A coordenação já recebeu as informações.'})
      .catch(function(x){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
 if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
-GFI.api('listMany',{app:'gd',cols:['pessoas','horarios']}).then(function(r){
-  var p=((r.pessoas||[])[0]||{}).data||{},hs=(r.horarios||[]).map(function(x){return x.data||{}}),h=hs.filter(function(x){return x.ano===ANO})[0]||hs.sort(function(a,b){return String(b.ano||'').localeCompare(String(a.ano||''))})[0];
+GFI.api('listMany',{app:'gd',cols:['pessoas','horarios'],key:'',portal:PORTAL}).then(function(r){
+  var p=((r.pessoas||[]).filter(function(x){return x.id===pid})[0]||{}).data||{},hs=(r.horarios||[]).filter(function(x){return x.id===pid||x.id.indexOf(pid+'-')===0}).map(function(x){return x.data||{}}),h=hs.filter(function(x){return x.ano===ANO})[0]||hs.sort(function(a,b){return String(b.ano||'').localeCompare(String(a.ano||''))})[0];
   $('#quem').textContent=(p.nome?p.nome+' · ':'')+'informe sua jornada semanal de '+ANO+' (vale para o ano todo)';
   if(h)H={ano:ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||''};
   render();
