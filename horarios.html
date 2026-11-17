@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Horário de trabalho · Mediadores</title>
+<script>window.GFI_APP='gd';window.GFI_LS=[]</script>
+<script src="config.js?v=6"></script>
+<script src="gfi.js?v=11"></script>
+<style>
+:root{--bg:#EEF2F5;--card:#fff;--ink:#0F1B2A;--mut:#5B6878;--line:#DCE4EA;--ac:#0F6E7A;--ac-s:#DDF1F1;--bad:#B92F26;--ok:#146C45;--warn:#8A6A12;--warn-s:#FBF1D9}
+@media (prefers-color-scheme:dark){:root{--bg:#0B131B;--card:#131F2A;--ink:#E8EEF3;--mut:#93A3B2;--line:#23313E;--ac:#4CC7C2;--ac-s:#12302F;--bad:#FF8F86;--ok:#5FD09B;--warn:#EAB35A;--warn-s:#35280F}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+.band{border-radius:18px;padding:22px 26px;color:#F3F7FA;background:radial-gradient(500px 240px at 90% 0%,rgba(76,199,194,.35),transparent 60%),linear-gradient(120deg,#0B1D2E,#10294A 60%,#134B5A);box-shadow:0 12px 30px -14px rgba(15,27,42,.4)}
+.band h1{margin:0;font-size:clamp(22px,4vw,32px)}
+.band p{margin:6px 0 0;color:#B9CAD6}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-top:16px}
+.card h2{font-size:17px;margin:0 0 4px}.card p.mut{margin:0 0 12px;color:var(--mut);font-size:13.5px}
+label{display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:13px}
+input,select{font:inherit;font-weight:400;padding:9px 10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);min-width:0}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:640px;table-layout:fixed}
+th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:12.5px;color:var(--mut)}
+td input{width:100%}
+tr.noite td{background:var(--warn-s)}
+.tot{font-weight:700;white-space:nowrap}
+.outro{display:grid;grid-template-columns:2fr 2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:10px}
+.dias{display:flex;gap:4px;flex-wrap:wrap}.dias label{flex-direction:row;align-items:center;gap:3px;font-weight:400;font-size:12.5px}
+button{font:inherit;font-weight:700;border-radius:999px;padding:10px 20px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}button.x{padding:6px 12px;color:var(--bad)}
+button:disabled{opacity:.55;cursor:default}
+.msg{margin-top:12px;font-weight:700}.msg.bad{color:var(--bad)}.msg.ok{color:var(--ok)}
+.resumo{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:14px}.resumo b{font-size:18px;display:block}
+@media (max-width:640px){.outro{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="band"><h1>Horário de trabalho</h1><p id="quem">Carregando…</p></div>
+  <div id="app"></div>
+</div>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+var DIAS=[['seg','Segunda'],['ter','Terça'],['qua','Quarta'],['qui','Quinta'],['sex','Sexta']],TODOS=[['seg','Seg'],['ter','Ter'],['qua','Qua'],['qui','Qui'],['sex','Sex'],['sab','Sáb'],['dom','Dom']];
+function min(h){if(!h)return null;var p=h.split(':');return (+p[0])*60+(+p[1])}
+function dur(a,b){var x=min(a),y=min(b);return x==null||y==null||y<=x?0:y-x}
+function hm(m){return Math.floor(m/60)+'h'+(m%60?(m%60<10?'0':'')+(m%60):'')}
+var cod=(/[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(location.hash+'&'+location.search)||[])[1]||'';
+if(cod){try{localStorage.setItem('gdPortal',cod)}catch(e){}}
+var pid=(cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})()).split('.')[0];
+var H={carga:'',dias:{},outros:[],obs:''};
+function horasDia(d){var v=H.dias[d]||{};var t=dur(v.entrada,v.almoco)+dur(v.retorno,v.saida);if(!v.almoco&&!v.retorno)t=dur(v.entrada,v.saida);if(d==='qua')t+=dur(v.noiteInicio,v.noiteFim);return t}
+function render(){
+  var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{},noite=dur(q.noiteInicio,q.noiteFim);
+  var h='<div class="card"><h2>Carga horária na Unicesumar</h2><p class="mut">Informe a carga semanal do seu contrato.</p><label style="max-width:260px">Horas por semana<input id="carga" type="number" min="0" max="60" step="1" value="'+esc(H.carga)+'" placeholder="Ex.: 40"></label></div>'
+   +'<div class="card"><h2>Jornada de segunda a sexta</h2><p class="mut">Entrada, saída para o almoço, retorno e fim do expediente. <b>Toda quarta-feira há 4 horas obrigatórias à noite</b>: informe o início e o fim.</p><div class="tw"><table><colgroup><col style="width:16%"><col><col><col><col><col style="width:12%"></colgroup><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th><th>Total</th></tr></thead><tbody>'
+   +DIAS.map(function(d){var v=H.dias[d[0]]||{},f=function(k){return '<input type="time" data-d="'+d[0]+'" data-k="'+k+'" value="'+esc(v[k]||'')+'">'};
+     return '<tr><td><b>'+d[1]+'</b></td><td>'+f('entrada')+'</td><td>'+f('almoco')+'</td><td>'+f('retorno')+'</td><td>'+f('saida')+'</td><td class="tot" id="t-'+d[0]+'">'+hm(horasDia(d[0]))+'</td></tr>'
+      +(d[0]==='qua'?'<tr class="noite"><td><b>Quarta à noite</b><br><small>obrigatório · 4h</small></td><td>'+f('noiteInicio')+'</td><td colspan="2" style="color:var(--mut);font-size:13px">até</td><td>'+f('noiteFim')+'</td><td class="tot" id="t-noite">'+hm(noite)+'</td></tr>':'')}).join('')
+   +'</tbody></table></div><div class="resumo"><div><b id="tot">'+hm(tot)+'</b>total na semana</div><div><b id="crg">'+(H.carga?H.carga+'h':'—')+'</b>contratadas</div></div></div>'
+   +'<div class="card"><h2>Outros locais de trabalho</h2><p class="mut">Se você trabalha em outro lugar, informe o local, os dias e o horário.</p><div id="outros">'
+   +(H.outros.length?H.outros.map(function(o,i){return '<div class="outro"><label>Local<input data-o="'+i+'" data-k="local" value="'+esc(o.local)+'" placeholder="Empresa / instituição"></label><div><span style="font-weight:700;font-size:13px">Dias</span><div class="dias">'+TODOS.map(function(d){return '<label><input type="checkbox" data-o="'+i+'" data-dia="'+d[0]+'"'+((o.dias||[]).indexOf(d[0])>=0?' checked':'')+'>'+d[1]+'</label>'}).join('')+'</div></div><label>Início<input type="time" data-o="'+i+'" data-k="inicio" value="'+esc(o.inicio)+'"></label><label>Fim<input type="time" data-o="'+i+'" data-k="fim" value="'+esc(o.fim)+'"></label><button type="button" class="x" data-del="'+i+'">Remover</button></div>'}).join(''):'<p class="mut" style="margin:0 0 10px">Nenhum outro local informado.</p>')
+   +'</div><button type="button" id="add">+ Adicionar local</button></div>'
+   +'<div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Salvar meu horário</button></div><p class="msg" id="msg"></p></div>';
+  $('#app').innerHTML=h;
+}
+function atualizarTotais(){DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};var n=$('#t-noite');if(n)n.textContent=hm(dur(q.noiteInicio,q.noiteFim));$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));$('#crg').textContent=H.carga?H.carga+'h':'—'}
+document.addEventListener('input',function(e){var t=e.target;
+  if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.id==='obs'){H.obs=t.value;return}
+  if(t.dataset.d){(H.dias[t.dataset.d]=H.dias[t.dataset.d]||{})[t.dataset.k]=t.value;atualizarTotais();return}
+  if(t.dataset.o!=null&&t.dataset.k){H.outros[+t.dataset.o][t.dataset.k]=t.value}});
+document.addEventListener('change',function(e){var t=e.target;if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1)}});
+document.addEventListener('click',function(e){var t=e.target;
+  if(t.id==='add'){H.outros.push({local:'',dias:[],inicio:'',fim:''});render();return}
+  if(t.dataset.del!=null){H.outros.splice(+t.dataset.del,1);render();return}
+  if(t.id==='salvar'){var m=$('#msg'),q=H.dias.qua||{};
+    var falta=!H.carga?'Informe a carga horária semanal.':DIAS.some(function(d){var v=H.dias[d[0]]||{};return !v.entrada||!v.saida})?'Informe a entrada e a saída de todos os dias.':(!q.noiteInicio||!q.noiteFim)?'Informe o horário da quarta-feira à noite (obrigatório).':dur(q.noiteInicio,q.noiteFim)<240?'A quarta-feira à noite precisa ter 4 horas.':H.outros.some(function(o){return !o.local||!o.inicio||!o.fim||!(o.dias||[]).length})?'Complete local, dias e horário de cada outro local de trabalho (ou remova).':'';
+    if(falta){m.className='msg bad';m.textContent=falta;return}
+    t.disabled=true;t.textContent='Salvando…';
+    GFI.api('horario',{data:H}).then(function(){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg ok';m.textContent='Horário salvo. A coordenação já recebeu as informações.'})
+     .catch(function(x){t.disabled=false;t.textContent='Salvar meu horário';m.className='msg bad';m.textContent='Não foi possível salvar: '+((x&&x.message)||'erro')})}});
+if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
+GFI.api('listMany',{app:'gd',cols:['pessoas','horarios']}).then(function(r){
+  var p=((r.pessoas||[])[0]||{}).data||{},h=((r.horarios||[])[0]||{}).data;
+  $('#quem').textContent=(p.nome?p.nome+' · ':'')+'informe sua jornada semanal';
+  if(h)H={carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||''};
+  render();
+}).catch(function(x){$('#quem').textContent='Não foi possível abrir: '+((x&&x.message)||'link inválido')});
+})();
+</script>
+</body>
+</html>
