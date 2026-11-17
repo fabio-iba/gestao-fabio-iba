@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Atividades da mediação</title>
+<script>window.GFI_APP='gd';window.GFI_LS=[]</script>
+<script src="config.js?v=6"></script>
+<script src="gfi.js?v=11"></script>
+<style>
+:root{--bg:#EEF2F5;--card:#fff;--ink:#0F1B2A;--mut:#5B6878;--line:#DCE4EA;--ac:#0F6E7A;--ac-s:#DDF1F1;--bad:#B92F26;--ok:#146C45;--ok-s:#E3F4EC;--warn:#8A6A12}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:16px 16px 110px}
+.band{border-radius:18px;padding:22px 26px;color:#F3F7FA;background:radial-gradient(500px 240px at 90% 0%,rgba(76,199,194,.35),transparent 60%),linear-gradient(120deg,#0B1D2E,#10294A 60%,#134B5A)}
+.band h1{margin:0;font-size:clamp(22px,4vw,30px)}.band p{margin:6px 0 0;color:#B9CAD6}
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:16px 2px}
+select{font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:14px}
+.card h2{font-size:17px;margin:0}.card .sub{color:var(--mut);font-size:13px;margin:2px 0 8px}
+details{border-top:1px solid var(--line);padding:8px 0}details summary{cursor:pointer;font-weight:700;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:10px}
+details summary::-webkit-details-marker{display:none}summary small{color:var(--mut);font-weight:400}
+.it{display:flex;gap:10px;align-items:flex-start;padding:7px 4px;border-radius:10px;cursor:pointer}
+.it:hover{background:#F6F8FA}.it input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--ac)}
+.it.feito{cursor:default;background:var(--ok-s)}.it.feito span.t{color:var(--ok)}
+.it span.t{flex:1}.it small{color:var(--mut);white-space:nowrap}.it small.late{color:var(--bad);font-weight:700}
+.foot{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:12px 16px;display:flex;justify-content:center;gap:14px;align-items:center;box-shadow:0 -8px 20px -12px rgba(0,0,0,.2)}
+button{font:inherit;font-weight:700;border-radius:999px;padding:10px 20px;cursor:pointer;border:1px solid var(--line);background:#fff}
+button.pri{background:var(--ac);border-color:var(--ac);color:#fff}button:disabled{opacity:.5;cursor:default}
+dialog{border:0;border-radius:18px;padding:0;width:min(560px,calc(100vw - 24px))}dialog::backdrop{background:rgba(10,20,30,.5)}
+.dl{padding:20px 22px}.dl h3{margin:0 0 6px}.dl ul{max-height:45vh;overflow:auto;padding-left:18px;font-size:14px}
+.msg{font-weight:700}.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="band"><h1>Atividades da mediação</h1><p id="quem">Carregando…</p></div>
+  <div class="bar"><label for="mod" style="font-weight:700">Módulo</label><select id="mod"></select><span class="msg" id="msg"></span></div>
+  <div id="app"></div>
+</div>
+<div class="foot"><span id="sel">Nenhuma atividade selecionada</span><button class="pri" id="enviar" disabled>Confirmar e enviar</button></div>
+<dialog id="dlg"><div class="dl"><h3>Confirmar atividades feitas</h3><p style="margin:0;color:#5B6878;font-size:14px">Depois de confirmar, estas atividades ficam registradas como feitas, com a data de hoje, e <b>não poderão mais ser alteradas</b>.</p><ul id="dl-lista"></ul><div style="display:flex;gap:8px;justify-content:flex-end"><button id="dl-nao">Voltar</button><button class="pri" id="dl-sim">Confirmar</button></div></div></dialog>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function pad(n){return (n<10?'0':'')+n}
+function isoAdd(iso,n){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]+n);return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function segunda(iso){var p=iso.split('-'),d=new Date(+p[0],+p[1]-1,+p[2]),w=d.getDay();return isoAdd(iso,w===0?-6:1-w)}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function hoje(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function br(iso){if(!iso)return '—';var p=String(iso).slice(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function sinChave(d){return [norm(d.nome).replace(/[^a-z0-9]/g,''),d.modulo||'',d.ordem==null?'':String(d.ordem),norm(d.hora||'').replace(/\s/g,'')].join('|')}
+
+var PLAN=[
+ ['Alinhamento com o professor',[
+  ['al-reuniao','Reunião com o professor e apresentação da equipe de mediação'],
+  ['al-mat','Vídeo de apresentação, foto e minicurrículo do professor recebidos'],
+  ['al-prazos','Prazos informados ao professor (questões, vídeo do MAPA, slides e plano de aula, book)']]],
+ ['Validação de materiais',[
+  ['va-plano','Plano de ensino atualizado e postado'],
+  ['va-quest','Questões discursivas validadas'],
+  ['va-mapa','Critérios de correção e formulário padrão do MAPA'],
+  ['va-slides','Slides e plano de aula validados']]],
+ ['Planejamento da disciplina',[
+  ['pl-links','Links das aulas ao vivo (planilha, capas e Studeo)'],
+  ['pl-videos','Links do vídeo de apresentação e do vídeo do MAPA (LIBRAS quando necessário)'],
+  ['pl-prog','Programação semanal no book']]],
+ ['Conferência do Studeo',[
+  ['st-amb','Ambiente conferido (aulas, livro, calendário, plano de ensino, mural)'],
+  ['st-mapa','Link do MAPA disponível antes da semana 1'],
+  ['st-ae','Links das AEs disponíveis antes da semana 2']]],
+ ['Publicações antes do início',[
+  ['pu-mat','Programação, slides, formulário e vídeo do MAPA postados'],
+  ['pu-foruns','Sala do Café, Mural, Fórum "O que vem por aí?" e Fórum Atividade']]],
+ ['Comunicação inicial',[
+  ['co-apres','Mural: apresentação do mediador',1],
+  ['co-boas','Comunicado de boas-vindas',1],
+  ['co-inicio','Comunicado de início na sexta anterior',1]]]
+];
+var MARCOS={
+ 1:['MAPA liberado','Aula ao vivo 1 da 1ª disciplina'],
+ 2:['Atividades de Estudo (AEs) liberadas','Aula ao vivo 1 da 2ª disciplina'],
+ 3:['Aula ao vivo 2 da 1ª disciplina'],
+ 4:['Aula ao vivo 2 da 2ª disciplina','Prova substitutiva (SUB) do módulo anterior'],
+ 5:['Aula ao vivo 3 da 1ª disciplina'],
+ 6:['Aula ao vivo 3 da 2ª disciplina','Lembrar: MAPA vence na semana 7'],
+ 7:['Última aula da 1ª disciplina','Fim do prazo do MAPA'],
+ 8:['Última aula da 2ª disciplina','Fim do prazo das AEs','Início do agendamento das provas'],
+ 9:['Agendamento e realização das provas','Fechar o book da disciplina','Preparar o próximo módulo'],
+ 10:['Prazo final das provas','Encerramento do módulo']
+};
+// itens controlados por disciplina em cada semana (obrigatórios do site)
+function itensSemana(n,ordem){
+  var r=[],aula=(ordem===1&&n%2===1&&n<=7)||(ordem===2&&n%2===0&&n<=8);
+  if(n===1)r.push(['s1-mapa','MAPA conferido e aviso no mural',1]);
+  if(n===2)r.push(['s2-ae','AEs conferidas e aviso no mural',1]);
+  if(aula){r.push(['aula-conv','Mural e comunicado convite da aula (dia anterior)',1]);r.push(['aula-med','Aula mediada (link ao professor e slides postados)',0])}
+  if(n===4)r.push(['s4-sub','Mural da SUB do módulo anterior',1]);
+  if(n===7)r.push(['s7-mapa','Mural: prazo final do MAPA',1]);
+  if(n===8){r.push(['s8-ae','Mural: prazo final das AEs',1]);r.push(['s8-ag','Mural: início do agendamento das provas',1])}
+  if(n===9){r.push(['s9-prov','Mural e comunicado das provas',1]);r.push(['s9-book','Book da disciplina fechado',0])}
+  if(n===10)r.push(['s10-enc','Mural e comunicado de encerramento',1]);
+  r.push(['sexta','Comunicado de sexta (encerramento da semana)',1]);
+  return r.map(function(x){return {k:'w'+n+'-'+x[0],t:x[1],obr:!!x[2]}});
+}
+var COMP=[
+ ['cp-reuniao','Reuniões semanais de alinhamento'],['cp-email','E-mail institucional e orientações da coordenação'],
+ ['cp-vitru','Treinamentos da VitruAcademy'],['cp-demandas','Planilhas de demandas (reabertura, notas, cancelamento de questões)'],
+ ['cp-calouro','Espaço Calouro e Prepare-se ENADE/PROFISSÃO'],['cp-enade','ENADE (edital e grupos de WhatsApp)'],
+ ['cp-projetos','Projetos institucionais (AMPLIAR, ACOLHE+)'],['cp-redes','Redes sociais dos cursos'],
+ ['cp-eventos','Projetos, palestras e semanas acadêmicas'],['cp-evid','Evidências de reconhecimento'],
+ ['cp-gt','Grupos de trabalho e ações institucionais'],['cp-notas','Lançamento de notas: alunos aguardando novo arquivo (15 dias antes)'],
+ ['cp-book','Encerramento: book concluído'],['cp-pend','Encerramento: pendências das planilhas conferidas'],['cp-sub','Encerramento: prazos da SUB divulgados']
+];
+
+
+var MODS=['Módulo 51','Módulo 52','Módulo 53','Módulo 54'],ANO='2027';
+var cod=(/[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(location.hash+'&'+location.search)||[])[1]||'';
+if(cod){try{localStorage.setItem('gdPortal',cod)}catch(e){}}else{try{cod=localStorage.getItem('gdPortal')||''}catch(e){}}
+var pid=cod.split('.')[0],G=null,MOD='',SEL={};
+function lst(c){return (G[c]||[]).map(function(x){return Object.assign({id:x.id},x.data||{})})}
+function inicioMod(m){var g=lst('gradeEntregas').filter(function(x){return x.id==='m'+m.replace(/\D/g,'')})[0];return g&&g.inicio?segunda(g.inicio):''}
+function modPadrao(){var h=hoje(),r='Módulo 51';MODS.forEach(function(m){var i=inicioMod(m);if(i&&i<=isoAdd(h,21))r=m});return r}
+function docId(tid){return ANO+'_'+MOD.replace(/\D/g,'')+'_'+tid.replace(/[^a-z0-9]/gi,'').slice(0,80)}
+function chk(tid){var d=lst('checks').filter(function(x){return x.id===docId(tid)})[0];return (d&&d.itens)||{}}
+function turmas(){var minhas={};lst('alocacoes').forEach(function(a){minhas[a.disciplinaId]=1});var g={},nomes={};lst('pessoas').forEach(function(p){nomes[p.id]=p.nome});
+  lst('disciplinas').forEach(function(d){if(!minhas[d.id]||d.modulo!==MOD||d.semAoVivo)return;var k=sinChave(d),t=g[k]=g[k]||{id:k,nome:d.nome,ordem:Number(d.ordem)||1,hora:d.hora||'',ano:d.ano||'',ids:[],prof:{}};t.ids.push(d.id)});
+  lst('alocacoesTodas').forEach(function(a){Object.keys(g).forEach(function(k){if(g[k].ids.indexOf(a.disciplinaId)>=0&&nomes[a.professorId])g[k].prof[nomes[a.professorId]]=1})});
+  return Object.keys(g).map(function(k){return g[k]}).sort(function(a,b){return a.ordem-b.ordem||a.nome.localeCompare(b.nome,'pt-BR')})}
+function item(tid,k,txt,prazo){var it=chk(tid),f=it[k],id=tid+'::'+k,late=!f&&prazo&&prazo<hoje();
+  if(f)return '<div class="it feito"><input type="checkbox" checked disabled><span class="t">'+esc(txt)+'</span><small>✓ feito em '+br(f)+'</small></div>';
+  return '<label class="it"><input type="checkbox" data-sel="'+esc(id)+'"'+(SEL[id]?' checked':'')+'><span class="t">'+esc(txt)+'</span>'+(prazo?'<small class="'+(late?'late':'')+'">prazo '+br(prazo)+'</small>':'')+'</label>'}
+function grupo(titulo,itens){var feitos=itens.filter(function(x){return x.f}).length;return '<details'+(feitos<itens.length?' open':'')+'><summary>'+esc(titulo)+'<small>'+feitos+' de '+itens.length+' feitas</small></summary>'+itens.map(function(x){return x.h}).join('')+'</details>'}
+function render(){
+  var i=inicioMod(MOD),ts=turmas(),h='';
+  if(!ts.length)h+='<div class="card"><h2>Nenhuma disciplina neste módulo</h2><p class="sub">Você não está alocado(a) em disciplinas com aula ao vivo no '+esc(MOD)+'.</p></div>';
+  ts.forEach(function(t){var it=chk(t.id),pp=i?isoAdd(i,-3):'';
+    var gs=PLAN.map(function(g){return grupo('Planejamento · '+g[0],g[1].map(function(x){return {f:!!it[x[0]],h:item(t.id,x[0],x[1],pp)}}))});
+    for(var n=1;n<=10;n++){var pz=i?isoAdd(i,7*(n-1)+4):'';gs.push(grupo('Semana '+n+(i?' ('+br(isoAdd(i,7*(n-1)))+' a '+br(pz)+')':''),itensSemana(n,t.ordem).map(function(x){return {f:!!it[x.k],h:item(t.id,x.k,x.t,pz)}})))}
+    h+='<div class="card"><h2>'+esc(t.nome)+'</h2><p class="sub">'+t.ordem+'ª disciplina · '+esc(t.ano)+' ano · '+esc(t.hora)+(Object.keys(t.prof).length?' · Professor: '+esc(Object.keys(t.prof).join(', ')):'')+'</p>'+gs.join('')+'</div>'});
+  var fim=i?isoAdd(i,7*9+4):'',cm='med-'+pid,ic=chk(cm);
+  h+='<div class="card"><h2>Atividades complementares</h2><p class="sub">Do módulo, independentes da disciplina.</p>'+grupo('Complementares',COMP.map(function(x){return {f:!!ic[x[0]],h:item(cm,x[0],x[1],/^cp-(book|pend|sub)$/.test(x[0])?fim:'')}}))+'</div>';
+  $('#app').innerHTML=h;atualizarSel();
+}
+function atualizarSel(){var n=Object.keys(SEL).filter(function(k){return SEL[k]}).length;$('#sel').textContent=n?n+(n===1?' atividade selecionada':' atividades selecionadas'):'Nenhuma atividade selecionada';$('#enviar').disabled=!n}
+document.addEventListener('change',function(e){var t=e.target;if(t.dataset.sel){SEL[t.dataset.sel]=t.checked;atualizarSel()}if(t.id==='mod'){MOD=t.value;SEL={};render()}});
+function rotulo(id){var p=id.split('::'),k=p[1],txt=k;PLAN.forEach(function(g){g[1].forEach(function(x){if(x[0]===k)txt=x[1]})});COMP.forEach(function(x){if(x[0]===k)txt=x[1]});var m=/^w(\d+)-/.exec(k);if(m)itensSemana(+m[1],1).concat(itensSemana(+m[1],2)).forEach(function(x){if(x.k===k)txt='Semana '+m[1]+': '+x.t});var tm=turmas().filter(function(t){return t.id===p[0]})[0];return (tm?tm.nome:'Complementares')+' — '+txt}
+$('#enviar').onclick=function(){var ids=Object.keys(SEL).filter(function(k){return SEL[k]});$('#dl-lista').innerHTML=ids.map(function(i){return '<li>'+esc(rotulo(i))+'</li>'}).join('');$('#dlg').showModal()};
+$('#dl-nao').onclick=function(){$('#dlg').close()};
+$('#dl-sim').onclick=function(){var b=this,ids=Object.keys(SEL).filter(function(k){return SEL[k]}),por={};ids.forEach(function(i){var p=i.split('::');(por[p[0]]=por[p[0]]||[]).push(p[1])});
+  b.disabled=true;b.textContent='Enviando…';
+  Object.keys(por).reduce(function(pr,tid){return pr.then(function(){return GFI.api('medMarcar',{turma:tid,itens:por[tid],modulo:MOD,ano:ANO,key:'',portal:cod}).then(function(r){var c=G.checks=G.checks||[],ix=c.findIndex(function(x){return x.id===r.id});if(ix>=0)c[ix]=r;else c.push(r)})})},Promise.resolve())
+   .then(function(){SEL={};$('#dlg').close();b.disabled=false;b.textContent='Confirmar';$('#msg').className='msg ok';$('#msg').textContent='✓ Atividades registradas. A coordenação já recebeu.';render()})
+   .catch(function(x){b.disabled=false;b.textContent='Confirmar';$('#dlg').close();$('#msg').className='msg bad';$('#msg').textContent='Não foi possível registrar: '+((x&&x.message)||'erro')})};
+if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
+GFI.api('medDados',{key:'',portal:cod}).then(function(r){G=r||{};var eu=lst('pessoas').filter(function(p){return p.id===pid})[0]||{};
+  $('#quem').textContent=(eu.nome?eu.nome+' · ':'')+'marque as atividades que já fez e clique em Confirmar e enviar';
+  MOD=modPadrao();$('#mod').innerHTML=MODS.map(function(m){return '<option'+(m===MOD?' selected':'')+'>'+m+'</option>'}).join('');render();
+}).catch(function(x){$('#quem').textContent='Não foi possível abrir: '+((x&&x.message)||'link inválido')});
+})();
+</script>
+</body>
+</html>
