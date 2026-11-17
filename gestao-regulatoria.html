@@ -288,12 +288,17 @@ function planoDe(curso,mod,ano){return S.d.planos[curso+'_'+ano+'_m'+mod.replace
 function planoId(curso,mod,ano){return curso+'_'+ano+'_m'+mod.replace(/\D/g,'')}
 function modAnterior(mod,ano){var i=MODULOS.indexOf(mod);return i>0?{mod:MODULOS[i-1],ano:ano}:{mod:MODULOS[MODULOS.length-1],ano:String(Number(ano)-1)}}
 function vencida(prazo,st){return prazo&&st!=='concluida'&&prazo<hoje()}
-function membrosDe(curso,orgao){var vist={};return lista('membros').filter(function(m){return (m.vinculos||[]).some(function(v){return v.curso===curso&&v.orgao===orgao})})
+function hojeISO(){var d=new Date();return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2)}
+// vínculo vale na data: ingresso até a data (inclusive) e sem saída ou saída depois da data
+function vigente(v,data){var d=data||hojeISO();return (!v.ingresso||v.ingresso<=d)&&(!v.saida||v.saida>d)}
+function membroAtivo(m){return (m.vinculos||[]).some(function(v){return vigente(v)})||!(m.vinculos||[]).length}
+function membrosDe(curso,orgao,data){var vist={};return lista('membros').filter(function(m){return (m.vinculos||[]).some(function(v){return v.curso===curso&&v.orgao===orgao&&vigente(v,data)})})
   .sort(function(a,b){return Object.keys(b).length-Object.keys(a).length})
   
   .filter(function(m){var dd=typeof achaDir==='function'&&achaDir(m.nome),k=dd?'dir:'+dd.id:String(m.nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();if(vist[k])return false;vist[k]=1;return true}).sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'','pt-BR')})}
 function funcaoDe(m,curso,orgao){var v=(m.vinculos||[]).filter(function(v){return v.curso===curso&&v.orgao===orgao})[0];return v?v.funcao:(((m.vinculos||[])[0]||{}).funcao||'Membro docente')}
-function membrosAta(a){var rem=a.removidos||[],base=membrosDe(a.curso,a.orgao).filter(function(m){return rem.indexOf(m.id)<0}),ids=base.map(function(m){return m.id});
+var encerrarMembro=function(mid){var m=S.d.membros[mid];if(!m)return Promise.resolve();var h=hojeISO();(m.vinculos||[]).forEach(function(v){if(!v.saida||v.saida>h)v.saida=h});return grava('membros',mid,m)};
+function membrosAta(a){var rem=a.removidos||[],base=membrosDe(a.curso,a.orgao,a.data).filter(function(m){return rem.indexOf(m.id)<0}),ids=base.map(function(m){return m.id});
   (a.extras||[]).forEach(function(id){var m=S.d.membros[id];if(m&&ids.indexOf(id)<0&&rem.indexOf(id)<0){base.push(m);ids.push(id)}});return base}
 function proxNumero(curso,orgao,ano){var n=lista('atas').filter(function(a){return a.curso===curso&&a.orgao===orgao&&String(a.ano)===String(ano)}).map(function(a){return Number(a.numero)||0});return (n.length?Math.max.apply(null,n):0)+1}
 function indic(curso,mod){var cs=cursoDe(curso);return S.d.indicadores[(cs.indicadorDe||curso)+'_m'+mod.replace(/\D/g,'')]||null}
@@ -774,12 +779,12 @@ function rbLink(href,ico,rot,n){return '<a class="btn-redondo" href="'+esc(href)
 var SEM_RT=' disabled title="Disponível ao abrir o painel no claude.ai"';
 function htmlMembros(){
   var f=S.fMb||(S.fMb={curso:'',orgao:''}),cs=cursos();
-  var ms=lista('membros').filter(function(m){return (!f.curso&&!f.orgao)||(m.vinculos||[]).some(function(v){return filtraVinc(v,f)})}).sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'','pt-BR')});
+  var exs=lista('membros').filter(function(m){return !membroAtivo(m)});var ms=lista('membros').filter(function(m){return S.verEx?!membroAtivo(m):membroAtivo(m)}).filter(function(m){return (!f.curso&&!f.orgao)||(m.vinculos||[]).some(function(v){return filtraVinc(v,f)})}).sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'','pt-BR')});
   var pend=ms.filter(function(m){return m.email&&m.email.toLowerCase()!=='fabio.iba@unicesumar.edu.br'&&pendDe(m,funcPrinc(m)).length}),semMail=ms.filter(function(m){return !m.email&&pendDe(m,funcPrinc(m)).length});
   var solicAll=pend.length?rbLink(mailtoSolic(pend.map(function(m){return m.email}),CAMPOS_SOLIC,null),'email','Solicitar dados pendentes a '+pend.length+' membro(s) (abre o Outlook; nada é enviado automaticamente)',pend.length):'';
   return '<div class="sec-h"><div><h2>Membros do NDE e dos Colegiados</h2><p>A lista de presentes e as assinaturas das atas saem daqui. Use os filtros e gere o relatório em PDF.</p></div><div class="acoes">'+solicAll+''+rb('membros-pdf','imprimir','Relatório em PDF dos membros',S.dl?'':SEM_RT)+rb('membro-add','mais','Adicionar membro')+'</div></div>'
     +'<div class="filtros"><label for="fm-curso">Curso<select id="fm-curso"><option value="">Todos</option>'+cs.map(function(c){return '<option value="'+esc(c.id)+'"'+(f.curso===c.id?' selected':'')+'>'+esc(c.sigla)+' · '+esc(c.nome)+'</option>'}).join('')+'</select></label>'
-    +'<label for="fm-orgao">Órgão<select id="fm-orgao"><option value="">NDE e Colegiado</option><option value="NDE"'+(f.orgao==='NDE'?' selected':'')+'>NDE</option><option value="COL"'+(f.orgao==='COL'?' selected':'')+'>Colegiado</option></select></label></div>'
+    +(exs.length||S.verEx?'<label style="align-self:flex-end"><button class="btn" type="button" data-act="ver-ex">'+(S.verEx?'Ver membros atuais':'Ver ex-membros ('+exs.length+')')+'</button></label>':'')+'<label for="fm-orgao">Órgão<select id="fm-orgao"><option value="">NDE e Colegiado</option><option value="NDE"'+(f.orgao==='NDE'?' selected':'')+'>NDE</option><option value="COL"'+(f.orgao==='COL'?' selected':'')+'>Colegiado</option></select></label></div>'
     +(ms.length?'<div class="tw"><table><thead><tr><th>Nome</th><th>Titulação · regime</th><th>Contato</th><th>Participa de</th><th>Lattes</th><th></th></tr></thead><tbody>'+ms.map(function(m){
       return '<tr><td><b>'+esc(m.nome)+'</b>'+(m.formacao?'<div class="mut">'+esc(m.formacao)+'</div>':'')+'</td><td>'+celTit(m)+'</td><td>'+(m.email?'<a href="mailto:'+esc(m.email)+'">'+esc(m.email)+'</a>':'—')+(m.celular?'<div class="mut">'+esc(fmtCel(m.celular))+'</div>':'')+'</td><td>'
       +(chipsPart(m,f)||'<span class="mut">—</span>')
@@ -819,9 +824,9 @@ function abrirMembro(m){var cs=cursos();m.vinculos=m.vinculos||[];S.editM=m;
     +'<label class="fld" for="m-lattes">Currículo Lattes<input id="m-lattes" type="url" value="'+esc(m.lattes)+'" placeholder="http://lattes.cnpq.br/…"></label>'
     +'<label class="fld s4" for="m-form">Formação<input id="m-form" value="'+esc(m.formacao)+'" placeholder="Ex.: Mestre em Administração (UEM)"></label><div class="fld s4">Assinatura <span class="mut" style="font-weight:500">(imagem; entra automaticamente nas atas, acima da linha de assinatura)</span><div id="m-ass-box">'+htmlAss(m)+'</div><input type="file" id="m-ass-file" accept="image/*" hidden></div></div>'
     +'<p class="dica" id="m-fonte">'+dicaDir(m)+'</p>'
-    +'<div class="blk"><h4>Participação <small>escolha a função em cada curso e órgão e a data de ingresso</small></h4><div class="tw"><table><thead><tr><th>Curso</th><th>NDE</th><th>Colegiado</th></tr></thead><tbody>'
+    +'<div class="blk"><h4>Participação <small>escolha a função em cada curso e órgão, a data de ingresso e, se saiu, a data de saída. A ata traz quem estava no órgão na data da reunião</small></h4><div class="tw"><table><thead><tr><th>Curso</th><th>NDE</th><th>Colegiado</th></tr></thead><tbody>'
     +cs.map(function(c){return '<tr><td><span class="sigla">'+esc(c.sigla)+'</span></td>'+['NDE','COL'].map(function(o){var v=m.vinculos.filter(function(x){return x.curso===c.id&&x.orgao===o})[0],k=esc(c.id)+'|'+o;
-      return '<td><select data-vinc="'+k+'" aria-label="'+esc(c.sigla)+' '+o+'"><option value="">Não participa</option>'+FUNCOES.map(function(f){return '<option'+(v&&v.funcao===f?' selected':'')+'>'+f+'</option>'}).join('')+'</select><label class="mut" style="display:flex;gap:6px;align-items:center;margin-top:4px;font-size:12px">desde <input type="date" data-ing="'+k+'" value="'+esc(v?v.ingresso:'')+'" aria-label="Ingresso '+esc(c.sigla)+' '+o+'" style="min-height:30px;padding:3px 6px"></label></td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div></div></div>'
+      return '<td><select data-vinc="'+k+'" aria-label="'+esc(c.sigla)+' '+o+'"><option value="">Não participa</option>'+FUNCOES.map(function(f){return '<option'+(v&&v.funcao===f?' selected':'')+'>'+f+'</option>'}).join('')+'</select><label class="mut" style="display:flex;gap:6px;align-items:center;margin-top:4px;font-size:12px">desde <input type="date" data-ing="'+k+'" value="'+esc(v?v.ingresso:'')+'" aria-label="Ingresso '+esc(c.sigla)+' '+o+'" style="min-height:30px;padding:3px 6px"></label><label class="mut" style="display:flex;gap:6px;align-items:center;margin-top:4px;font-size:12px">até <input type="date" data-sai="'+k+'" value="'+esc(v&&v.saida?v.saida:'')+'" aria-label="Saída '+esc(c.sigla)+' '+o+'" style="min-height:30px;padding:3px 6px"></label></td>'}).join('')+'</tr>'}).join('')+'</tbody></table></div></div></div>'
     +'<div class="dlg-f">'+(m._novo?'':'<button class="btn danger" type="button" data-act="membro-del">Excluir</button>')+'<span class="grow"></span><button class="btn" type="button" data-act="fechar">Cancelar</button><button class="btn pri" type="button" data-act="membro-salvar">Salvar</button></div></div>';
   if(!$('#dlg').open)$('#dlg').showModal();
 }
@@ -903,13 +908,13 @@ document.addEventListener('click',function(ev){
     case 'ia-ata':iaAta(t);break;
     case 'ata-pdf':pdfAta();break;
     case 'part-add':var partSel=$('#part-sel'),partPid=partSel&&partSel.value;if(!partPid)return toast('Escolha o membro.',true);lerAta();var aP=S.edit;aP.extras=(aP.extras||[]).filter(function(x){return x!==partPid}).concat([partPid]);aP.removidos=(aP.removidos||[]).filter(function(x){return x!==partPid});var stP=$('#dlg').scrollTop;renderAta();$('#dlg').scrollTop=stP;break;
-    case 'part-del':var partDid=t.getAttribute('data-id');lerAta();var aD=S.edit;aD.extras=(aD.extras||[]).filter(function(x){return x!==partDid});if(membrosDe(aD.curso,aD.orgao).some(function(m){return m.id===partDid}))aD.removidos=(aD.removidos||[]).concat([partDid]);if(aD.participantes)delete aD.participantes[partDid];var stD=$('#dlg').scrollTop;renderAta();$('#dlg').scrollTop=stD;break;
+    case 'part-del':var partDid=t.getAttribute('data-id');lerAta();var aD=S.edit;aD.extras=(aD.extras||[]).filter(function(x){return x!==partDid});if(membrosDe(aD.curso,aD.orgao,aD.data).some(function(m){return m.id===partDid}))aD.removidos=(aD.removidos||[]).concat([partDid]);if(aD.participantes)delete aD.participantes[partDid];var stD=$('#dlg').scrollTop;renderAta();$('#dlg').scrollTop=stD;break;
     case 'arq-add':$('#d-arq-file').value='';$('#d-arq-file').click();break;
     case 'arq-del':if(S.editDoc){delete S.editDoc.arquivo;delete S.editDoc.link;var bD=$('#d-arq-box');if(bD)bD.innerHTML=htmlArq(S.editDoc)}break;
     case 'ass-add':$('#m-ass-file').value='';$('#m-ass-file').click();break;
     case 'ass-del':if(S.editM){delete S.editM.assinatura;var bA=$('#m-ass-box');if(bA)bA.innerHTML=htmlAss(S.editM)}break;
     case 'fig-add':var taF=$('#a-texto');S._figPos=taF?taF.selectionStart:null;$('#a-fig-file').value='';$('#a-fig-file').click();break;
-    case 'conv-copiar':lerAta();var txt=textoConvocacao(S.edit,membrosDe(S.edit.curso,S.edit.orgao));
+    case 'conv-copiar':lerAta();var txt=textoConvocacao(S.edit,membrosDe(S.edit.curso,S.edit.orgao,S.edit.data));
       (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(function(){toast('Texto da convocação copiado.')}).catch(function(){toast('Não foi possível copiar. Selecione o texto da pauta manualmente.',true)});
       if(S.edit.status==='agendada'){S.edit.status='convocada';var st=$('#a-status');if(st)st.value='convocada'}break;
     case 'ata-salvar':lerAta();var a=S.edit;
@@ -937,26 +942,27 @@ document.addEventListener('click',function(ev){
       delete d._novo;
       grava('docs',d.id,d).then(function(){S.d.docs[d.id]=d;$('#dlg').close();toast('Documento salvo.');render()});break;
     case 'doc-del':if(t.dataset.ok){var di=S.editDoc.id;apaga('docs',di).then(function(){delete S.d.docs[di];$('#dlg').close();render()})}else{t.dataset.ok='1';t.textContent='Confirmar exclusão'}break;
+    case 'ver-ex':S.verEx=!S.verEx;render();break;
     case 'membro-add':abrirMembro({id:'mb_'+uid(),nome:'',email:'',vinculos:[],_novo:true});break;
     case 'membro-salvar':var m=S.editM,gv=function(i){var e=$('#'+i);return e?e.value:''};m.nome=gv('m-nome').trim();m.email=gv('m-email').trim();if(!m.nome)return toast('Informe o nome.',true);
       m.tratamento=gv('m-trat');m.titulacao=gv('m-tit');m.regime=gv('m-reg');m.celular=fmtCel(gv('m-cel'));m.lattes=gv('m-lattes').trim();m.formacao=gv('m-form').trim();
-      m.vinculos=$$('[data-vinc]').filter(function(s){return s.value}).map(function(s){var k=s.getAttribute('data-vinc'),p=k.split('|'),ing=document.querySelector('[data-ing="'+k+'"]');return {curso:p[0],orgao:p[1],funcao:s.value,ingresso:ing?ing.value:''}});
+      m.vinculos=$$('[data-vinc]').filter(function(s){return s.value}).map(function(s){var k=s.getAttribute('data-vinc'),p=k.split('|'),ing=document.querySelector('[data-ing="'+k+'"]'),sai=document.querySelector('[data-sai="'+k+'"]');return {curso:p[0],orgao:p[1],funcao:s.value,ingresso:ing?ing.value:'',saida:sai?sai.value:''}});
       var dup=membroExistente(m.nome,m.id);
       if(dup){var alvo=JSON.parse(JSON.stringify(dup));['tratamento','titulacao','regime','email','celular','lattes','formacao','assinatura'].forEach(function(k){if(m[k])alvo[k]=m[k]});alvo.nome=m.nome.length>=(alvo.nome||'').length?m.nome:alvo.nome;
-        m.vinculos.forEach(function(v){var e=(alvo.vinculos||(alvo.vinculos=[])).filter(function(x){return x.curso===v.curso&&x.orgao===v.orgao})[0];if(e){e.funcao=v.funcao;if(v.ingresso)e.ingresso=v.ingresso}else alvo.vinculos.push(v)});
+        m.vinculos.forEach(function(v){var e=(alvo.vinculos||(alvo.vinculos=[])).filter(function(x){return x.curso===v.curso&&x.orgao===v.orgao})[0];if(e){e.funcao=v.funcao;if(v.ingresso)e.ingresso=v.ingresso;e.saida=v.saida||''}else alvo.vinculos.push(v)});
         var antigo=m._novo?null:m.id;m=alvo;S.editM=alvo;
         grava('membros',m.id,m).then(function(){S.d.membros[m.id]=m;if(antigo)return apaga('membros',antigo).then(function(){delete S.d.membros[antigo]})}).then(function(){$('#dlg').close();toast('Cadastro unificado: '+m.nome+' já existia, os cursos foram somados.');render()});break}
       delete m._novo;
       grava('membros',m.id,m).then(function(){S.d.membros[m.id]=m;$('#dlg').close();toast('Membro salvo.');render()});break;
     case 'cadastros':if(S.tab==='geral')S.tab=S.ultTab||'atas';lembrar();render();window.scrollTo({top:0,behavior:'smooth'});break;
     case 'home':S.tab='geral';lembrar();render();window.scrollTo({top:0,behavior:'smooth'});break;
-    case 'del-confirmar':var dp=S.delPend;if(!dp)break;t.disabled=true;apaga(dp.col,dp.id).then(function(){delete S.d[dp.col][dp.id];S.delPend=null;$('#dlg').close();toast((dp.col==='membros'?'Membro excluído: ':dp.col==='docs'?'Excluído: ':'Excluída: ')+dp.nome+'.');render()}).catch(function(){t.disabled=false;toast('Não foi possível excluir agora.',true)});break;
+    case 'del-confirmar':var dp=S.delPend;if(!dp)break;t.disabled=true;(dp.col==='membros'?encerrarMembro(dp.id):apaga(dp.col,dp.id)).then(function(){if(dp.col!=='membros')delete S.d[dp.col][dp.id];S.delPend=null;$('#dlg').close();toast((dp.col==='membros'?'Membro excluído: ':dp.col==='docs'?'Excluído: ':'Excluída: ')+dp.nome+'.');render()}).catch(function(){t.disabled=false;toast('Não foi possível excluir agora.',true)});break;
     case 'conf-tog':var kC=t.getAttribute('data-k');S.confK=S.confK===kC?'':kC;render();break;
     case 'pe-pdf':pdfPE();break;
     case 'membros-pdf':pdfMembros();break;
     case 'dir-preencher':var d0=achaDir(($('#m-nome')||{}).value);if(d0)preencheDir(d0,true);break;
     case 'curso-salvar':var cc=S.editC;cc.sigla=$('#c-sigla').value.trim()||cc.sigla;cc.nome=$('#c-nome').value.trim()||cc.nome;cc.nomeOficial=$('#c-of').value.trim();grava('cursos',cc.id,cc).then(function(){S.d.cursos[cc.id]=cc;$('#dlg').close();toast('Curso salvo.');render()});break;
-    case 'membro-del':if(t.dataset.ok){var mi=S.editM.id;apaga('membros',mi).then(function(){delete S.d.membros[mi];$('#dlg').close();render()})}else{t.dataset.ok='1';t.textContent='Confirmar exclusão'}break;
+    case 'membro-del':if(t.dataset.ok){var mi=S.editM.id;encerrarMembro(mi).then(function(){$('#dlg').close();toast('Membro encerrado hoje. Continua nas atas anteriores.');render()})}else{t.dataset.ok='1';t.textContent='Confirmar exclusão'}break;
   }
 });
 document.addEventListener('input',function(ev){var t=ev.target;if(t&&t.id==='f-busca'){var pos=t.selectionStart;S.fBusca=t.value;render();var n=document.getElementById('f-busca');if(n){n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}}}});
