@@ -318,7 +318,8 @@ var S={area:'',tab:'geral',ficha:'',editCoord:'',fPapel:'',fBusca:'',reg:{},feri
 
 /* ---------- dados da Gestão das Entregas (somente leitura) ---------- */
 function L(c){var m=S.gd[c]||{};return Object.keys(m).map(function(k){return m[k]})}
-function sinChave(d){return [norm(d.nome).replace(/[^a-z0-9]/g,''),d.modulo||'',d.ordem==null?'':String(d.ordem),norm(d.hora||'').replace(/\s/g,'')].join('|')}
+function sinRaiz(d){var D=S.gd.disciplinas||{},v={};while(d&&d.sinergiaCom&&D[d.sinergiaCom]&&!v[d.sinergiaCom]){v[d.sinergiaCom]=1;d=D[d.sinergiaCom]}return d}
+function sinChave(d){d=sinRaiz(d);return [norm(d.nome).replace(/[^a-z0-9]/g,''),d.modulo||'',d.ordem==null?'':String(d.ordem),norm(d.hora||'').replace(/\s/g,'')].join('|')}
 function cursoSigla(id){var c=(S.gd.cursos||{})[id]||{},n=norm(c.nome);
   return /institucion/.test(n)?'Institucional':/administra/.test(n)?'ADM/PGER':/recursos humanos/.test(n)?'RH':/felicidade/.test(n)?'CFEL':/saude mental/.test(n)?'SMENT':/psicolog/.test(n)?'PSIORG':(c.nome||'')}
 function inicioMod(mod){var d=(S.gd.gradeEntregas||{})['m'+mod.replace(/\D/g,'')]||{};return d.inicio?segunda(d.inicio):''}
@@ -486,13 +487,13 @@ function coordsDe(pid){return L('coords').filter(function(c){return c.professorI
 function contratoDe(p){return p.aulasContrato!=null&&p.aulasContrato!==''?Number(p.aulasContrato):null}
 // mesma regra da Gestão das Entregas: dias marcados × 4 aulas (EAD) ou × 9 (estendida); turma sinérgica conta uma vez
 function cargaDe(pid,mod){var g={},D=S.gd.disciplinas||{};
-  alocsDe(pid).forEach(function(a){var d=D[a.disciplinaId];if(mod&&(!d||d.modulo!==mod))return;var ch=(d?sinChave(d):a.disciplinaId)+'#'+(a.tipo||'ead'),n=diasDaAlocacao(a);if(!(ch in g)||n>g[ch])g[ch]=n});
+  alocsDe(pid).forEach(function(a){var d=D[a.disciplinaId];if(mod&&(!d||d.modulo!==mod))return;var ch=(d?sinChave(d):a.disciplinaId)+'#'+(a.tipo||(d&&/estend/.test(norm(d.hora||''))?'estendida':'ead')),n=diasDaAlocacao(a);if(!(ch in g)||n>g[ch])g[ch]=n});
   var minhas=Object.keys(g).reduce(function(t,k){return t+g[k]},0),outras=0;
   coordsDe(pid).forEach(function(c){if(!mod||c.modulo===mod)outras+=diasDaAlocacao(c)});
   return {minhas:minhas,outras:outras,total:minhas+outras}}
 function limiteComigo(p){if(p.aulasMinhaCoord!=null&&p.aulasMinhaCoord!=='')return Number(p.aulasMinhaCoord);return p.discMinhaCoord!=null&&p.discMinhaCoord!==''?Number(p.discMinhaCoord)*4:null}
 function entregasDe(pid){return L('entregas').filter(function(e){return e.professorId===pid&&e.atividade!=='AE1'})}
-function stEntrega(e){var h=hoje();if(e.entregueEm)return e.prazo&&String(e.entregueEm).slice(0,10)>e.prazo?'atraso':'ok';if(!e.prazo)return 'semprazo';return e.prazo<h?'vencida':'pendente'}
+function stEntrega(e){var h=hoje();if(!e.prazo)return 'semprazo';if(e.entregueEm)return e.prazo&&String(e.entregueEm).slice(0,10)>e.prazo?'atraso':'ok';if(!e.prazo)return 'semprazo';return e.prazo<h?'vencida':'pendente'}
 function resumoEnt(pid){var r={total:0,ok:0,atraso:0,vencida:0,pendente:0,prox:0,notas:[]},h=hoje(),lim=isoAdd(h,14);
   entregasDe(pid).forEach(function(e){var st=stEntrega(e);r.total++;if(st in r)r[st]++;if(st==='pendente'&&e.prazo<=lim)r.prox++;
     if(e.prazo&&(e.entregueEm||e.prazo<h)){var fim=String(e.entregueEm||h).slice(0,10),dias=Math.max(0,Math.round((new Date(fim+'T12:00:00')-new Date(e.prazo+'T12:00:00'))/864e5));r.notas.push(Math.max(0,10-0.5*dias))}});

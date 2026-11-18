@@ -205,7 +205,9 @@ function tratarPortal(req) {
     var modulo = String(req.modulo || ''), anoM = /^\d{4}$/.test(String(req.ano)) ? String(req.ano) : '2027';
     if (!ks.length || !/^Módulo \d+$/.test(modulo)) return { ok: false, code: 'invalid_argument', message: 'Nada para registrar.' };
     var nrm = function (s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); };
-    var sin = function (d) { return [nrm(d.nome).replace(/[^a-z0-9]/g, ''), d.modulo || '', d.ordem == null ? '' : String(d.ordem), nrm(d.hora || '').replace(/\s/g, '')].join('|'); };
+    var dsAll = {}; listMany('gd', ['disciplinas']).disciplinas.forEach(function (d) { dsAll[d.id] = d.data || {}; });
+    var raizS = function (d) { var v = {}; while (d && d.sinergiaCom && dsAll[d.sinergiaCom] && !v[d.sinergiaCom]) { v[d.sinergiaCom] = 1; d = dsAll[d.sinergiaCom]; } return d; };
+    var sin = function (d) { d = raizS(d); return [nrm(d.nome).replace(/[^a-z0-9]/g, ''), d.modulo || '', d.ordem == null ? '' : String(d.ordem), nrm(d.hora || '').replace(/\s/g, '')].join('|'); };
     var permitido = turma === 'med-' + pid;
     if (!permitido) {
       var ds = {}; listMany('gd', ['disciplinas']).disciplinas.forEach(function (d) { ds[d.id] = d.data || {}; });

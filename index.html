@@ -476,7 +476,7 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
   var G=null,sel=null,mod='';
   function m(l){var o={};(l||[]).forEach(function(x){o[x.id]=Object.assign({id:x.id},x.data||{})});return o}
   function carregar(){if(G)return Promise.resolve(G);if(!window.GFI||!GFI.temChave||!GFI.temChave())return Promise.reject(new Error('sem chave'));
-    return GFI.api('listMany',{app:'gd',cols:['cursos','disciplinas','alocacoes','pessoas']}).then(function(r){G={C:m(r.cursos),D:m(r.disciplinas),A:m(r.alocacoes),P:m(r.pessoas)};return G})}
+    return GFI.api('listMany',{app:'gd',cols:['cursos','disciplinas','alocacoes','pessoas','gradeEntregas']}).then(function(r){G={C:m(r.cursos),D:m(r.disciplinas),A:m(r.alocacoes),P:m(r.pessoas),GE:m(r.gradeEntregas)};return G})}
   function cursoDe(nome){var k=CHAVES[norm(nome)]||norm(nome);return Object.keys(G.C).map(function(i){return G.C[i]}).filter(function(c){return norm(c.nome).indexOf(k)>=0})[0]}
   function nomeP(id){var p=G.P[id];return p?p.nome:''}
   function render(){
@@ -484,7 +484,8 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     if(!c){box.innerHTML='<div class="cr-top"><div><h2>'+esc(sel)+'</h2><p>Curso não encontrado na Gestão Docente.</p></div><button class="cr-fechar" data-cr="fechar">Fechar</button></div>';return}
     var ds=Object.keys(G.D).map(function(k){return G.D[k]}).filter(function(d){return d.cursoId===c.id});
     var mods=Object.keys(G.D).map(function(k){return G.D[k].modulo}).filter(Boolean).filter(function(x,i,a){return a.indexOf(x)===i}).sort();
-    if(!mod||mods.indexOf(mod)<0)mod=mods[mods.length-1]||'';
+    // módulo padrão igual ao da Gestão Docente: o último que começa até 21 dias a partir de hoje
+    if(!mod||mods.indexOf(mod)<0){var hj=new Date(),lim=new Date(hj.getTime()+21*864e5).toISOString().slice(0,10),pad0='Módulo 51';mods.forEach(function(x){var ge=G.GE['m'+x.replace(/\D/g,'')];if(ge&&ge.inicio&&ge.inicio<=lim)pad0=x});mod=mods.indexOf(pad0)>=0?pad0:(mods[0]||'')}
     var dm=ds.filter(function(d){return d.modulo===mod}).sort(function(a,b){return String(a.ano).localeCompare(String(b.ano))||(a.ordem||0)-(b.ordem||0)});
     var al=Object.keys(G.A).map(function(k){return G.A[k]});
     // disciplinas sinérgicas (mesmo nome em matrizes/anos diferentes) aparecem uma vez só
