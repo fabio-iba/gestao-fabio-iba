@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificação de consistência</title>
+<script>window.GFI_APP='gd';window.GFI_LS=[]</script>
+<script src="config.js?v=6"></script>
+<script src="gfi.js?v=11"></script>
+<style>
+:root{--bg:#F4F5F9;--card:#fff;--ink:#0F172A;--mut:#64748B;--line:#E2E8F0;--bad:#B92F26;--bad-s:#FFF1F0;--warn:#8A6A12;--warn-s:#FBF1D9;--ok:#146C45;--ok-s:#E3F4EC}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Arial,Helvetica,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:24px 16px 48px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}header p{margin:4px 0 0;color:var(--mut)}
+a.home,button{font:inherit;font-weight:700;border-radius:99px;padding:9px 16px;border:1px solid var(--line);background:#fff;color:inherit;text-decoration:none;cursor:pointer}
+.res{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:20px 0}
+.res div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px}.res b{display:block;font-size:26px}.res span{color:var(--mut);font-size:13px}
+.grp{background:#fff;border:1px solid var(--line);border-radius:16px;margin-top:12px;overflow:hidden}
+.grp summary{list-style:none;cursor:pointer;padding:14px 18px;display:flex;gap:10px;align-items:center;font-weight:700}
+.grp summary::-webkit-details-marker{display:none}
+.tag{font-size:12px;border-radius:99px;padding:2px 10px;font-weight:700}.tag.bad{background:var(--bad-s);color:var(--bad)}.tag.warn{background:var(--warn-s);color:var(--warn)}.tag.ok{background:var(--ok-s);color:var(--ok)}
+.grp ul{margin:0;padding:0 18px 14px 38px;font-size:14px}.grp li{margin:4px 0}.grp .cmo{color:var(--mut);font-size:13px;padding:0 18px 12px 18px;margin:0}
+#st{color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><div><h1>Verificação de consistência</h1><p id="st">Lendo os dados de todos os painéis…</p></div><div style="display:flex;gap:8px"><button id="rodar" type="button">Verificar de novo</button><a class="home" href="index.html">Página inicial</a></div></header>
+  <div class="res" id="res"></div>
+  <div id="out"></div>
+</div>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function norm(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim()}
+function pad(n){return (n<10?'0':'')+n}function hoje(){var d=new Date();return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())}
+function br(iso){if(!iso)return '—';var p=String(iso).slice(0,10).split('-');return p[2]+'/'+p[1]+'/'+p[0]}
+function m(l){var o={};(l||[]).forEach(function(x){o[x.id]=Object.assign({id:x.id},x.data||{})});return o}
+function vals(o){return Object.keys(o||{}).map(function(k){return o[k]})}
+var COMO={
+ 'Alocação com disciplina inexistente':'Abra a Gestão das Entregas e exclua ou refaça a alocação.',
+ 'Alocação com professor inexistente':'Abra a Gestão das Entregas e escolha o professor de novo.',
+ 'Mediador inexistente ou que não é mediador':'Na Gestão das Entregas, revise os mediadores da alocação ou o papel da pessoa na Gestão Docente.',
+ 'Turma sinérgica com professores diferentes':'Disciplinas sinérgicas são uma turma só: deixe o mesmo professor em todas as ofertas (ou desfaça a sinergia).',
+ 'Disciplina com aula ao vivo sem professor':'Aloque um professor na Gestão das Entregas.',
+ 'Disciplina com aula ao vivo sem mediador':'Inclua o mediador na alocação.',
+ 'Professor acima do contrato':'Redistribua as aulas ou atualize as aulas do contrato na ficha do professor.',
+ 'Professor acima do limite na sua coordenação':'Revise as alocações ou o limite "aulas comigo" na ficha.',
+ 'Entrega de professor/disciplina inexistente':'Exclua a entrega órfã na Gestão das Entregas.',
+ 'Entrega de quem não está alocado na disciplina':'A entrega está em nome de um professor que não dá essa disciplina: corrija o professor da entrega ou a alocação.',
+ 'Entrega sem prazo':'Defina o prazo na grade de entregas do módulo.',
+ 'Pessoa cadastrada em duplicidade':'Mantenha só um cadastro (os painéis contam em dobro).',
+ 'Pessoa sem e-mail':'Inclua o e-mail na Gestão Docente: sem ele os e-mails e links não chegam.',
+ 'Disciplina em outra coordenação sem professor válido':'Revise o cadastro em Disciplinas de outra coordenação.',
+ 'Membro do NDE/Colegiado sem data de ingresso':'Preencha "desde" no cadastro do membro (a ata usa a data para saber quem estava no órgão).',
+ 'Membro com vínculo em curso inexistente':'Edite o membro na Gestão Regulatória.',
+ 'Membro com saída antes do ingresso':'Corrija as datas desde/até do membro.',
+ 'Órgão sem nenhum membro vigente hoje':'Cadastre os membros atuais do NDE/Colegiado.',
+ 'Horário de pessoa inexistente':'O registro é de alguém que saiu da equipe: pode ser apagado.',
+ 'Mediador sem horário informado':'Envie o link pela aba Horários da equipe.',
+ 'Horário com conflito com outro emprego':'Peça ao mediador para corrigir (Liberar edição na aba Horários da equipe).',
+ 'Projeto: registro de projeto excluído':'Restos de projeto apagado (edições, agenda ou chat).',
+ 'Atividade da mediação de turma que não existe mais':'A disciplina mudou de nome, horário ou ordem depois de marcada: os ✓ antigos não aparecem mais.'
+};
+var GRAVE={'Alocação com disciplina inexistente':1,'Alocação com professor inexistente':1,'Mediador inexistente ou que não é mediador':1,'Turma sinérgica com professores diferentes':1,'Professor acima do contrato':1,'Entrega de professor/disciplina inexistente':1,'Entrega de quem não está alocado na disciplina':1,'Pessoa cadastrada em duplicidade':1,'Membro com vínculo em curso inexistente':1,'Membro com saída antes do ingresso':1,'Horário com conflito com outro emprego':1};
+function verificar(){
+  $('#st').textContent='Lendo os dados de todos os painéis…';$('#out').innerHTML='';$('#res').innerHTML='';
+  Promise.all([
+    GFI.api('listMany',{app:'gd',cols:['pessoas','disciplinas','cursos','alocacoes','entregas','coords','horarios','gradeEntregas']}),
+    GFI.api('listMany',{app:'reg',cols:['membros','cursos']}).catch(function(){return {}}),
+    GFI.api('listMany',{app:'proj',cols:['projetos','edicoes','eventos','chat']}).catch(function(){return {}}),
+    GFI.api('listMany',{app:'gdoc',cols:['checks']}).catch(function(){return {}})
+  ]).then(function(r){
+    var g=r[0]||{},P=m(g.pessoas),D=m(g.disciplinas),A=m(g.alocacoes),E=m(g.entregas),CO=m(g.coords),HO=m(g.horarios),GE=m(g.gradeEntregas),C=m(g.cursos);
+    var RM=m((r[1]||{}).membros),RC=m((r[1]||{}).cursos),PJ=m((r[2]||{}).projetos),PE=m((r[2]||{}).edicoes),PV=m((r[2]||{}).eventos),PC=m((r[2]||{}).chat),CK=m((r[3]||{}).checks);
+    var out={},add=function(cat,txt){(out[cat]=out[cat]||[]).push(txt)},nomeP=function(id){return (P[id]&&P[id].nome)||id},nomeD=function(d){return d.nome+' · '+(d.modulo||'')+' · '+(C[d.cursoId]?C[d.cursoId].nome:'curso?')+(d.ano?' · '+d.ano+' ano':'')};
+    var raiz=function(d){var v={};while(d&&d.sinergiaCom&&D[d.sinergiaCom]&&!v[d.sinergiaCom]){v[d.sinergiaCom]=1;d=D[d.sinergiaCom]}return d};
+    var sk=function(d){d=raiz(d);return [norm(d.nome).replace(/[^a-z0-9]/g,''),d.modulo||'',d.ordem==null?'':String(d.ordem),norm(d.hora||'').replace(/\s/g,'')].join('|')};
+    // pessoas
+    var porNome={};vals(P).forEach(function(p){var k=norm(p.nome);(porNome[k]=porNome[k]||[]).push(p);if(!p.email&&p.papel!=='externo')add('Pessoa sem e-mail',p.nome+' ('+(p.papel||'sem papel')+')')});
+    Object.keys(porNome).forEach(function(k){if(k&&porNome[k].length>1)add('Pessoa cadastrada em duplicidade',porNome[k][0].nome+' — '+porNome[k].length+' cadastros ('+porNome[k].map(function(p){return p.papel||'?'}).join(', ')+')')});
+    // alocações
+    var alocPorDisc={},grupos={};
+    vals(A).forEach(function(a){var d=D[a.disciplinaId];
+      if(!d){add('Alocação com disciplina inexistente','Alocação '+a.id+' (professor '+nomeP(a.professorId)+')');return}
+      if(a.professorId&&!P[a.professorId])add('Alocação com professor inexistente',nomeD(d)+' → id '+a.professorId);
+      (a.mediadorIds||[]).forEach(function(mid){if(!P[mid]||P[mid].papel!=='mediador')add('Mediador inexistente ou que não é mediador',nomeD(d)+' → '+(P[mid]?P[mid].nome+' ('+P[mid].papel+')':'id '+mid))});
+      (alocPorDisc[d.id]=alocPorDisc[d.id]||[]).push(a)});
+    vals(D).forEach(function(d){var k=sk(d);(grupos[k]=grupos[k]||[]).push(d)});
+    Object.keys(grupos).forEach(function(k){var ds=grupos[k],profs={},meds={},temAloc=false;
+      ds.forEach(function(d){(alocPorDisc[d.id]||[]).forEach(function(a){temAloc=true;if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1})})});
+      var d0=raiz(ds[0]),aoVivo=!d0.semAoVivo&&(String(d0.ordem)==='1'||String(d0.ordem)==='2');
+      if(Object.keys(profs).length>1)add('Turma sinérgica com professores diferentes',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||'')+' → '+Object.keys(profs).map(nomeP).join(' × '));
+      if(aoVivo&&!Object.keys(profs).length)add('Disciplina com aula ao vivo sem professor',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||'')+' ('+ds.map(function(d){return C[d.cursoId]?C[d.cursoId].nome:'?'}).filter(function(x,i,a){return a.indexOf(x)===i}).join(', ')+')');
+      else if(aoVivo&&!Object.keys(meds).length)add('Disciplina com aula ao vivo sem mediador',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||''))});
+    // carga (mesma regra da Gestão das Entregas)
+    var diasAl=function(a){var pd=a.tipo==='estendida'?9:4;if(a.diasSemana&&a.diasSemana.length)return a.diasSemana.length*pd;var s={};(a.datasAulas||[]).forEach(function(x){var q=/^(\d{4})-(\d{2})-(\d{2})/.exec(x||'');if(q)s[new Date(Date.UTC(+q[1],+q[2]-1,+q[3])).getUTCDay()]=1});return Math.max(1,Object.keys(s).length)*pd};
+    vals(P).forEach(function(p){if(p.papel==='mediador')return;var gg={};vals(A).forEach(function(a){if(a.professorId!==p.id)return;var d=D[a.disciplinaId],t=a.tipo||(d&&/estend/.test(norm(d.hora||''))?'estendida':'ead'),ch=(d?sk(d):a.disciplinaId)+'#'+t,n=diasAl(a);if(!(ch in gg)||n>gg[ch])gg[ch]=n});
+      var minhas=Object.keys(gg).reduce(function(s,k){return s+gg[k]},0),outras=vals(CO).filter(function(c){return c.professorId===p.id}).reduce(function(s,c){return s+diasAl(c)},0);
+      var ct=p.aulasContrato!=null&&p.aulasContrato!==''?Number(p.aulasContrato):null,lim=p.aulasMinhaCoord!=null&&p.aulasMinhaCoord!==''?Number(p.aulasMinhaCoord):(p.discMinhaCoord!=null&&p.discMinhaCoord!==''?Number(p.discMinhaCoord)*4:null);
+      if(ct!==null&&minhas+outras>ct)add('Professor acima do contrato',p.nome+': '+(minhas+outras)+' aulas para '+ct+' de contrato');
+      if(lim!==null&&minhas>lim)add('Professor acima do limite na sua coordenação',p.nome+': '+minhas+' aulas para limite de '+lim)});
+    vals(CO).forEach(function(c){if(!P[c.professorId])add('Disciplina em outra coordenação sem professor válido',(c.disciplina||'?')+' · '+(c.curso||'')+' · '+(c.modulo||''))});
+    // entregas
+    vals(E).forEach(function(e){if(e.atividade==='AE1')return;var d=D[e.disciplinaId];
+      if(!d||!P[e.professorId]){add('Entrega de professor/disciplina inexistente',(e.atividade||'?')+' · '+(d?nomeD(d):'disciplina '+e.disciplinaId)+' · '+nomeP(e.professorId));return}
+      var g0=grupos[sk(d)]||[d],alocado=g0.some(function(x){return (alocPorDisc[x.id]||[]).some(function(a){return a.professorId===e.professorId})});
+      if(!alocado)add('Entrega de quem não está alocado na disciplina',(e.atividade||'?')+' · '+nomeD(d)+' · '+nomeP(e.professorId));
+      if(!e.prazo)add('Entrega sem prazo',(e.atividade||'?')+' · '+nomeD(d)+' · '+nomeP(e.professorId))});
+    // regulatório
+    var hj=hoje(),vig={};
+    vals(RM).forEach(function(mb){(mb.vinculos||[]).forEach(function(v){
+      if(!RC[v.curso])add('Membro com vínculo em curso inexistente',(mb.nome||'?')+' → '+v.curso+' · '+v.orgao);
+      if(!v.ingresso)add('Membro do NDE/Colegiado sem data de ingresso',(mb.nome||'?')+' · '+((RC[v.curso]||{}).sigla||v.curso)+' · '+String(v.orgao||'').toUpperCase());
+      if(v.ingresso&&v.saida&&v.saida<v.ingresso)add('Membro com saída antes do ingresso',(mb.nome||'?')+' · desde '+br(v.ingresso)+' até '+br(v.saida));
+      if((!v.ingresso||v.ingresso<=hj)&&(!v.saida||v.saida>hj))vig[v.curso+'|'+v.orgao]=1})});
+    vals(RC).forEach(function(c){if(c.indicadorDe)return;['nde','colegiado'].forEach(function(o){if(!vig[c.id+'|'+o])add('Órgão sem nenhum membro vigente hoje',(c.sigla||c.nome)+' · '+(o==='nde'?'NDE':'Colegiado'))})});
+    // horários
+    var minH=function(h){if(!h)return null;var q=String(h).split(':');return (+q[0])*60+(+q[1])};
+    vals(HO).forEach(function(h){var pid=h.id.replace(/-\d{4}$/,'');if(!P[pid]){add('Horário de pessoa inexistente',h.id);return}
+      var conf=[];['seg','ter','qua','qui','sex'].forEach(function(dd){var v=(h.dias||{})[dd]||{},iv=[];if(v.almoco||v.retorno){if(v.entrada&&v.almoco)iv.push([v.entrada,v.almoco]);if(v.retorno&&v.saida)iv.push([v.retorno,v.saida])}else if(v.entrada&&v.saida)iv.push([v.entrada,v.saida]);
+        (h.outros||[]).forEach(function(o){if(!o.inicio||!o.fim||(o.dias&&o.dias.length&&o.dias.indexOf(dd)<0))return;iv.forEach(function(x){if(minH(x[0])<minH(o.fim)&&minH(o.inicio)<minH(x[1]))conf.push(dd)})})});
+      if(conf.length)add('Horário com conflito com outro emprego',P[pid].nome+' ('+conf.filter(function(x,i,a){return a.indexOf(x)===i}).join(', ')+')')});
+    vals(P).forEach(function(p){if(p.papel==='mediador'&&!HO[p.id+'-2027'])add('Mediador sem horário informado',p.nome)});
+    // projetos
+    vals(PE).concat(vals(PV)).concat(vals(PC)).forEach(function(x){if(x.projetoId&&!PJ[x.projetoId])add('Projeto: registro de projeto excluído',(x.titulo||x.texto||x.id).toString().slice(0,60)+' (projeto '+x.projetoId+')')});
+    // atividades da mediação marcadas para turmas que não existem mais
+    var chaves={};Object.keys(grupos).forEach(function(k){chaves[k.replace(/[^a-z0-9]/gi,'').slice(0,80)]=1});
+    vals(CK).forEach(function(c){if(!c.turma||/^med-/.test(c.turma))return;var t=String(c.turma).replace(/[^a-z0-9]/gi,'').slice(0,80);if(!chaves[t]&&Object.keys(c.itens||{}).length)add('Atividade da mediação de turma que não existe mais',(c.turma.split('|')[0]||c.turma)+' · '+(c.modulo||'')+' · '+Object.keys(c.itens).length+' itens marcados')});
+    // saída
+    var cats=Object.keys(out).sort(function(a,b){return (GRAVE[b]?1:0)-(GRAVE[a]?1:0)||out[b].length-out[a].length}),graves=cats.filter(function(c){return GRAVE[c]}).reduce(function(s,c){return s+out[c].length},0),avisos=cats.filter(function(c){return !GRAVE[c]}).reduce(function(s,c){return s+out[c].length},0);
+    $('#res').innerHTML='<div><b style="color:'+(graves?'var(--bad)':'var(--ok)')+'">'+graves+'</b><span>erros que afetam relatórios</span></div><div><b style="color:'+(avisos?'var(--warn)':'var(--ok)')+'">'+avisos+'</b><span>pendências de cadastro</span></div><div><b>'+vals(P).length+'</b><span>pessoas</span></div><div><b>'+vals(D).length+'</b><span>disciplinas</span></div><div><b>'+vals(A).length+'</b><span>alocações</span></div>';
+    $('#out').innerHTML=cats.length?cats.map(function(c){var l=out[c];return '<details class="grp"'+(GRAVE[c]?' open':'')+'><summary><span class="tag '+(GRAVE[c]?'bad':'warn')+'">'+l.length+'</span>'+esc(c)+'</summary><p class="cmo">Como corrigir: '+esc(COMO[c]||'')+'</p><ul>'+l.slice(0,200).map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+(l.length>200?'<li>… e mais '+(l.length-200)+'</li>':'')+'</ul></details>'}).join(''):'<div class="grp" style="padding:18px"><span class="tag ok">Tudo certo</span> Nenhuma inconsistência encontrada.</div>';
+    $('#st').textContent='Verificado em '+br(hoje())+' às '+new Date().toTimeString().slice(0,5)+'. Os mesmos critérios usados pelos painéis.';
+  }).catch(function(e){$('#st').textContent='Não foi possível ler os dados: '+((e&&e.message)||'erro')});
+}
+$('#rodar').onclick=verificar;verificar();
+})();
+</script>
+</body>
+</html>
