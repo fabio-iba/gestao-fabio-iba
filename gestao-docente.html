@@ -4464,18 +4464,26 @@ function distSalvarHab(){
 }
 function distAplicar(){
   var D=S.dist,P=D.prop;if(!P)return;
-  var sel=P.linhas.filter(function(r,i){return r.pid&&D.marc[i]});
+  var sel=P.linhas.map(function(r,i){r.i=i;return r}).filter(function(r,i){return r.pid&&D.marc[i]});
   if(!sel.length){toast('Marque ao menos uma disciplina da proposta.',true);return}
   pedirConfirmacao('Salvar as alocações?','Serão salvas '+sel.length+' '+pl(sel.length,'alocação','alocações')+'. Elas passam a aparecer no painel principal, em Professores, nos relatórios e na carga de cada professor. Depois você completa mediadores, datas e entregas de cada uma pelo Editar entregas.','Salvar').then(function(ok){
     if(!ok)return;
-    var seq=Promise.resolve(true),agora=new Date().toISOString(),eu=meuId(),n=0;
+    var seq=Promise.resolve(true),agora=new Date().toISOString(),eu=meuId(),n=0,falhas=[];
     sel.forEach(function(r){
       var u=r.u,ds=u.discs.slice().sort(function(a,b){return (cursoInst(S.data.cursos[(S.data.disciplinas[a]||{}).cursoId])?1:0)-(cursoInst(S.data.cursos[(S.data.disciplinas[b]||{}).cursoId])?1:0)});
       var did=ds[0],outros=ds.slice(1).map(function(id){return (S.data.disciplinas[id]||{}).cursoId}).filter(function(c,i,a){return c&&c!==(S.data.disciplinas[did]||{}).cursoId&&a.indexOf(c)===i});
       var doc={professorId:r.pid,disciplinaId:did,mediadorIds:[],tipo:u.mod,sinergia:outros.length?'responsavel':'unico',coordenadorConvidado:null,cursoResponsavel:null,cursosSinergia:outros,cluster:false,datasAulas:[],diasSemana:r.dias||(r.dia?[r.dia]:[]),datasAulasDia:{},origem:'distribuicao',atualizadoEm:agora,por:eu};
-      seq=seq.then(function(ok){if(!ok)return false;return gravar(function(){return S.db.doc('alocacoes/'+r.pid+'__'+did).set(doc)}).then(function(o){if(o)n++;return o})});
+      // grava uma por vez; se o servidor estiver ocupado (bloqueio), espera e tenta de novo até 4 vezes
+      seq=seq.then(function(){
+        function tenta(k){return Promise.resolve().then(function(){return S.db.doc('alocacoes/'+r.pid+'__'+did).set(doc)}).then(function(){return true},function(e){if(k<4)return esperar(3000*(k+1)).then(function(){return tenta(k+1)});return false})}
+        toast('Salvando alocações… '+(n+falhas.length+1)+' de '+sel.length);
+        return tenta(0).then(function(o){if(o){n++;S.data.alocacoes[r.pid+'__'+did]=Object.assign({id:r.pid+'__'+did},doc);D.marc[r.i]=0;delete D.marc[r.i]}else falhas.push(r)});
+      });
     });
-    seq.then(function(){toast(n+' '+pl(n,'alocação criada','alocações criadas')+' pela distribuição.');S.dist.prop=null;S.dist.marc={};render()});
+    seq.then(function(){
+      if(!falhas.length){toast(n+' '+pl(n,'alocação criada','alocações criadas')+' pela distribuição.');S.dist.prop=null;S.dist.marc={}}
+      else toast(n+' salvas; '+falhas.length+' não foram salvas porque o servidor estava ocupado. Elas continuam marcadas: clique de novo em Salvar alocações marcadas.',true);
+      render()});
   });
 }
 document.addEventListener('change',function(ev){
