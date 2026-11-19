@@ -477,7 +477,7 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
   var G=null,sel=null,mod='';
   function m(l){var o={};(l||[]).forEach(function(x){o[x.id]=Object.assign({id:x.id},x.data||{})});return o}
   function carregar(){if(G)return Promise.resolve(G);if(!window.GFI||!GFI.temChave||!GFI.temChave())return Promise.reject(new Error('sem chave'));
-    return GFI.api('listMany',{app:'gd',cols:['cursos','disciplinas','alocacoes','pessoas','gradeEntregas']}).then(function(r){G={C:m(r.cursos),D:m(r.disciplinas),A:m(r.alocacoes),P:m(r.pessoas),GE:m(r.gradeEntregas)};return G})}
+    return GFI.api('listMany',{app:'gd',cols:['cursos','disciplinas','alocacoes','pessoas','gradeEntregas','coords']}).then(function(r){G={C:m(r.cursos),D:m(r.disciplinas),A:m(r.alocacoes),P:m(r.pessoas),GE:m(r.gradeEntregas),K:m(r.coords)};return G})}
   function cursoDe(nome){var k=CHAVES[norm(nome)]||norm(nome);return Object.keys(G.C).map(function(i){return G.C[i]}).filter(function(c){return norm(c.nome).indexOf(k)>=0})[0]}
   function nomeP(id){var p=G.P[id];return p?p.nome:''}
   function render(){
@@ -496,6 +496,9 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     var raiz=function(d){var v={};while(d&&d.sinergiaCom&&G.D[d.sinergiaCom]&&!v[d.sinergiaCom]){v[d.sinergiaCom]=1;d=G.D[d.sinergiaCom]}return d};var sk=function(d){d=raiz(d);return [norm(d.nome).replace(/[^a-z0-9]/g,''),d.modulo||'',String(d.ordem==null?'':d.ordem),norm(d.hora||'').replace(/\s/g,'')].join('|')},porChave={};
     Object.keys(G.D).forEach(function(k){var x=G.D[k];if(x.modulo!==mod)return;(porChave[sk(x)]=porChave[sk(x)]||[]).push(k)});
     dm.forEach(function(g){var ex=porChave[sk(g)]||[];ex.forEach(function(id){if(g.ids.indexOf(id)<0){g.ids.push(id);g.outros=true}})});
+    // alocações de outra coordenação (coords) entram na disciplina sinérgica de mesmo nome/módulo/ordem/horário
+    var skK=function(c){return [norm(c.disciplina||'').replace(/[^a-z0-9]/g,''),c.modulo||'',String(c.ordem==null?'':c.ordem),norm(c.hora||'').replace(/\s/g,'')].join('|')};
+    Object.keys(G.K||{}).forEach(function(k){var c=G.K[k];if(c.modulo!==mod||!c.professorId)return;dm.forEach(function(g){if(sk(g)===skK(c)){var fid='coords:'+k;if(g.ids.indexOf(fid)<0){g.ids.push(fid);g.outros=true;al.push({professorId:c.professorId,disciplinaId:fid,mediadorIds:[]})}}})});
     var profs={},meds={},semProf=0;
     var linhas=dm.map(function(d){var as=al.filter(function(a){return d.ids.indexOf(a.disciplinaId)>=0}).filter(function(a,i,arr){return arr.findIndex(function(x){return x.professorId===a.professorId})===i}),pr=as.map(function(a){if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1});var p=G.P[a.professorId]||{};return esc(p.nome||'')+(p.papel?'<small>'+esc(p.papel)+'</small>':'')}).filter(Boolean),
       md=[].concat.apply([],as.map(function(a){return a.mediadorIds||[]})).filter(function(x,i,arr){return arr.indexOf(x)===i}).map(nomeP).filter(Boolean);
