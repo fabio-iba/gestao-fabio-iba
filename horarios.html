@@ -55,27 +55,43 @@ var cod=(/[#?&]p=([\w-]+\.[a-z0-9]+)/i.exec(location.hash+'&'+location.search)||
 if(cod){try{localStorage.setItem('gdPortal',cod)}catch(e){}}
 var PORTAL=cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})();
 var pid=(cod||(function(){try{return localStorage.getItem('gdPortal')||''}catch(e){return ''}})()).split('.')[0];
-var ANO='2027',H={ano:ANO,carga:'',dias:{},outros:[],obs:''};
+var ANO='2027',H={ano:ANO,carga:'',dias:{},outros:[],obs:''},PAPEL='mediador',PROF=false;
+var MODS={'EAD 40':{h:16,tipo:'ead'},'EAD 20':{h:8,tipo:'ead'},'Regente 40':{h:40,tipo:'reg'},'Regente 20':{h:20,tipo:'reg'},'Regente 12':{h:12,tipo:'reg'}};
+function noiteMin(d){return intervalos(d).reduce(function(s,iv){var a=Math.max(min(iv[0]),18*60),b=Math.min(min(iv[1]),24*60);return s+(b>a?b-a:0)},0)}
+function foraComercial(d){return intervalos(d).reduce(function(s,iv){var a=min(iv[0]),b=min(iv[1]),x=0;if(a<8*60)x+=Math.min(b,8*60)-a;return s+x},0)}
+// regras do contrato do professor: devolve a lista de pendências
+function regras(){if(!PROF)return [];var m=MODS[H.modalidade],out=[],NM={seg:'segunda',ter:'terça',qua:'quarta',qui:'quinta',sex:'sexta'};if(!m)return out;
+  var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0);
+  if(tot<m.h*60)out.push('O total informado ('+hm(tot)+') é menor que as '+m.h+' horas semanais exigidas para '+H.modalidade+'.');
+  if(m.tipo==='ead'){if(noiteMin('qua')<240)out.push('Na quarta-feira à noite (depois das 18h) são obrigatórias 4 horas. Informado: '+hm(noiteMin('qua'))+'.')}
+  else{var nn=Math.min(4,Math.floor(m.h/4)),ok=['seg','ter','qua','qui'].filter(function(d){return noiteMin(d)>=240});
+    if(ok.length<nn)out.push('São obrigatórias 4 horas noturnas (depois das 18h) em '+(nn===4?'cada dia de aula: segunda, terça, quarta e quinta':nn+' dos dias de aula (segunda a quinta)')+'. Hoje: '+(['seg','ter','qua','qui'].map(function(d){return NM[d]+' '+hm(noiteMin(d))}).join(', '))+'.');
+    DIAS.forEach(function(d){if(foraComercial(d[0])>0)out.push('Na '+NM[d[0]]+' há horário antes das 8h: fora do noturno, as horas devem ficar em horário comercial.')})}
+  return out}
+function mostrarRegras(){var r=regras(),b=$('#regra');if(!b)return r;b.hidden=!r.length;b.innerHTML=r.length?'<b>⚠ Disponibilidade abaixo do exigido pelo contrato</b><ul style="margin:6px 0 0;padding-left:18px">'+r.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul><div style="margin-top:6px">O envio fica bloqueado até ajustar.</div>':'';return r}
+function noturnoDia(d){var m=MODS[H.modalidade];if(!PROF)return d==='qua';if(!m)return false;return m.tipo==='ead'?d==='qua':d!=='sex'}
 function horasDia(d){var v=H.dias[d]||{};var t=dur(v.entrada,v.almoco)+dur(v.retorno,v.saida);if(!v.almoco&&!v.retorno)t=dur(v.entrada,v.saida);return t}
 function render(){
   var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{},noite=dur(q.noiteInicio,q.noiteFim);
-  var h='<div class="card"><h2>Carga horária na Unicesumar</h2><p class="mut">Informe a carga semanal do seu contrato.</p><div style="display:flex;gap:14px;flex-wrap:wrap"><label style="max-width:260px">Horas por semana<select id="carga"><option value="">Selecione</option>'+['20','40'].map(function(x){return '<option value="'+x+'"'+(String(H.carga)===x?' selected':'')+'>'+x+' horas</option>'}).join('')+'</select></label></div></div>'
-   +'<div class="card"><h2>Jornada de segunda a sexta</h2><p class="mut">Entrada, saída para o almoço, retorno e fim do expediente. <b>Na quarta-feira, o horário deve incluir as 4 horas obrigatórias à noite.</b></p><div class="tw"><table><colgroup><col style="width:16%"><col><col><col><col><col style="width:12%"></colgroup><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th><th>Total</th></tr></thead><tbody>'
+  var opcs=PAPEL==='regente'?['Regente 40','Regente 20','Regente 12']:['EAD 40','EAD 20'],mm=MODS[H.modalidade];
+  var h=(PROF?'<div class="card"><h2>Seu contrato</h2><p class="mut">'+(PAPEL==='regente'?'Regente: 4 horas noturnas em cada dia de aula (segunda a quinta) e o restante em horário comercial.':'EAD 40: 16 horas por semana · EAD 20: 8 horas por semana. Em ambos, 4 horas obrigatórias na quarta-feira à noite.')+'</p><label style="max-width:260px">Modalidade<select id="modal"><option value="">Selecione</option>'+opcs.map(function(x){return '<option'+(H.modalidade===x?' selected':'')+'>'+x+'</option>'}).join('')+'</select></label>'+(mm?'<p style="margin:10px 0 0"><b>'+mm.h+' horas semanais</b> disponíveis para a IES.</p>':'')+'</div>'
+   :'<div class="card"><h2>Carga horária na Unicesumar</h2><p class="mut">Informe a carga semanal do seu contrato.</p><div style="display:flex;gap:14px;flex-wrap:wrap"><label style="max-width:260px">Horas por semana<select id="carga"><option value="">Selecione</option>'+['20','40'].map(function(x){return '<option value="'+x+'"'+(String(H.carga)===x?' selected':'')+'>'+x+' horas</option>'}).join('')+'</select></label></div></div>')
+   +'<div class="card"><h2>'+(PROF?'Disponibilidade de segunda a sexta':'Jornada de segunda a sexta')+'</h2><p class="mut">'+(PROF?'Informe os horários em que está disponível para a IES. Deixe em branco os dias sem disponibilidade. Se não houver intervalo, preencha só a entrada e a saída. <b>As linhas destacadas exigem 4 horas à noite.</b>':'Entrada, saída para o almoço, retorno e fim do expediente. <b>Na quarta-feira, o horário deve incluir as 4 horas obrigatórias à noite.</b>')+'</p><div class="tw"><table><colgroup><col style="width:16%"><col><col><col><col><col style="width:12%"></colgroup><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th><th>Total</th></tr></thead><tbody>'
    +DIAS.map(function(d){var v=H.dias[d[0]]||{},f=function(k){return '<input type="time" data-d="'+d[0]+'" data-k="'+k+'" value="'+esc(v[k]||'')+'">'};
-     return '<tr'+(d[0]==='qua'?' class="noite"':'')+'><td><b>'+d[1]+'</b>'+(d[0]==='qua'?'<br><small style="color:var(--warn);font-weight:700">inclui 4h à noite</small>':'')+'</td><td>'+f('entrada')+'</td><td>'+f('almoco')+'</td><td>'+f('retorno')+'</td><td>'+f('saida')+'</td><td class="tot" id="t-'+d[0]+'">'+hm(horasDia(d[0]))+'</td></tr>'
+     return '<tr'+(noturnoDia(d[0])?' class="noite"':'')+'><td><b>'+d[1]+'</b>'+(noturnoDia(d[0])?'<br><small style="color:var(--warn);font-weight:700">inclui 4h à noite</small>':'')+'</td><td>'+f('entrada')+'</td><td>'+f('almoco')+'</td><td>'+f('retorno')+'</td><td>'+f('saida')+'</td><td class="tot" id="t-'+d[0]+'">'+hm(horasDia(d[0]))+'</td></tr>'
       }).join('')
-   +'</tbody></table></div><div class="resumo"><div><b id="tot">'+hm(tot)+'</b>total na semana</div><div><b id="crg">'+(H.carga?H.carga+'h':'—')+'</b>contratadas</div></div></div>'
-   +'<div class="card"><h2>Outros locais de trabalho</h2><p class="mut">Se você trabalha em outro lugar, informe o local e o horário.</p><div id="outros">'
+   +'</tbody></table></div><div class="resumo"><div><b id="tot">'+hm(tot)+'</b>total na semana</div><div><b id="crg">'+(PROF?(mm?mm.h+'h':'—'):(H.carga?H.carga+'h':'—'))+'</b>'+(PROF?'exigidas':'contratadas')+'</div></div></div>'
+   +(PROF?'':'<div class="card"><h2>Outros locais de trabalho</h2><p class="mut">Se você trabalha em outro lugar, informe o local e o horário.</p><div id="outros">'
    +(H.outros.length?H.outros.map(function(o,i){return '<div class="outro"><label>Local<input data-o="'+i+'" data-k="local" value="'+esc(o.local)+'" placeholder="Empresa / instituição"></label><label>Início<input type="time" data-o="'+i+'" data-k="inicio" value="'+esc(o.inicio)+'"></label><label>Fim<input type="time" data-o="'+i+'" data-k="fim" value="'+esc(o.fim)+'"></label><button type="button" class="x" data-del="'+i+'">Remover</button></div>'}).join(''):'<p class="mut" style="margin:0 0 10px">Nenhum outro local informado.</p>')
-   +'</div><button type="button" id="add">+ Adicionar local</button></div>'
-   +'<div id="conf" hidden style="margin-top:16px;border:2px solid var(--bad);background:#FFF1F0;color:var(--bad);border-radius:14px;padding:14px 16px"></div><div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Enviar meu horário</button></div><p class="msg" id="msg"></p></div>';
-  setTimeout(mostrarConflitos,0);
+   +'</div><button type="button" id="add">+ Adicionar local</button></div>')
+   +'<div id="regra" hidden style="margin-top:16px;border:2px solid var(--bad);background:#FFF1F0;color:var(--bad);border-radius:14px;padding:14px 16px"></div><div id="conf" hidden style="margin-top:16px;border:2px solid var(--bad);background:#FFF1F0;color:var(--bad);border-radius:14px;padding:14px 16px"></div><div class="card"><label>Observações<input id="obs" value="'+esc(H.obs)+'" placeholder="Opcional"></label><div style="margin-top:14px;display:flex;justify-content:flex-end"><button class="pri" type="button" id="salvar">Enviar meu horário</button></div><p class="msg" id="msg"></p></div>';
+  setTimeout(function(){mostrarConflitos();mostrarRegras()},0);
   $('#app').innerHTML=h;
 }
 function fechado(){var tot=DIAS.reduce(function(s,d){return s+horasDia(d[0])},0),q=H.dias.qua||{};
   $('#app').innerHTML='<div class="card" style="border-color:var(--ok)"><h2 style="color:var(--ok)">✓ Horário de '+esc(H.ano)+' enviado</h2><p class="mut">Enviado em '+esc(String(H.atualizadoEm||'').slice(0,10).split('-').reverse().join('/'))+'. A coordenação já recebeu. Para alterar, fale com a coordenação.</p>'
-   +'<div class="tw"><table><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th></tr></thead><tbody>'+DIAS.map(function(d){var v=H.dias[d[0]]||{};return '<tr'+(d[0]==='qua'?' class="noite"':'')+'><td><b>'+d[1]+'</b></td><td>'+esc(v.entrada||'—')+'</td><td>'+esc(v.almoco||'—')+'</td><td>'+esc(v.retorno||'—')+'</td><td>'+esc(v.saida||'—')+'</td></tr>'}).join('')+'</tbody></table></div>'
-   +'<div class="resumo"><div><b>'+hm(tot)+'</b>total na semana</div><div><b>'+esc(H.carga||'—')+'h</b>contratadas</div></div>'
+   +'<div class="tw"><table><thead><tr><th>Dia</th><th>Entrada</th><th>Almoço</th><th>Retorno</th><th>Saída</th></tr></thead><tbody>'+DIAS.map(function(d){var v=H.dias[d[0]]||{};return '<tr'+(noturnoDia(d[0])?' class="noite"':'')+'><td><b>'+d[1]+'</b></td><td>'+esc(v.entrada||'—')+'</td><td>'+esc(v.almoco||'—')+'</td><td>'+esc(v.retorno||'—')+'</td><td>'+esc(v.saida||'—')+'</td></tr>'}).join('')+'</tbody></table></div>'
+   +'<div class="resumo"><div><b>'+hm(tot)+'</b>total na semana</div><div><b>'+esc(H.carga||'—')+'h</b>'+(PROF?'exigidas · '+esc(H.modalidade||''):'contratadas')+'</div></div>'
    +((H.outros||[]).length?'<p style="margin:14px 0 4px"><b>Outros locais</b></p>'+H.outros.map(function(o){return '<div>'+esc(o.local)+' · '+esc(o.inicio)+'–'+esc(o.fim)+'</div>'}).join(''):'')+'</div>'}
 function intervalos(d){var v=H.dias[d]||{},r=[];if(v.almoco||v.retorno){if(v.entrada&&v.almoco)r.push([v.entrada,v.almoco]);if(v.retorno&&v.saida)r.push([v.retorno,v.saida])}else if(v.entrada&&v.saida)r.push([v.entrada,v.saida]);return r}
 function conflitos(){var out=[],NOME={seg:'segunda',ter:'terça',qua:'quarta',qui:'quinta',sex:'sexta'};
@@ -83,17 +99,18 @@ function conflitos(){var out=[],NOME={seg:'segunda',ter:'terça',qua:'quarta',qu
     intervalos(d).forEach(function(iv){var a=min(iv[0]),b=min(iv[1]),c=min(o.inicio),e=min(o.fim);if(a<e&&c<b)out.push('Na '+NOME[d]+', o horário na Unicesumar ('+iv[0]+'–'+iv[1]+') coincide com '+(o.local||'outro local')+' ('+o.inicio+'–'+o.fim+').')})})});
   return out}
 function mostrarConflitos(){var c=conflitos(),b=$('#conf');if(!b)return c;b.hidden=!c.length;b.innerHTML=c.length?'<b>⚠ Conflito de horário</b><ul style="margin:6px 0 0;padding-left:18px">'+c.map(function(x){return '<li>'+esc(x)+'</li>'}).join('')+'</ul><div style="margin-top:6px">Ajuste os horários: não é possível estar em dois locais ao mesmo tempo. O envio fica bloqueado até corrigir.</div>':'';return c}
-function atualizarTotais(){mostrarConflitos();DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));$('#crg').textContent=H.carga?H.carga+'h':'—'}
+function atualizarTotais(){mostrarConflitos();mostrarRegras();DIAS.forEach(function(d){var e=$('#t-'+d[0]);if(e)e.textContent=hm(horasDia(d[0]))});var q=H.dias.qua||{};$('#tot').textContent=hm(DIAS.reduce(function(s,d){return s+horasDia(d[0])},0));if(!PROF)$('#crg').textContent=H.carga?H.carga+'h':'—'}
 document.addEventListener('input',function(e){var t=e.target;
   if(t.id==='obs'){H.obs=t.value;return}
   if(t.dataset.d){(H.dias[t.dataset.d]=H.dias[t.dataset.d]||{})[t.dataset.k]=t.value;atualizarTotais();return}
   if(t.dataset.o!=null&&t.dataset.k){H.outros[+t.dataset.o][t.dataset.k]=t.value;mostrarConflitos()}});
-document.addEventListener('change',function(e){var t=e.target;if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1);mostrarConflitos()}});
+document.addEventListener('change',function(e){var t=e.target;if(t.id==='modal'){H.modalidade=t.value;H.carga=MODS[t.value]?String(MODS[t.value].h):'';render();return}if(t.id==='carga'){H.carga=t.value;atualizarTotais();return}if(t.dataset.dia){var o=H.outros[+t.dataset.o];o.dias=o.dias||[];var i=o.dias.indexOf(t.dataset.dia);if(t.checked&&i<0)o.dias.push(t.dataset.dia);if(!t.checked&&i>=0)o.dias.splice(i,1);mostrarConflitos()}});
 document.addEventListener('click',function(e){var t=e.target;
   if(t.id==='add'){H.outros.push({local:'',dias:['seg','ter','qua','qui','sex'],inicio:'',fim:''});render();return}
   if(t.dataset.del!=null){H.outros.splice(+t.dataset.del,1);render();return}
   if(t.id==='salvar'){var m=$('#msg'),q=H.dias.qua||{};
-    var falta=!H.carga?'Informe a carga horária semanal.':DIAS.some(function(d){var v=H.dias[d[0]]||{};return !v.entrada||!v.saida})?'Informe a entrada e a saída de todos os dias.':H.outros.some(function(o){return !o.local||!o.inicio||!o.fim})?'Complete local e horário de cada outro local de trabalho (ou remova).':'';
+    var falta=PROF&&!H.modalidade?'Escolha a modalidade do seu contrato.':!H.carga?'Informe a carga horária semanal.':DIAS.some(function(d){var v=H.dias[d[0]]||{};return PROF?(!!v.entrada!==!!v.saida):(!v.entrada||!v.saida)})?(PROF?'Em cada dia preenchido, informe a entrada e a saída.':'Informe a entrada e a saída de todos os dias.'):H.outros.some(function(o){return !o.local||!o.inicio||!o.fim})?'Complete local e horário de cada outro local de trabalho (ou remova).':'';
+    if(!falta&&mostrarRegras().length)falta='A disponibilidade não atende às regras do seu contrato. Veja o quadro vermelho.';
     if(!falta&&mostrarConflitos().length)falta='Há conflito de horário com outro local de trabalho. Corrija antes de enviar.';
     if(falta){m.className='msg bad';m.textContent=falta;var cf=$('#conf');if(cf&&!cf.hidden)cf.scrollIntoView({behavior:'smooth',block:'center'});return}
     if(!window.confirm('Depois de enviar, o horário de '+H.ano+' não poderá mais ser alterado por aqui. Enviar agora?'))return;t.disabled=true;t.textContent='Enviando…';
@@ -102,8 +119,11 @@ document.addEventListener('click',function(e){var t=e.target;
 if(!pid){$('#quem').textContent='Abra esta página pelo link enviado pela coordenação.';return}
 GFI.api('listMany',{app:'gd',cols:['pessoas','horarios'],key:'',portal:PORTAL}).then(function(r){
   var p=((r.pessoas||[]).filter(function(x){return x.id===pid})[0]||{}).data||{},hs=(r.horarios||[]).filter(function(x){return x.id===pid+'-'+ANO}).map(function(x){return x.data||{}}),h=hs[0];
-  $('#quem').textContent=(p.nome?p.nome+' · ':'')+'jornada de '+ANO;
-  if(h)H={ano:ANO,carga:h.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||'',enviado:h.enviado,atualizadoEm:h.atualizadoEm};
+  PAPEL=p.papel||'mediador';PROF=PAPEL==='formador'||PAPEL==='regente';
+  $('#quem').textContent=(p.nome?p.nome+' · ':'')+(PROF?'disponibilidade de horário de ':'jornada de ')+ANO;
+  if(PROF){document.title='Disponibilidade de horário · Professores';var b1=document.querySelector('.band h1');if(b1)b1.textContent='Disponibilidade de horário';
+    var ct=String(p.contrato||''),n=(/(\d{2})/.exec(ct)||[])[1];if(PAPEL==='regente'&&MODS['Regente '+n])H.modalidade='Regente '+n;else if(PAPEL!=='regente'&&MODS['EAD '+n])H.modalidade='EAD '+n;if(H.modalidade)H.carga=String(MODS[H.modalidade].h)}
+  if(h)H={ano:ANO,modalidade:h.modalidade||H.modalidade||'',carga:h.carga||H.carga||'',dias:h.dias||{},outros:h.outros||[],obs:h.obs||'',enviado:h.enviado,atualizadoEm:h.atualizadoEm};
   if(H.enviado)fechado();else render();
 }).catch(function(x){$('#quem').textContent='Não foi possível abrir: '+((x&&x.message)||'link inválido')});
 })();

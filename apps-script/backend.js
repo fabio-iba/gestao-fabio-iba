@@ -176,7 +176,7 @@ function tratarPortal(req) {
   }
   if (op === 'horario') {
     // mediador informa a própria jornada (só grava no próprio cadastro)
-    var h = req.data || {}, anoH = '2027', limpo = { ano: anoH, carga: String(h.carga || '').slice(0, 10), dias: {}, outros: [], obs: String(h.obs || '').slice(0, 500), atualizadoEm: new Date().toISOString() };
+    var h = req.data || {}, anoH = '2027', limpo = { ano: anoH, modalidade: ['EAD 40', 'EAD 20', 'Regente 40', 'Regente 20', 'Regente 12'].indexOf(String(h.modalidade || '')) >= 0 ? String(h.modalidade) : '', carga: String(h.carga || '').slice(0, 10), dias: {}, outros: [], obs: String(h.obs || '').slice(0, 500), atualizadoEm: new Date().toISOString() };
     var HR = function (x) { x = String(x || ''); return /^\d{2}:\d{2}$/.test(x) ? x : ''; };
     ['seg', 'ter', 'qua', 'qui', 'sex'].forEach(function (d) { var v = (h.dias || {})[d] || {}; limpo.dias[d] = { entrada: HR(v.entrada), almoco: HR(v.almoco), retorno: HR(v.retorno), saida: HR(v.saida) };
       if (d === 'qua') { limpo.dias.qua.noiteInicio = HR(v.noiteInicio); limpo.dias.qua.noiteFim = HR(v.noiteFim); } });
