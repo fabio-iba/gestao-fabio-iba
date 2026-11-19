@@ -678,7 +678,7 @@ function htmlEscolha(){
 }
 function render(){
   TABS=S.area==='prof'?TABS_PROF:TABS_MED;
-  if(S.area==='prof'&&!/^p(vis|lista|carga|ent)$/.test(S.tab))S.tab='pvis';if(S.area==='med'&&/^p(vis|lista|carga|ent)$/.test(S.tab))S.tab='geral';
+  if(S.area==='prof'&&!/^p(vis|lista|carga|ent|hor)$/.test(S.tab))S.tab='pvis';if(S.area==='med'&&/^p(vis|lista|carga|ent|hor)$/.test(S.tab))S.tab='geral';
   $('#tabs').hidden=!S.area;$('.per-claro').hidden=!S.area;$('#f-med').parentNode.hidden=S.area!=='med';
   $('#f-mod').parentNode.hidden=S.area==='prof'&&S.tab!=='pent';
   $('#tabs').innerHTML=(S.area?'<button type="button" data-area="" title="Voltar à escolha">← Voltar</button>':'')+TABS.map(function(t){return '<button type="button" data-tab="'+t[0]+'" aria-pressed="'+(S.tab===t[0])+'">'+t[1]+'</button>'}).join('');
