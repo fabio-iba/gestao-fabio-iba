@@ -44,7 +44,7 @@ var COMO={
  'Alocação com disciplina inexistente':'Abra a Gestão das Entregas e exclua ou refaça a alocação.',
  'Alocação com professor inexistente':'Abra a Gestão das Entregas e escolha o professor de novo.',
  'Mediador inexistente ou que não é mediador':'Na Gestão das Entregas, revise os mediadores da alocação ou o papel da pessoa na Gestão Docente.',
- 'Turma sinérgica com professores diferentes':'Disciplinas sinérgicas são uma turma só: deixe o mesmo professor em todas as ofertas (ou desfaça a sinergia).',
+ 'Turma sinérgica com professores diferentes':'Disciplinas sinérgicas são uma turma só: na mesma modalidade (EAD ou estendida), deixe o mesmo professor em todas as ofertas (ou desfaça a sinergia). EAD e estendida podem ter professores diferentes.',
  'Disciplina com aula ao vivo sem professor':'Aloque um professor na Gestão das Entregas.',
  'Disciplina com aula ao vivo sem mediador':'Inclua o mediador na alocação.',
  'Professor acima do contrato':'Redistribua as aulas ou atualize as aulas do contrato na ficha do professor.',
@@ -90,10 +90,11 @@ function verificar(){
       (a.mediadorIds||[]).forEach(function(mid){if(!P[mid]||P[mid].papel!=='mediador')add('Mediador inexistente ou que não é mediador',nomeD(d)+' → '+(P[mid]?P[mid].nome+' ('+P[mid].papel+')':'id '+mid))});
       (alocPorDisc[d.id]=alocPorDisc[d.id]||[]).push(a)});
     vals(D).forEach(function(d){var k=sk(d);(grupos[k]=grupos[k]||[]).push(d)});
-    Object.keys(grupos).forEach(function(k){var ds=grupos[k],profs={},meds={},temAloc=false;
-      ds.forEach(function(d){(alocPorDisc[d.id]||[]).forEach(function(a){temAloc=true;if(a.professorId)profs[a.professorId]=1;(a.mediadorIds||[]).forEach(function(x){meds[x]=1})})});
+    Object.keys(grupos).forEach(function(k){var ds=grupos[k],profs={},porTipo={},meds={},temAloc=false;
+      ds.forEach(function(d){(alocPorDisc[d.id]||[]).forEach(function(a){temAloc=true;if(a.professorId){profs[a.professorId]=1;var tp=a.tipo||'ead';(porTipo[tp]=porTipo[tp]||{})[a.professorId]=1}(a.mediadorIds||[]).forEach(function(x){meds[x]=1})})});
       var d0=raiz(ds[0]),aoVivo=!d0.semAoVivo&&(String(d0.ordem)==='1'||String(d0.ordem)==='2');
-      if(Object.keys(profs).length>1)add('Turma sinérgica com professores diferentes',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||'')+' → '+Object.keys(profs).map(nomeP).join(' × '));
+      // EAD e estendida são turmas diferentes: só acusa dois professores na mesma modalidade
+      Object.keys(porTipo).forEach(function(tp){var ps=Object.keys(porTipo[tp]);if(ps.length>1)add('Turma sinérgica com professores diferentes',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||'')+' · '+(tp==='estendida'?'Estendida':'EAD')+' → '+ps.map(nomeP).join(' × '))});
       if(aoVivo&&!Object.keys(profs).length)add('Disciplina com aula ao vivo sem professor',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||'')+' ('+ds.map(function(d){return C[d.cursoId]?C[d.cursoId].nome:'?'}).filter(function(x,i,a){return a.indexOf(x)===i}).join(', ')+')');
       else if(aoVivo&&!Object.keys(meds).length)add('Disciplina com aula ao vivo sem mediador',d0.nome+' · '+d0.modulo+' · '+d0.ordem+'ª · '+(d0.hora||''))});
     // carga (mesma regra da Gestão das Entregas)
