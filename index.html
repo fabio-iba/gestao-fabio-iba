@@ -111,7 +111,7 @@ body{background:#F4F5F9}
 .kpi small{display:block;font-size:12.5px;font-weight:700;color:#64748B;letter-spacing:0;text-transform:none}
 .kpi b{display:block;font-size:22px!important;line-height:1.2;margin:4px 0 4px;letter-spacing:-.01em;color:#0F172A}
 .kpi span{display:block;font-size:13px;color:#64748B;opacity:1}
-.k1{--kb:#E0F2FE;--kc:#0284C7}.k2{--kb:#EDE9FE;--kc:#7C3AED}.k3{--kb:#FFE4E6;--kc:#E11D48}
+.k4{--kb:#DCFCE7;--kc:#16A34A}.k5{--kb:#FEF3C7;--kc:#D97706}.k1{--kb:#E0F2FE;--kc:#0284C7}.k2{--kb:#EDE9FE;--kc:#7C3AED}.k3{--kb:#FFE4E6;--kc:#E11D48}
 .kpi.alerta{border-color:#FECDD3;background:#FFF7F8}
 .sec{margin:0;border:0;padding:0;display:flex;justify-content:space-between;align-items:center}
 .sec h2{font-size:16px;letter-spacing:-.01em;text-transform:none;color:#0F172A;font-weight:700}
@@ -463,8 +463,27 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     var h='<a class="kpi k1'+('')+'" href="'+(prox?lk(prox.projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></i><div><small>Próxima reunião</small><b>'+(prox?br(prox.data)+(prox.hora?' · '+esc(prox.hora):''):'Nenhuma')+'</b><span>'+(prox?esc(prox.titulo||'Reunião')+' — '+esc(P[prox.projetoId].nome):'nada agendado')+'</span></div></a>'
      +'<a class="kpi k2'+(nTot?' alerta':'')+'" href="'+(nP?lk(nP):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></i><div><small>Mensagens novas</small><b>'+(nTot||'Nenhuma')+'</b><span>'+(nTot?Object.keys(novas).map(function(k){return esc(P[k].nome)+' ('+novas[k]+')'}).join(' · '):'chats em dia')+'</span></div></a>'
      +'<a class="kpi k3'+(pend.length?' alerta':'')+'" href="'+(pend[0]?lk(pend[0].projetoId):'projetos.html')+'"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></i><div><small>Decisões a registrar</small><b>'+(pend.length||'Nenhuma')+'</b><span>'+(pend.length?'reuniões sem decisões':'tudo registrado')+'</span></div></a>';
-    var s=document.getElementById('resumo');s.innerHTML=h;s.hidden=false;
+    var s=document.getElementById('resumo');s.innerHTML=h;s.hidden=false;window.__resumoProj=h;if(window.__calKpi)s.innerHTML=window.__calKpi+h;
   }).catch(function(){});
+  // calendário acadêmico: o que acontece hoje e o próximo evento
+  Promise.all([
+    fetch('calendario.html',{cache:'no-store'}).then(function(r){return r.text()}).then(function(t){var mm=t.match(/<script type="application\/json" id="cal-data">([\s\S]*?)<\/script>/);return mm?JSON.parse(mm[1]).events||[]:[]}).catch(function(){return []}),
+    GFI.api('listMany',{app:'cal',cols:['paginas']}).then(function(r){var x=(r.paginas||[]).filter(function(p){return p.id==='cal-data'})[0];return x&&x.data&&x.data.json?(JSON.parse(x.data.json).events||[]):[]}).catch(function(){return []})
+  ]).then(function(rs){
+    var of=function(e){return /^k27_/.test(e.id)},ev=rs[1].filter(function(e){return !of(e)}).concat(rs[0].filter(of));if(!rs[1].length)ev=rs[0];
+    var hoje=ev.filter(function(e){return e.c!=='modulo'&&e.s<=hj&&e.e>=hj}).sort(function(a,b){return (a.s===hj?0:1)-(b.s===hj?0:1)||a.s.localeCompare(b.s)});
+    var mod=ev.filter(function(e){return e.c==='modulo'&&e.s<=hj&&e.e>=hj})[0];
+    var comeca=hoje.filter(function(e){return e.s===hj});
+    var prox=ev.filter(function(e){return e.s>hj}).sort(function(a,b){return a.s.localeCompare(b.s)})[0];
+    var tit=function(e){return esc(e.t)+(e.s!==e.e&&e.s!==hj?' (até '+br(e.e)+')':'')};
+    var ic='<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2.5"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M9 15l2 2 4-4"/></svg></i>';
+    var ic2='<i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></i>';
+    var b1=comeca.length?(comeca.length===1?'Começa hoje':comeca.length+' começam hoje'):(hoje.length?hoje.length+' em andamento':'Nada hoje');
+    var sp1=hoje.length?hoje.slice(0,2).map(tit).join(' · ')+(hoje.length>2?' +'+(hoje.length-2):''):(mod?'Módulo '+esc(mod.m)+' em andamento':'sem eventos no calendário');
+    var k='<a class="kpi k4'+(comeca.length?' alerta':'')+'" href="calendario.html" title="'+esc(hoje.map(function(e){return e.t}).join(' · '))+'">'+ic+'<div><small>Hoje no calendário</small><b>'+b1+'</b><span>'+sp1+'</span></div></a>'
+      +'<a class="kpi k5" href="calendario.html">'+ic2+'<div><small>Próximo no calendário</small><b>'+(prox?br(prox.s):'—')+'</b><span>'+(prox?esc(prox.t):'nada previsto')+'</span></div></a>';
+    window.__calKpi=k;var s=document.getElementById('resumo');s.innerHTML=k+(window.__resumoProj||'');s.hidden=false;
+  });
 })();
 </script>
 
