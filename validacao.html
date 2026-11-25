@@ -592,6 +592,17 @@ ${corpo}`;
   // Histórico
   const lerHist = () => { try { return JSON.parse(localStorage.getItem(HKEY) || '[]'); } catch { return []; } };
   const gravarHist = h => { try { localStorage.setItem(HKEY, JSON.stringify(h)); return true; } catch { return false; } };
+  // histórico compartilhado com a versão no Claude: aba val__avaliacoes da planilha
+  async function puxarPlan(){
+    try { if (!window.GFI || !GFI.temChave()) return;
+      const r = await GFI.api('listMany', { app: 'val', cols: ['avaliacoes'] });
+      const por = {}; (r.avaliacoes || []).forEach(x => { por[x.id] = x.data; });
+      const h = lerHist(), ids = new Set(h.map(x => String(x.id))); let mudou = false;
+      Object.keys(por).forEach(id => { const x = por[id]; if (x && x.apagado){ const i = h.findIndex(y => String(y.id) === id); if (i >= 0){ h.splice(i,1); mudou = true; } } else if (x && !ids.has(id)){ h.push(x); mudou = true; } });
+      if (mudou){ gravarHist(h); try { renderHist(); atualizarCards(); } catch {} }
+    } catch (e) { console.warn('histórico da planilha', e); }
+  }
+  setTimeout(puxarPlan, 800);
 
   $('#btnSalvar').addEventListener('click', () => {
     if (!atual){ $('#saveMsg').textContent = 'Faça uma análise primeiro.'; return; }
