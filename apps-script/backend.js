@@ -18,7 +18,7 @@ function doGet(e) {
   if (req.op === 'resultado') {
     // resultado de um pedido grande enviado antes por POST (rid)
     var pm = /^([\w-]+)\.([a-z0-9]+)$/i.exec(String(req.portal || ''));
-    if (req.key !== PROPS.getProperty('CHAVE') && !(pm && codProf(pm[1]) === pm[2].toLowerCase())) res = { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
+    if (req.key !== PROPS.getProperty('CHAVE') && !(req.key && req.key === tokenCopia('leitor')) && !(pm && codProf(pm[1]) === pm[2].toLowerCase())) res = { ok: false, code: 'not_granted', message: 'Chave de acesso incorreta.' };
     else { var t = CacheService.getScriptCache().get('rid_' + req.rid); res = t ? JSON.parse(t) : { ok: false, code: 'pending', message: 'Aguardando.' }; }
   } else res = tratar(req);
   return responder(res, cb);
@@ -44,6 +44,7 @@ function tratar(req) {
     var chave = PROPS.getProperty('CHAVE');
     if (!chave) return { ok: false, code: 'not_configured', message: 'Defina a propriedade CHAVE no Apps Script.' };
     if (req.key !== chave) {
+      if (req.key && req.key === tokenCopia('leitor')) return tratarLeitor(req);
       var copia = acessoCopia(req);
       if (copia) return copia;
       if (req.op === 'entrarProjeto') return entrarProjeto(req);
@@ -55,6 +56,7 @@ function tratar(req) {
     if (req.op === 'set' && req.data && JSON.stringify(req.data).indexOf(chave) >= 0) return { ok: false, code: 'invalid_argument', message: 'O texto digitado é a chave de acesso. Use outro nome.' };
     var op = req.op;
     if (op === 'ping') return { ok: true };
+    if (op === 'linkLeitor') return { ok: true, data: tokenCopia('leitor') };
     if (op === 'linkCopia') { if (!COPIAS[req.copia]) return { ok: false, code: 'invalid_argument', message: 'Cópia desconhecida.' }; return { ok: true, data: tokenCopia(req.copia) }; }
     // escolhas enviadas pelo link do professor, mesmo quando o navegador já tem a chave da coordenação
     if (op === 'escolhas') {
@@ -491,6 +493,21 @@ function acessoCopia(req) {
     if (op === 'arquivo') return { ok: true, data: baixarArquivo(req.id) };
     if (op === 'ia') return { ok: true, data: ia(req.prompt, req.max) };
     return { ok: false, code: 'not_granted', message: 'Operação não permitida neste painel.' };
+  } catch (err) { return { ok: false, code: err.code || 'internal', message: String(err.message || err) }; }
+}
+/* ---------- Link de visualização (espelho somente leitura, ex.: Nayara) ----------
+ * Código derivado da CHAVE: vê tudo o que o coordenador vê, mas nenhuma gravação é aceita.
+ * Responde 'read_only' (e não 'not_granted') para o navegador não apagar o acesso guardado. */
+function tratarLeitor(req) {
+  try {
+    var op = req.op;
+    if (op === 'ping') return { ok: true, data: { leitor: true } };
+    if (op === 'listMany') return { ok: true, data: listMany(req.app, req.cols || []) };
+    if (op === 'arquivo') return { ok: true, data: baixarArquivo(req.id) };
+    if (op === 'driveSearch') return { ok: true, data: driveSearch(req.query, req.pageSize) };
+    if (op === 'driveText') return { ok: true, data: driveText(req.fileId) };
+    if (op === 'driveDownload') return { ok: true, data: driveDownload(req.fileId, req.exportMimeType) };
+    return { ok: false, code: 'read_only', message: 'Acesso somente para visualização: não é possível editar.' };
   } catch (err) { return { ok: false, code: err.code || 'internal', message: String(err.message || err) }; }
 }
 // código de acesso embutido no link da cópia: derivado da CHAVE do coordenador (não fica no código-fonte)

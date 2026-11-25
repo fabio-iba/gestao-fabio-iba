@@ -12,6 +12,25 @@
   var API = /^https?:\/\//.test(CFG.api || '') ? CFG.api : '';
   var APP = window.GFI_APP || 'geral';
   var KEY_LS = 'gfi_chave';
+  // link de visualização (#leitor=CODIGO): guarda o código e entra em modo somente leitura
+  (function () {
+    var m = /[#?&]leitor=([A-Za-z0-9]{10,40})/.exec((location.hash || '') + '&' + (location.search || ''));
+    if (!m) return;
+    try { localStorage.setItem(KEY_LS, m[1]); localStorage.setItem('gfi_leitor', '1'); } catch (e) {}
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+  })();
+  var LEITOR = (function () { try { return localStorage.getItem('gfi_leitor') === '1'; } catch (e) { return false; } })();
+  var LEITURA_OK = { ping: 1, listMany: 1, resultado: 1, arquivo: 1, driveSearch: 1, driveText: 1, driveDownload: 1 };
+  if (LEITOR) {
+    var faixa = function () {
+      if (document.getElementById('gfi-leitor')) return;
+      var b = document.createElement('div'); b.id = 'gfi-leitor';
+      b.textContent = '👁 Modo visualização: você vê tudo, mas não pode editar';
+      b.style.cssText = 'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99999;background:#0F172A;color:#fff;font:600 12.5px system-ui,sans-serif;padding:7px 14px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none;opacity:.92';
+      document.body.appendChild(b);
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', faixa); else faixa();
+  }
   var POLL_MS = CFG.atualizarACada || 20000;
 
   function erro(code, message) { var e = new Error(message || code); e.code = code; return e; }
@@ -77,6 +96,7 @@
   }
   function api(op, dados) {
     if (!API) return Promise.reject(erro('not_configured', 'Configure o endereço do Apps Script em config.js.'));
+    if (LEITOR && !LEITURA_OK[op]) { aviso('Modo visualização: não é possível editar.'); return Promise.reject(erro('read_only', 'Modo visualização: não é possível editar.')); }
     var corpo = Object.assign({ op: op, key: chave(), app: APP }, dados || {});
     if (!corpo.key && portal()) corpo.portal = portal();
     var txt = JSON.stringify(corpo);
@@ -341,11 +361,11 @@
     };
     Storage.prototype.setItem = function (k, v) {
       setOrig.call(this, k, v);
-      if (this === localStorage && LS.indexOf(k) >= 0) db.doc('navegador/' + k).set({ v: String(v) }).catch(function (e) { aviso('Não foi possível salvar na planilha: ' + e.message); });
+      if (this === localStorage && !LEITOR && LS.indexOf(k) >= 0) db.doc('navegador/' + k).set({ v: String(v) }).catch(function (e) { aviso('Não foi possível salvar na planilha: ' + e.message); });
     };
     Storage.prototype.removeItem = function (k) {
       rmOrig.call(this, k);
-      if (this === localStorage && LS.indexOf(k) >= 0) db.doc('navegador/' + k).delete().catch(function () {});
+      if (this === localStorage && !LEITOR && LS.indexOf(k) >= 0) db.doc('navegador/' + k).delete().catch(function () {});
     };
   }
 
@@ -353,9 +373,9 @@
   window.claude = window.claude || {};
   window.claude.use = function (nome) { return Promise.resolve(CAPS[nome] || null); };
   // coordenador entra para editar uma página pública
-  function entrar() { var k = window.prompt('Chave de acesso do coordenador (propriedade CHAVE do Apps Script):'); if (k && String(k).trim()) { lsSet(KEY_LS, String(k).trim()); location.reload(); } }
-  function sair() { try { localStorage.removeItem(KEY_LS); } catch (e) {} location.reload(); }
-  window.GFI = { entrar: entrar, sair: sair, temChave: function () { return !!lsGet(KEY_LS); }, api: api, trocarChave: trocarChave, imgUrl: imgUrl, db: db };
+  function entrar() { var k = window.prompt('Chave de acesso do coordenador (propriedade CHAVE do Apps Script):'); if (k && String(k).trim()) { lsSet(KEY_LS, String(k).trim()); try { localStorage.removeItem('gfi_leitor'); } catch (e) {} location.reload(); } }
+  function sair() { try { localStorage.removeItem(KEY_LS); localStorage.removeItem('gfi_leitor'); } catch (e) {} location.reload(); }
+  window.GFI = { entrar: entrar, sair: sair, temChave: function () { return !!lsGet(KEY_LS); }, leitor: function () { return LEITOR; }, api: api, trocarChave: trocarChave, imgUrl: imgUrl, db: db };
 })();
 
 /* Botão "casa" de todos os painéis leva à página inicial (index.html) */
