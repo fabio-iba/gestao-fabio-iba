@@ -25,8 +25,9 @@
     var faixa = function () {
       if (document.getElementById('gfi-leitor')) return;
       var b = document.createElement('div'); b.id = 'gfi-leitor';
-      b.textContent = '👁 Modo visualização: você vê tudo, mas não pode editar';
-      b.style.cssText = 'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99999;background:#0F172A;color:#fff;font:600 12.5px system-ui,sans-serif;padding:7px 14px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.25);pointer-events:none;opacity:.92';
+      b.innerHTML = '👁 Modo visualização: você vê tudo, mas não pode editar <button type="button" style="margin-left:10px;background:#fff;color:#0F172A;border:0;border-radius:999px;padding:3px 10px;font:700 11.5px system-ui,sans-serif;cursor:pointer">Sou o coordenador</button>';
+      b.style.cssText = 'position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:99999;background:#0F172A;color:#fff;font:600 12.5px system-ui,sans-serif;padding:7px 8px 7px 14px;border-radius:999px;box-shadow:0 6px 20px rgba(0,0,0,.25);opacity:.95;white-space:nowrap';
+      b.querySelector('button').onclick = function () { window.GFI && GFI.entrar(); };
       document.body.appendChild(b);
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', faixa); else faixa();
