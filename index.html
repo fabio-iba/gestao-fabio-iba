@@ -175,21 +175,6 @@ a.card:hover{transform:translateY(-2px);box-shadow:0 16px 32px -20px rgba(15,23,
     <ul id="lista-cursos"><li>Administração</li><li>Recursos Humanos</li><li>Psicologia Aplicada</li><li>Processos Gerenciais</li><li>Ciências da Felicidade</li><li>Saúde Mental no Trabalho</li><li>Disciplinas Institucionais</li></ul>
     <nav id="nav" aria-label="Painéis"></nav>
     <a class="drive" href="auditoria.html" style="margin-top:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M12 3l8 4v5c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V7z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg> Verificação de consistência</a>
-    <a class="drive" href="#" id="btnLeitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg> Link de visualização</a>
-    <script>
-    (function(){var b=document.getElementById('btnLeitor');if(!b)return;
-      if(!window.GFI||!GFI.temChave()||(GFI.leitor&&GFI.leitor())){b.style.display='none';return}
-      b.addEventListener('click',function(ev){ev.preventDefault();
-        GFI.api('linkLeitor',{}).then(function(t){
-          var url=location.origin+location.pathname.replace(/[^/]*$/,'')+'#leitor='+t;
-          var ok=function(){alertaLeitor(url,true)},no=function(){alertaLeitor(url,false)};
-          if(navigator.clipboard)navigator.clipboard.writeText(url).then(ok,no);else no();
-        }).catch(function(e){alertaLeitor('Não foi possível gerar o link: '+e.message,false)});
-      });
-      function alertaLeitor(t,copiado){var d=document.getElementById('dlgLeitor');if(!d){d=document.createElement('div');d.id='dlgLeitor';d.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,.45);display:grid;place-items:center;z-index:9999';document.body.appendChild(d)}
-        d.innerHTML='<div style="background:#fff;border-radius:16px;padding:22px;max-width:560px;width:calc(100% - 32px);font:14px system-ui,sans-serif;color:#0F172A"><b style="font-size:16px">Link de visualização</b><p style="margin:8px 0;color:#475569">'+(copiado?'Link copiado. ':'')+'Quem abrir este link vê todos os painéis e usa os filtros, mas não consegue editar nada. Não abra este link no seu navegador, senão ele também entra em modo visualização.</p><input readonly style="width:100%;padding:8px;border:1px solid #CBD5E1;border-radius:8px;font:12px monospace" value="'+t.replace(/"/g,'&quot;')+'" onclick="this.select()"><div style="text-align:right;margin-top:12px"><button style="padding:8px 16px;border-radius:10px;border:0;background:#0F172A;color:#fff;font-weight:700;cursor:pointer" onclick="this.closest(\'#dlgLeitor\').remove()">Fechar</button></div></div>';}
-    })();
-    </script>
     <a class="drive" id="side-drive" target="_blank" rel="noopener" style="margin-top:8px">Pasta no Drive</a>
   </aside>
   <div class="content">
